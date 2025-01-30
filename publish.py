@@ -56,7 +56,7 @@ for key, value in benchmark.items():
 col_best = "Best<br/>Model<br/>for<br/>Size (GB)"
 col_score = "Eco-<br/>Score"
 col_size = "Size<br/>(*10^9 Params)"
-col_quant = "Quantization<br/>(Bits)"
+col_quant = "Bits"
 col_context = "Context Length<br/>(K)"
 col_bench_python_100 = "PE-Bench-Python-100"
 col_bench_java_100 = "PE-Bench-Java-100"

@@ -177,6 +177,24 @@
         "python-100": 9.02,
         "rust-100": 5.71
     },
+    "hf.co/mradermacher/phi-4-abliterated-GGUF:Q4_K_M": {
+        "_context_size": 16,
+        "_parameter_size": 14.7,
+        "_quantization_level": 4,
+        "clojure-100": 0.89,
+        "java-100": 6.8,
+        "python-100": 8.88,
+        "rust-100": 4.42
+    },
+    "hf.co/bartowski/Sky-T1-32B-Flash-GGUF:Q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 32.8,
+        "_quantization_level": 4,
+        "clojure-100": 2.5,
+        "java-100": 10.75,
+        "python-100": 8.78,
+        "rust-100": 6.64
+    },
     "yi-coder:9b-chat-q8_0": {
         "_context_size": 128,
         "_parameter_size": 8.8,
@@ -428,6 +446,15 @@
         "java-100": 3.91,
         "python-100": 5.57,
         "rust-100": 2.16
+    },
+    "hf.co/lmstudio-community/Mistral-Small-24B-Instruct-2501-GGUF:Q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 23.6,
+        "_quantization_level": 4,
+        "clojure-100": 0.79,
+        "java-100": 2.86,
+        "python-100": 5.21,
+        "rust-100": 1.54
     },
     "gemma2:27b-instruct-q8_0": {
         "_context_size": 8,
@@ -833,6 +860,15 @@
         "java-100": 0.0,
         "python-100": 1.01,
         "rust-100": 0.21
+    },
+    "hf.co/bartowski/OpenThinker-7B-GGUF:Q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 7.62,
+        "_quantization_level": 4,
+        "clojure-100": 0.62,
+        "java-100": 0.77,
+        "python-100": 0.88,
+        "rust-100": 0.53
     },
     "granite3.1-moe:3b-instruct-q8_0": {
         "_context_size": 128,

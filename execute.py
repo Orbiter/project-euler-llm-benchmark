@@ -38,11 +38,15 @@ def execute_python_code_worker(code, output_queue):
         'enumerate', 'sorted', 'reversed', 'zip', 'map', 'filter',
         'any', 'all', 'min', 'max', 'abs', 'pow', 'round', 'ord', 
         'list', 'dict', 'set', 'tuple', 'type', 'isinstance', 'bin',
+        'frozenset', 'callable', 'next', 'ZeroDivisionError', 'exit',
+        'eval'
     ]
     allowed_builtins = {name: getattr(builtins, name) for name in safe_builtins}
 
     # Define allowed modules
-    allowed_module_names = ['math', 'itertools', 'random']  # Add more as needed
+    allowed_module_names = [
+        'math', 'itertools', 'random', 'collections',
+        'heapq', 'decimal', 'numpy']
     allowed_modules = {name: __import__(name) for name in allowed_module_names}
 
     # Custom __import__ function to restrict imports
@@ -52,10 +56,17 @@ def execute_python_code_worker(code, output_queue):
         else:
             raise ImportError(f"Importing module '{name}' is not allowed.")
 
+    # Add the custom __import__ to allowed built-ins
+    allowed_builtins['__import__'] = safe_import
+
     # Define the restricted global environment
     restricted_globals = {
         '__builtins__': allowed_builtins,
         '__import__': safe_import,
+        '__name__': '__main__',    # Add this line
+        '__file__': None,          # Optional but recommended for consistency
+        '__package__': None,       # Optional but recommended
+        **allowed_modules,         # Inject allowed modules into the global scope
     }
 
     # Capture the output

@@ -34,19 +34,22 @@ def get_extension(language):
 def execute_python_code_worker(code, output_queue):
     # Define allowed built-ins
     safe_builtins = [
-        'print', 'range', 'len', 'int', 'float', 'str', 'sum', 'chr',
-        'enumerate', 'sorted', 'reversed', 'zip', 'map', 'filter',
-        'any', 'all', 'min', 'max', 'abs', 'pow', 'round', 'ord', 
-        'list', 'dict', 'set', 'tuple', 'type', 'isinstance', 'bin',
-        'frozenset', 'callable', 'next', 'ZeroDivisionError', 'exit',
-        'eval'
+        'abs', 'all', 'any', 'ascii', 'bin', 'bin', 'bool', 'bytearray',
+        'bytes', 'callable', 'chr', 'chr', 'complex', 'delattr', 'dict', 'dict',
+        'dir', 'divmod', 'enumerate', 'eval', 'exit', 'filter', 'float',
+        'frozenset', 'getattr', 'globals', 'hasattr', 'hash', 'hex', 'id',
+        'int', 'isinstance', 'issubclass', 'iter', 'len', 'list', 'locals',
+        'map', 'max', 'min', 'next', 'oct', 'ord', 'pow', 'print', 'property',
+        'range', 'repr', 'reversed', 'round', 'set', 'setattr', 'slice',
+        'sorted', 'str', 'sum', 'tuple', 'type', 'vars', 'zip',
+        'ZeroDivisionError', 'ValueError'
     ]
     allowed_builtins = {name: getattr(builtins, name) for name in safe_builtins}
 
     # Define allowed modules
     allowed_module_names = [
-        'math', 'itertools', 'random', 'collections',
-        'heapq', 'decimal', 'numpy']
+        'math', 'itertools', 'random', 'collections', 'string', 'sympy',
+        'heapq', 'decimal', 'numpy', 'fractions']
     allowed_modules = {name: __import__(name) for name in allowed_module_names}
 
     # Custom __import__ function to restrict imports
@@ -312,7 +315,8 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
             # if the output has several lines, we only want the last one
             #print(f"Executed {solution_code_path}, raw output:{output}")
             output = output.strip().split('\n')[-1]
-            print(f"Executed {program_file_path}:{output}")
+            result = "** CORRECT **" if output == expected_solution else ".. incorrect .."
+            print(f"Executed {program_file_path}:{output} - {result}")
             solutions[problem_number] = output
 
         # Write the solutions to a JSON file. We write this after each solution to avoid losing progress.

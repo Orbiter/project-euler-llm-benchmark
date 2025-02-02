@@ -10,6 +10,8 @@ from io import StringIO
 from argparse import ArgumentParser
 from contextlib import redirect_stdout
 
+benchmark_file = 'benchmark.json'
+
 def get_extension(language):
     if language == 'c': return 'c'
     elif language == 'r': return 'r'
@@ -326,8 +328,49 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
     print(f"Executed all Python files and saved results to {solutions_json_path}")
     return solutions
 
+def evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions):
+
+    if len(solutions) == max_problem_number:
+        # evaluate the solutions by comparing with the expected results
+        points = 0.0
+        count = 0
+        for problem_number in solutions:
+            if problem_number not in expected_solutions:
+                print(f"Problem {problem_number} not found in expected solutions.")
+                continue
+            expected = expected_solutions[problem_number]
+            solution = solutions[problem_number]
+            expected_solution = expected['solution']
+            if solution == expected_solution:
+                points += expected_solutions[problem_number]['points']
+            count += 1
+
+        points = round(points / count, 2)
+        print(f"Points: {points}")
+
+        # open the benchmark file and update the points
+        benchmark = {}
+        with open(benchmark_file, 'r', encoding='utf-8') as json_file:
+            benchmark = json.load(json_file)
+
+        # update the benchmark entry
+        entry = benchmark.get(model_name, {})
+        series_name = f"{language}-{max_problem_number}"
+        entry[series_name] = points
+        benchmark[model_name] = entry
+
+        # sort the benchmark with the highest points first, use the series name "python-100" as the key
+        sorted_benchmark = dict(sorted(benchmark.items(), key=lambda item: -item[1].get("python-100", 0)))
+
+        # write the updated benchmark file
+        with open(benchmark_file, 'w', encoding='utf-8') as json_file:
+            json.dump(sorted_benchmark, json_file, indent=4)
+    else:
+        print("Not all solutions were executed, so the benchmark was not updated.")
+
 def main():
     parser = ArgumentParser(description="Execute solutions and store results in a JSON file.")
+    parser.add_argument('--allmodels', action='store_true', help='loop over all models as provided by benchmark.json and run all of them')
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
     parser.add_argument('--language', required=False, default='python', help='Name of the programming language to use, default is python')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
@@ -356,46 +399,18 @@ def main():
 
     with open('solutions.json', 'r', encoding='utf-8') as json_file:
         expected_solutions = json.load(json_file)
-    solutions = process_solutions(model_name, language, max_problem_number, expected_solutions)
 
-    if len(solutions) == max_problem_number:
-        # evaluate the solutions by comparing with the expected results
-        points = 0.0
-        count = 0
-        for problem_number in solutions:
-            if problem_number not in expected_solutions:
-                print(f"Problem {problem_number} not found in expected solutions.")
-                continue
-            expected = expected_solutions[problem_number]
-            solution = solutions[problem_number]
-            expected_solution = expected['solution']
-            if solution == expected_solution:
-                points += expected_solutions[problem_number]['points']
-            count += 1
-
-        points = round(points / count, 2)
-        print(f"Points: {points}")
-
-        # open the benchmark file and update the points
-        benchmark_file = 'benchmark.json'
-        benchmark = {}
+    if args.allmodels:
+        # iterate over all models provided by benchmark.json and run all of them
         with open(benchmark_file, 'r', encoding='utf-8') as json_file:
             benchmark = json.load(json_file)
-
-        # update the benchmark entry
-        entry = benchmark.get(model_name, {})
-        series_name = f"{language}-{max_problem_number}"
-        entry[series_name] = points
-        benchmark[model_name] = entry
-
-        # sort the benchmark with the highest points first, use the series name "python-100" as the key
-        sorted_benchmark = dict(sorted(benchmark.items(), key=lambda item: -item[1].get("python-100", 0)))
-
-        # write the updated benchmark file
-        with open(benchmark_file, 'w', encoding='utf-8') as json_file:
-            json.dump(sorted_benchmark, json_file, indent=4)
+            # the keys are the model names
+            for model_name in benchmark:
+                solutions = process_solutions(model_name, language, max_problem_number, expected_solutions)
+                evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions)
     else:
-        print("Not all solutions were executed, so the benchmark was not updated.")
+        solutions = process_solutions(model_name, language, max_problem_number, expected_solutions)
+        evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions)
 
 if __name__ == "__main__":
     main()

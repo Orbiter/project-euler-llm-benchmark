@@ -204,6 +204,15 @@
         "python-100": 9.64,
         "rust-100": 3.14
     },
+    "phi4:latest": {
+        "_context_size": 16,
+        "_parameter_size": 14.7,
+        "_quantization_level": 4,
+        "clojure-100": 0.84,
+        "java-100": 6.91,
+        "python-100": 9.64,
+        "rust-100": 3.14
+    },
     "hf.co/bartowski/Qwen2.5-Coder-32B-Instruct-abliterated-GGUF:Q4_K_M": {
         "_context_size": 32,
         "_parameter_size": 32.8,

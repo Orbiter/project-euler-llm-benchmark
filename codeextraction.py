@@ -56,7 +56,7 @@ def process_markdown_files(model_name, language):
     markdown_files = sorted(os.listdir(language_dir))
 
     for markdown_file in markdown_files:
-        if markdown_file.endswith('.md'):
+        if not markdown_file.startswith('.') and markdown_file.endswith('.md'):
             markdown_path = os.path.join(language_dir, markdown_file)
 
             with open(markdown_path, 'r', encoding='utf-8') as file:

@@ -277,7 +277,7 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
     solutions = {}
     program_files = sorted(os.listdir(results_dir))
     for program_file in program_files:
-        if not program_file.endswith('.' + extension): continue
+        if program_file.startswith('.')  or not program_file.endswith('.' + extension): continue
         program_file_path = os.path.join(results_dir, program_file)
         extlen = len(extension) + 1
         problem_number = program_file[:-extlen]  # Remove extension

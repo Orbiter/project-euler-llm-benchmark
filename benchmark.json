@@ -969,7 +969,17 @@
         "python-100": 0.98,
         "rust-100": 0.0
     },
+    "qwen:72b-chat-v1.5-q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 72.0,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.78,
+        "python-100": 0.94,
+        "rust-100": 0.13
+    },
     "phi:2.7b-chat-v2-q4_K_M": {
+        "_context_size": 2,
         "_parameter_size": 3.0,
         "_quantization_level": 4,
         "clojure-100": 0.0,
@@ -1109,6 +1119,15 @@
         "java-100": 0.01,
         "python-100": 0.31,
         "rust-100": 0.03
+    },
+    "llama2:70b-chat-q4_K_M": {
+        "_context_size": 4,
+        "_parameter_size": 69.0,
+        "_quantization_level": 4,
+        "clojure-100": 0.03,
+        "java-100": 0.03,
+        "python-100": 0.31,
+        "rust-100": 0.01
     },
     "falcon:7b-instruct-q4_0": {
         "_parameter_size": 7.0,
@@ -1253,11 +1272,6 @@
         "_parameter_size": 620.0,
         "_quantization_level": 4
     },
-    "qwen:72b-chat-v1.5-q4_K_M": {
-        "_parameter_size": 72.0,
-        "_quantization_level": 4,
-        "java-100": 0.78
-    },
     "qwen:32b-chat-v1.5-q4_K_M": {
         "_parameter_size": 33.0,
         "_quantization_level": 4,
@@ -1292,10 +1306,6 @@
     },
     "mistral-small:24b-instruct-2501-q4_K_M": {
         "_parameter_size": 23.6,
-        "_quantization_level": 4
-    },
-    "llama2:70b-chat-q4_K_M": {
-        "_parameter_size": 69.0,
         "_quantization_level": 4
     },
     "codegemma:2b-code-v1.1-q4_K_M": {

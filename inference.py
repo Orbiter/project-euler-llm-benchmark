@@ -28,11 +28,11 @@ def process_problem_files(problems_dir, template_content, endpoint, language, ma
         prompt = template_content.replace('$$$PROBLEM$$$', problem_content)
 
         try:
-            content = ollama_chat(endpoint, prompt)
+            answer, total_tokens, token_per_second = ollama_chat(endpoint, prompt)
 
             # Save the response to a file
             with open(result_file_path, 'w', encoding='utf-8') as result_file:
-                result_file.write(content)
+                result_file.write(answer)
             print(f"Processed problem {problem_number} and saved response to {result_file_path}")
         except NameError as e:
             print(f"NameError occurred: {e}")

@@ -325,7 +325,7 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
         with open(solutions_json_path, 'w', encoding='utf-8') as json_file:
             json.dump(solutions, json_file, indent=4)
 
-    print(f"Executed all Python files and saved results to {solutions_json_path}")
+    print(f"Executed all {language} files and saved results to {solutions_json_path}")
     return solutions
 
 def evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions):

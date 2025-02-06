@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import urllib3
 import requests
 from argparse import ArgumentParser
@@ -93,7 +94,9 @@ def ollama_chat(endpoint, prompt='Hello World', temperature=0.0, max_tokens=8192
 
     try:
         #print(payload)
+        t0 = time.time()
         response = requests.post(endpoint["endpoint"], headers=headers, json=payload, verify=False)
+        t1 = time.time()
         #print(response)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
@@ -113,13 +116,16 @@ def ollama_chat(endpoint, prompt='Hello World', temperature=0.0, max_tokens=8192
     try:
         #print(response.text)
         data = response.json()
-        #print(data)
+        usage = data.get('usage', {})
+        total_tokens = usage.get('total_tokens', 0)
+        token_per_second = total_tokens / (t1 - t0)
+        #print(f"Total tokens: {total_tokens}, tokens per second: {token_per_second:.2f}")
         choices = data.get('choices', [])
         if len(choices) == 0:
             raise Exception("No response from the API: " + str(data))
         message = choices[0].get('message', {})
-        content = message.get('content', '')
-        return content
+        answer = message.get('content', '')
+        return answer, total_tokens, token_per_second
     except json.JSONDecodeError as e:
         raise Exception(f"Failed to parse JSON response from the API: {e}")
 
@@ -150,8 +156,9 @@ def main():
     
     # access the ollama API
     models_dict = ollama_list()
-    print(models_dict)
-    answer = ollama_chat(endpoint)
+    for (model, attr) in models_dict.items():
+        print(f"Model: {model}")
+    answer, total_tokens, token_per_second = ollama_chat(endpoint)
     print(answer)
 
 if __name__ == "__main__":

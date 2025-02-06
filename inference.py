@@ -7,12 +7,12 @@ def read_template(template_path):
     with open(template_path, 'r', encoding='utf-8') as file:
         return file.read()
 
-def process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number=9999, skip_existing=False):
+def process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number=9999, skip_existing=True):
     results_dir = os.path.join('solutions', endpoint["name"], language)
     os.makedirs(results_dir, exist_ok=True)
 
     for problem_file in sorted(os.listdir(problems_dir)):
-        if not problem_file.endswith('.txt'): continue
+        if problem_file.startswith('.') or not problem_file.endswith('.txt'): continue
         problem_number = problem_file[:-4]  # Remove .txt extension
         if int(problem_number) > max_problem_number: break
         problem_path = os.path.join(problems_dir, problem_file)
@@ -46,7 +46,7 @@ def main():
     parser.add_argument('--allmodels', action='store_true', help='loop over all models provided by ollama and run those which are missing in benchmark.json')
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
     parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the languages to test, default is python,java,rust,clojure')
-    parser.add_argument('--skip_existing', action='store_true', help='if set, skip problems that already have a solution')
+    parser.add_argument('--overwrite_existing', action='store_true', help='if set, re-calculate problems that already have a solution')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     parser.add_argument('--n100', action='store_true', help='only 100 problems') # this is the default
     parser.add_argument('--n200', action='store_true', help='only 200 problems')
@@ -98,7 +98,7 @@ def main():
                 if not model in benchmark or not bench_name in benchmark[model]:
                     print(f"Inference: Using model {model} and language {language}")
                     endpoint = ollama_chat_endpoint(api_base, model)
-                    process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number = max_problem_number, skip_existing = args.skip_existing)
+                    process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number = max_problem_number, skip_existing = (not args.overwrite_existing))
         else:
             # construct the endpoint object
             endpoint = {}
@@ -116,7 +116,7 @@ def main():
                 endpoint = ollama_chat_endpoint(api_base, model_name)
             
             # run the inference
-            process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number = max_problem_number, skip_existing = args.skip_existing)
+            process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number = max_problem_number, skip_existing = (not args.overwrite_existing))
 
 if __name__ == "__main__":
     main()

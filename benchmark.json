@@ -96,6 +96,15 @@
         "python-100": 12.72,
         "rust-100": 7.25
     },
+    "hf.co/mradermacher/Bespoke-Stratos-32B-GGUF:Q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 32.8,
+        "_quantization_level": 4,
+        "clojure-100": 1.78,
+        "java-100": 9.9,
+        "python-100": 12.37,
+        "rust-100": 7.58
+    },
     "qwen2.5:32b-instruct-q4_K_M": {
         "_context_size": 32,
         "_parameter_size": 32.8,
@@ -474,6 +483,12 @@
         "python-100": 6.37,
         "rust-100": 3.78
     },
+    "mistral-small:24b-instruct-2501-q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 23.6,
+        "_quantization_level": 4,
+        "python-100": 6.32
+    },
     "nemotron:70b-instruct-q8_0": {
         "_context_size": 128,
         "_parameter_size": 70.6,
@@ -538,12 +553,22 @@
         "rust-100": 1.18
     },
     "qwen2.5-coder:7b-instruct-q4_K_M": {
+        "_context_size": 32,
         "_parameter_size": 7.6,
         "_quantization_level": 4,
         "clojure-100": 0.87,
         "java-100": 4.7,
         "python-100": 4.76,
         "rust-100": 2.87
+    },
+    "hf.co/mradermacher/Bespoke-Stratos-7B-GGUF:Q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 7.62,
+        "_quantization_level": 4,
+        "clojure-100": 0.23,
+        "java-100": 2.67,
+        "python-100": 4.72,
+        "rust-100": 2.26
     },
     "opencoder:8b-instruct-q8_0": {
         "_context_size": 8,
@@ -576,6 +601,12 @@
         "_parameter_size": 9.0,
         "_quantization_level": 4,
         "python-100": 4.33
+    },
+    "yi:34b-chat-v1.5-q4_K_M": {
+        "_context_size": 4,
+        "_parameter_size": 34.0,
+        "_quantization_level": 4,
+        "python-100": 4.25
     },
     "phi3:14b-medium-128k-instruct-q8_0": {
         "_context_size": 128,
@@ -898,6 +929,12 @@
         "python-100": 1.54,
         "rust-100": 0.26
     },
+    "qwen:32b-chat-v1.5-q4_K_M": {
+        "_parameter_size": 33.0,
+        "_quantization_level": 4,
+        "java-100": 0.81,
+        "python-100": 1.54
+    },
     "Bio-Medical-Llama-3-8B-GGUF:Q8_0": {
         "_context_size": 8,
         "_parameter_size": 8.0,
@@ -1177,6 +1214,11 @@
         "python-100": 0.07,
         "rust-100": 0.0
     },
+    "falcon:40b-instruct-q4_0": {
+        "_parameter_size": 40.0,
+        "_quantization_level": 4,
+        "python-100": 0.07
+    },
     "vicuna:13b-v1.5-16k-q4_K_M": {
         "_parameter_size": 13.0,
         "_quantization_level": 4,
@@ -1258,11 +1300,6 @@
         "_quantization_level": 4,
         "java-100": 0.78
     },
-    "qwen:32b-chat-v1.5-q4_K_M": {
-        "_parameter_size": 33.0,
-        "_quantization_level": 4,
-        "java-100": 0.81
-    },
     "qwen:14b-chat-v1.5-q4_K_M": {
         "_parameter_size": 14.0,
         "_quantization_level": 4,
@@ -1280,18 +1317,6 @@
     },
     "falcon:180b-chat-q4_0": {
         "_parameter_size": 180.0,
-        "_quantization_level": 4
-    },
-    "falcon:40b-instruct-q4_0": {
-        "_parameter_size": 40.0,
-        "_quantization_level": 4
-    },
-    "yi:34b-chat-v1.5-q4_K_M": {
-        "_parameter_size": 34.0,
-        "_quantization_level": 4
-    },
-    "mistral-small:24b-instruct-2501-q4_K_M": {
-        "_parameter_size": 23.6,
         "_quantization_level": 4
     },
     "llama2:70b-chat-q4_K_M": {

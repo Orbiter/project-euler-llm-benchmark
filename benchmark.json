@@ -487,7 +487,10 @@
         "_context_size": 32,
         "_parameter_size": 23.6,
         "_quantization_level": 4,
-        "python-100": 6.32
+        "clojure-100": 0.93,
+        "java-100": 2.89,
+        "python-100": 6.32,
+        "rust-100": 2.47
     },
     "nemotron:70b-instruct-q8_0": {
         "_context_size": 128,
@@ -597,11 +600,20 @@
         "python-100": 4.51,
         "rust-100": 1.44
     },
+    "hf.co/bartowski/simplescaling_s1-32B-GGUF:Q4_K_M": {
+        "_parameter_size": 32.8,
+        "clojure-100": 1.4,
+        "java-100": 2.29,
+        "python-100": 4.33,
+        "rust-100": 2.78
+    },
     "yi:34b-chat-v1.5-q4_K_M": {
         "_context_size": 4,
         "_parameter_size": 34.0,
         "_quantization_level": 4,
-        "python-100": 4.25
+        "java-100": 2.63,
+        "python-100": 4.25,
+        "rust-100": 0.58
     },
     "phi3:14b-medium-128k-instruct-q8_0": {
         "_context_size": 128,
@@ -936,8 +948,10 @@
     "qwen:32b-chat-v1.5-q4_K_M": {
         "_parameter_size": 33.0,
         "_quantization_level": 4,
+        "clojure-100": 0.12,
         "java-100": 0.81,
-        "python-100": 1.54
+        "python-100": 1.54,
+        "rust-100": 0.13
     },
     "Bio-Medical-Llama-3-8B-GGUF:Q8_0": {
         "_context_size": 8,
@@ -1253,7 +1267,10 @@
     "falcon:40b-instruct-q4_0": {
         "_parameter_size": 40.0,
         "_quantization_level": 4,
-        "python-100": 0.07
+        "clojure-100": 0.0,
+        "java-100": 0.0,
+        "python-100": 0.07,
+        "rust-100": 0.42
     },
     "vicuna:13b-v1.5-16k-q4_K_M": {
         "_parameter_size": 13.0,

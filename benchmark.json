@@ -1006,6 +1006,13 @@
         "python-100": 1.29,
         "rust-100": 0.56
     },
+    "hf.co/bartowski/agentica-org_DeepScaleR-1.5B-Preview-GGUF:Q4_K_M": {
+        "_parameter_size": 1.78,
+        "clojure-100": 0.05,
+        "java-100": 0.4,
+        "python-100": 1.14,
+        "rust-100": 0.03
+    },
     "granite3.1-dense:2b-instruct-q8_0": {
         "_context_size": 128,
         "_parameter_size": 2.5,

@@ -321,6 +321,12 @@
         "python-100": 8.35,
         "rust-100": 0.0
     },
+    "mistral-large:123b-instruct-2407-q4_K_M": {
+        "_parameter_size": 122.6,
+        "_quantization_level": 4,
+        "java-100": 6.61,
+        "python-100": 8.27
+    },
     "llama3.1:70b-instruct-q8_0": {
         "_context_size": 128,
         "_parameter_size": 70.6,
@@ -365,6 +371,11 @@
         "java-100": 4.61,
         "python-100": 7.73,
         "rust-100": 3.09
+    },
+    "hf.co/ozone-ai/0x-lite-Q4_K_M-GGUF:latest": {
+        "_parameter_size": 14.8,
+        "java-100": 4.52,
+        "python-100": 7.66
     },
     "qwen2.5:7b-instruct-q4_K_M": {
         "_context_size": 128,
@@ -855,15 +866,6 @@
         "python-100": 2.17,
         "rust-100": 0.19
     },
-    "llama3.2:latest": {
-        "_context_size": 128,
-        "_parameter_size": 3.21,
-        "_quantization_level": 4,
-        "clojure-100": 0.0,
-        "java-100": 0.18,
-        "python-100": 2.14,
-        "rust-100": 0.21
-    },
     "qwen2.5:1.5b-instruct-q8_0": {
         "_context_size": 128,
         "_parameter_size": 1.5,
@@ -1006,6 +1008,10 @@
         "python-100": 1.29,
         "rust-100": 0.56
     },
+    "hf.co/bartowski/agentica-org_DeepScaleR-1.5B-Preview-GGUF:Q4_K_M": {
+        "_parameter_size": 1.78,
+        "python-100": 1.28
+    },
     "granite3.1-dense:2b-instruct-q8_0": {
         "_context_size": 128,
         "_parameter_size": 2.5,
@@ -1014,6 +1020,15 @@
         "java-100": 0.11,
         "python-100": 1.07,
         "rust-100": 0.2
+    },
+    "llama3.2:latest": {
+        "_context_size": 128,
+        "_parameter_size": 3.21,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.18,
+        "python-100": 0.99,
+        "rust-100": 0.21
     },
     "smallthinker:3b-preview-q4_K_M": {
         "_context_size": 128,

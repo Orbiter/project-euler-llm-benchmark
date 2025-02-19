@@ -1012,7 +1012,7 @@
         "_parameter_size": 1.78,
         "clojure-100": 0.05,
         "java-100": 0.4,
-        "python-100": 1.28
+        "python-100": 1.28,
         "rust-100": 0.03
     },
     "granite3.1-dense:2b-instruct-q8_0": {

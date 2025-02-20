@@ -420,6 +420,13 @@
         "python-100": 7.31,
         "rust-100": 3.35
     },
+    "hf.co/bartowski/smirki_UIGEN-T1.1-Qwen-14B-GGUF:Q4_K_M": {
+        "_parameter_size": 14.8,
+        "clojure-100": 1.14,
+        "java-100": 5.2,
+        "python-100": 7.27,
+        "rust-100": 4.41
+    },
     "llama3.3:70b-instruct-q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 70.6,
@@ -518,6 +525,13 @@
         "java-100": 4.05,
         "python-100": 6.31,
         "rust-100": 3.23
+    },
+    "hf.co/smirki/UIGEN-T1.1-Qwen-7B-Q4_K_M-GGUF:latest": {
+        "_parameter_size": 7.62,
+        "clojure-100": 0.88,
+        "java-100": 4.53,
+        "python-100": 6.06,
+        "rust-100": 2.08
     },
     "nemotron:70b-instruct-q4_K_M": {
         "_context_size": 128,

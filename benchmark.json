@@ -667,6 +667,13 @@
         "python-100": 4.2,
         "rust-100": 1.4
     },
+    "hf.co/bartowski/open-thoughts_OpenThinker-32B-GGUF:Q4_K_M": {
+        "_parameter_size": 32.8,
+        "clojure-100": 2.95,
+        "java-100": 4.22,
+        "python-100": 4.2,
+        "rust-100": 3.22
+    },
     "yi:9b-chat-v1.5-q4_K_M": {
         "_context_size": 4,
         "_parameter_size": 9.0,
@@ -756,6 +763,12 @@
         "java-100": 1.35,
         "python-100": 2.95,
         "rust-100": 0.56
+    },
+    "qwen2.5:3b": {
+        "_parameter_size": 3.1,
+        "_quantization_level": 4,
+        "java-100": 1.35,
+        "python-100": 2.95
     },
     "deepseek-llm:67b-chat-q4_K_M": {
         "_context_size": 4,
@@ -1179,12 +1192,26 @@
         "python-100": 0.45,
         "rust-100": 0.0
     },
+    "llama3.2:1b": {
+        "_parameter_size": 1.2,
+        "_quantization_level": 8,
+        "java-100": 0.06,
+        "python-100": 0.41
+    },
     "gemma2:2b-instruct-q8_0": {
         "_context_size": 8,
         "_parameter_size": 2.6,
         "_quantization_level": 8,
         "clojure-100": 0.0,
         "java-100": 0.22,
+        "python-100": 0.39,
+        "rust-100": 0.03
+    },
+    "phi3:3.8b": {
+        "_parameter_size": 3.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.04,
         "python-100": 0.39,
         "rust-100": 0.03
     },
@@ -1215,6 +1242,15 @@
         "python-100": 0.33,
         "rust-100": 0.33
     },
+    "qwen2.5-coder:0.5b-instruct-q8_0": {
+        "_context_size": 32,
+        "_parameter_size": 0.5,
+        "_quantization_level": 8,
+        "clojure-100": 0.0,
+        "java-100": 0.01,
+        "python-100": 0.33,
+        "rust-100": 0.03
+    },
     "hf.co/bartowski/Qwen2-VL-72B-Instruct-GGUF:Q4_K_M": {
         "_context_size": 32,
         "_parameter_size": 72.7,
@@ -1223,15 +1259,6 @@
         "java-100": 0.0,
         "python-100": 0.31,
         "rust-100": 0.08
-    },
-    "qwen2.5-coder:0.5b-instruct-q8_0": {
-        "_context_size": 32,
-        "_parameter_size": 0.5,
-        "_quantization_level": 8,
-        "clojure-100": 0.0,
-        "java-100": 0.01,
-        "python-100": 0.31,
-        "rust-100": 0.03
     },
     "llama2:70b-chat-q4_K_M": {
         "_context_size": 4,

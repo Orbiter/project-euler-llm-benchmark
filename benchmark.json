@@ -1242,6 +1242,15 @@
         "python-100": 0.33,
         "rust-100": 0.33
     },
+    "qwen2.5-coder:0.5b-instruct-q8_0": {
+        "_context_size": 32,
+        "_parameter_size": 0.5,
+        "_quantization_level": 8,
+        "clojure-100": 0.0,
+        "java-100": 0.01,
+        "python-100": 0.33,
+        "rust-100": 0.03
+    },
     "hf.co/bartowski/Qwen2-VL-72B-Instruct-GGUF:Q4_K_M": {
         "_context_size": 32,
         "_parameter_size": 72.7,
@@ -1250,15 +1259,6 @@
         "java-100": 0.0,
         "python-100": 0.31,
         "rust-100": 0.08
-    },
-    "qwen2.5-coder:0.5b-instruct-q8_0": {
-        "_context_size": 32,
-        "_parameter_size": 0.5,
-        "_quantization_level": 8,
-        "clojure-100": 0.0,
-        "java-100": 0.01,
-        "python-100": 0.31,
-        "rust-100": 0.03
     },
     "llama2:70b-chat-q4_K_M": {
         "_context_size": 4,

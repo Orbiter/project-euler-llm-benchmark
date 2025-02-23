@@ -1287,6 +1287,12 @@
         "python-100": 0.24,
         "rust-100": 0.0
     },
+    "falcon:180b-chat-q4_0": {
+        "_parameter_size": 180.0,
+        "_quantization_level": 4,
+        "java-100": 0.53,
+        "python-100": 0.17
+    },
     "vicuna:13b-q4_K_M": {
         "_context_size": 2,
         "_parameter_size": 13.0,
@@ -1427,10 +1433,6 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
-    },
-    "falcon:180b-chat-q4_0": {
-        "_parameter_size": 180.0,
-        "_quantization_level": 4
     },
     "codegemma:2b-code-v1.1-q4_K_M": {
         "_parameter_size": 3.0,

@@ -499,6 +499,15 @@
         "python-100": 6.49,
         "rust-100": 2.61
     },
+    "hf.co/mradermacher/Viper-Coder-Hybrid-v1.3-GGUF:Q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 14.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.46,
+        "java-100": 4.45,
+        "python-100": 6.44,
+        "rust-100": 1.83
+    },
     "qwen2.5-coder:7b-instruct-q8_0": {
         "_context_size": 128,
         "_parameter_size": 7.6,
@@ -568,6 +577,15 @@
         "java-100": 3.3,
         "python-100": 5.18,
         "rust-100": 2.47
+    },
+    "hf.co/mradermacher/Viper-Coder-HybridMini-v1.3-GGUF:Q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 7.62,
+        "_quantization_level": 4,
+        "clojure-100": 0.24,
+        "java-100": 3.51,
+        "python-100": 5.18,
+        "rust-100": 1.99
     },
     "qwen2.5-coder:3b-instruct-q4_K_M": {
         "_context_size": 32,

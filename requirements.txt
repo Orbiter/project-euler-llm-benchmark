@@ -1,0 +1,4 @@
+sympy
+urllib3
+requests
+ArgumentParser

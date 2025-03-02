@@ -85,8 +85,8 @@ print(table)
 
 # produce new markdown-table from benchmark json
 col_best = "Best<br/>Model<br/>for<br/>Size (GB)"
-col_bench_score = "PE-<br/>Score<br/>(Superhuman<br/>Factor)"
-col_memory_score = "Memory-<br/>Score"
+col_bench_score = "PE-<br/>Score"
+col_memory_score = "Mem-<br/>Score"
 col_size = "Size<br/>(*10^9 Params)"
 col_quant = "Bits"
 col_context = "Context Length<br/>(K)"
@@ -135,10 +135,10 @@ for key, value in benchmark.items():
     newtable += " | " + " "*(4 - len(col_context_vs)) + col_context_vs
 
     benchdetails = ""
-    benchdetails += "`Python:  " + col_bench_python_100_vs + "`<br/>"
-    benchdetails += "`Java:    " + col_bench_java_100_vs + "`<br/>"
-    benchdetails += "`Rust:    " + col_bench_rust_100_vs + "`<br/>"
-    benchdetails += "`Clojure: " + col_bench_clojure_100_vs + "`"
+    benchdetails += "Python: " + col_bench_python_100_vs + ", "
+    benchdetails += "Java: "   + col_bench_java_100_vs + ", "
+    benchdetails += "Rust: "   + col_bench_rust_100_vs + ", "
+    benchdetails += "Clojure: " + col_bench_clojure_100_vs
     newtable += " | " + benchdetails + " |\n"
 
 newtable += "\n" # make sure that the table has an empty line again

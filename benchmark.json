@@ -842,6 +842,15 @@
         "python-100": 2.6,
         "rust-100": 1.19
     },
+    "granite3.2:8b-instruct-q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 8.2,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 1.43,
+        "python-100": 2.53,
+        "rust-100": 0.3
+    },
     "qwen2-math:7b-instruct-q8_0": {
         "_context_size": 4,
         "_parameter_size": 7.6,
@@ -1138,6 +1147,15 @@
         "python-100": 0.88,
         "rust-100": 0.53
     },
+    "granite3.2:2b-instruct-q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 2.5,
+        "_quantization_level": 4,
+        "clojure-100": 0.05,
+        "java-100": 0.16,
+        "python-100": 0.85,
+        "rust-100": 0.15
+    },
     "smallthinker:3b-preview-q8_0": {
         "_context_size": 128,
         "_parameter_size": 3.4,
@@ -1332,6 +1350,15 @@
         "python-100": 0.24,
         "rust-100": 0.0
     },
+    "phi4-mini:3.8b-q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 3.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.04,
+        "python-100": 0.23,
+        "rust-100": 0.01
+    },
     "vicuna:13b-q4_K_M": {
         "_context_size": 2,
         "_parameter_size": 13.0,
@@ -1360,12 +1387,22 @@
         "rust-100": 0.0
     },
     "falcon:40b-instruct-q4_0": {
+        "_context_size": 2,
         "_parameter_size": 40.0,
         "_quantization_level": 4,
         "clojure-100": 0.0,
         "java-100": 0.0,
         "python-100": 0.07,
         "rust-100": 0.42
+    },
+    "granite3.2-vision:2b-q4_K_M": {
+        "_context_size": 16,
+        "_parameter_size": 2.5,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.03,
+        "python-100": 0.07,
+        "rust-100": 0.0
     },
     "vicuna:13b-v1.5-16k-q4_K_M": {
         "_context_size": 2,
@@ -1377,6 +1414,7 @@
         "rust-100": 0.0
     },
     "llama2:13b-chat-q4_K_M": {
+        "_context_size": 4,
         "_parameter_size": 13.0,
         "_quantization_level": 4,
         "clojure-100": 0.0,
@@ -1385,6 +1423,7 @@
         "rust-100": 0.0
     },
     "vicuna:7b-v1.5-16k-q4_K_M": {
+        "_context_size": 4,
         "_parameter_size": 7.0,
         "_quantization_level": 4,
         "clojure-100": 0.0,
@@ -1393,6 +1432,7 @@
         "rust-100": 0.0
     },
     "llama2:7b-chat-q4_K_M": {
+        "_context_size": 4,
         "_parameter_size": 7.0,
         "_quantization_level": 4,
         "clojure-100": 0.0,

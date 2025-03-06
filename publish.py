@@ -5,31 +5,66 @@ from argparse import ArgumentParser
 with open('benchmark.json', 'r', encoding='utf-8') as json_file:
     benchmark = json.load(json_file)
 
+
+# scan through the benchmark to find some attributes of the results
+maxkey = 0 # the maximum length of the model name
+coeff_java = 0 # the coefficient for the java benchmark relative to python
+coeff_java_count = 0
+coeff_rust = 0 # the coefficient for the rust benchmark relative to python
+coeff_rust_count = 0
+coeff_clojure = 0 # the coefficient for the clojure benchmark relative to python
+coeff_clojure_count = 0
+for key, value in benchmark.items():
+    # first find largest key entry
+    if len(key) > maxkey: maxkey = len(key)
+    bench_python_100_v = value.get('python-100', '')
+    bench_java_100_v = value.get('java-100', '')
+    bench_rust_100_v = value.get('rust-100', '')
+    bench_clojure_100_v = value.get('clojure-100', '')
+    if bench_python_100_v != '':
+        bench_python_100 = float(bench_python_100_v)
+        if bench_python_100 > 0:
+            if bench_java_100_v != '':
+                bench_java_100 = float(bench_java_100_v)
+                coeff_java += bench_java_100 / bench_python_100
+                coeff_java_count += 1
+            if bench_rust_100_v != '':
+                bench_rust_100 = float(bench_rust_100_v)
+                coeff_rust += bench_rust_100 / bench_python_100
+                coeff_rust_count += 1
+            if bench_clojure_100_v != '':
+                bench_clojure_100 = float(bench_clojure_100_v)
+                coeff_clojure += bench_clojure_100 / bench_python_100
+                coeff_clojure_count += 1
+coeff_java = coeff_java / coeff_java_count if coeff_java_count > 0 else 0
+coeff_rust = coeff_rust / coeff_rust_count if coeff_rust_count > 0 else 0
+coeff_clojure = coeff_clojure / coeff_clojure_count if coeff_clojure_count > 0 else 0
+
+# Enrich the benchmark with a combined score from the single python, java, rust, and clojure scores.
+# We do the following weights on the scores:
+# - python: 4
+# - java: 3
+# - rust: 2
+# - clojure: 1
+# In case that not all scores are available, we compute guessed scores based on the coefficients computed before
+# This should only be required for models which are very costly to compute (like models used over API).
 for key, value in benchmark.items():
     bench_python_100_v = value.get('python-100', '')
     bench_java_100_v = value.get('java-100', '')
     bench_rust_100_v = value.get('rust-100', '')
     bench_clojure_100_v = value.get('clojure-100', '')
-    bench_avg = 0
-    n = 0
+    bench_score = 0.0
     if bench_python_100_v != '':
-        bench_avg += 2 * bench_python_100_v
-        n += 2  # double weight for python
-    if bench_java_100_v != '':
-        bench_avg += 2 * bench_java_100_v
-        n += 2 # double weight for java
-    if bench_rust_100_v != '':
-        bench_avg += bench_rust_100_v
-        n += 1
-    if bench_clojure_100_v != '':
-        bench_avg += bench_clojure_100_v
-        n += 1
-    bench_avg = bench_avg / n if n > 0 else 0
+        bench_score += 4.0 * float(bench_python_100_v)
+        bench_score += 3.0 * float(bench_java_100_v) if bench_java_100_v != '' else 3 * coeff_java * float(bench_python_100_v)
+        bench_score += 2.0 * float(bench_rust_100_v) if bench_rust_100_v != '' else 2 * coeff_rust * float(bench_python_100_v)
+        bench_score += float(bench_clojure_100_v) if bench_clojure_100_v != '' else coeff_clojure * float(bench_python_100_v)
+        bench_score = bench_score / 10.0
     # write the average score back to the benchmark
-    benchmark[key]['_average_score'] = bench_avg
+    benchmark[key]['_bench_score'] = bench_score
 
 # sort the benchmark by average score
-benchmark = dict(sorted(benchmark.items(), key=lambda item: item[1]['_average_score'], reverse=True))
+benchmark = dict(sorted(benchmark.items(), key=lambda item: item[1]['_bench_score'], reverse=True))
 
 with open('README.md', 'r', encoding='utf-8') as md_file:
     readme = md_file.read()
@@ -49,25 +84,19 @@ for line in readme.split("\n"):
 print(table)
 
 # produce new markdown-table from benchmark json
-# first find largest key entry
-maxkey = 0
-for key, value in benchmark.items():
-    if len(key) > maxkey: maxkey = len(key)
 col_best = "Best<br/>Model<br/>for<br/>Size (GB)"
-col_score = "Eco-<br/>Score"
+col_bench_score = "PE-<br/>Score"
+col_memory_score = "Mem-<br/>Score"
 col_size = "Size<br/>(*10^9 Params)"
 col_quant = "Bits"
 col_context = "Context Length<br/>(K)"
-col_bench_python_100 = "PE-Bench-Python-100"
-col_bench_java_100 = "PE-Bench-Java-100"
-col_bench_rust_100 = "PE-Bench-Rust-100"
-col_bench_clojure_100 = "PE-Bench-Clojure-100"
+col_bench_100 = "PE-Bench-100 Details"
 
 lowest_memory_amount = 9999 # to identify the best model for its class
 
-newtable =  "| Model" + " "*(maxkey-5) + " | " + col_best + " | " + col_score + " | " + col_size + " | " + col_quant + " | " + col_context + " | " + col_bench_python_100 + " | " + col_bench_java_100 + " | " + col_bench_rust_100 + " | " + col_bench_clojure_100 + " |\n"
-newtable += "| :" + "-"*(maxkey-1) + " | " + "-"*(len(col_best)-1) + ": | " + "-"*(len(col_score)-1) + ": | " + "-"*(len(col_size)-1) + ": | " + "-"*(len(col_quant)-1) + ": | " + "-"*(len(col_context)-1)
-newtable += ": | " + "-"*(len(col_bench_python_100)-1) + ": | " + "-"*(len(col_bench_java_100)-1) + ": | " + "-"*(len(col_bench_rust_100)-1) + ": | " + "-"*(len(col_bench_clojure_100)-1) + ": |\n"
+newtable =  "| Model" + " "*(maxkey-5) + " | " + col_best + " | " + col_bench_score + " | " + col_memory_score + " | " + col_size + " | " + col_quant + " | " + col_context + " | " + col_bench_100 + " |\n"
+newtable += "| :" + "-"*(maxkey-1) + " | " + "-"*(len(col_best)-1) + ": | " + "-"*(len(col_bench_score)-1) + ": | " + "-"*(len(col_memory_score)-1) + ": | " + "-"*(len(col_size)-1) + ": | " + "-"*(len(col_quant)-1) + ": | " + "-"*(len(col_context)-1)
+newtable += ": | " + "-"*(len(col_bench_100)-1) + ": |\n"
 for key, value in benchmark.items():
     size_v = value.get('_parameter_size', '')
     quant_v = value.get('_quantization_level', '')
@@ -76,16 +105,17 @@ for key, value in benchmark.items():
     bench_java_100_v = value.get('java-100', '')
     bench_rust_100_v = value.get('rust-100', '')
     bench_clojure_100_v = value.get('clojure-100', '')
-    bench_avg = value.get('_average_score', 0.0)
+    bench_score_v = float(value.get('_bench_score', 0.0))
     memory_amount = size_v * float(quant_v) / 8.0 if quant_v and size_v and size_v > 0 else 9999 # required memory for the model in bytes
-    score_v = (100 * bench_avg / memory_amount) if quant_v and size_v and size_v > 0 else ''
+    memory_score_v = (100 * bench_score_v / memory_amount) if quant_v and size_v and size_v > 0 else ''
 
     best_model = False
     if memory_amount <= lowest_memory_amount:
         lowest_memory_amount = memory_amount
         best_model = True
 
-    col_score_vs = '' if score_v == '' else "{:.0f}".format(score_v)
+    col_bench_score_vs = '' if bench_score_v == '' else "{:.2f}".format(bench_score_v)
+    col_memory_score_vs = '' if memory_score_v == '' else "{:.0f}".format(memory_score_v)
     col_best_vs = "{:.2f}".format(memory_amount) if best_model else ''
     col_size_vs = str(size_v)
     col_quant_vs = str(quant_v)
@@ -97,16 +127,19 @@ for key, value in benchmark.items():
 
     if col_bench_python_100_vs == '': continue
     newtable += "| " + key + " "*(maxkey - len(key))
-    newtable += " | " + " "*(len(col_best) - len(col_best_vs)) + col_best_vs
-    newtable += " | " + " "*(len(col_score) - len(col_score_vs)) + col_score_vs
-    newtable += " | " + " "*(len(col_size) - len(col_size_vs)) + col_size_vs
-    newtable += " | " + " "*(len(col_quant) - len(col_quant_vs)) + col_quant_vs
-    newtable += " | " + " "*(len(col_context) - len(col_context_vs)) + col_context_vs
-    newtable += " | " + " "*(len(col_bench_python_100) - len(col_bench_python_100_vs)) + col_bench_python_100_vs
-    newtable += " | " + " "*(len(col_bench_java_100) - len(col_bench_java_100_vs)) + col_bench_java_100_vs
-    newtable += " | " + " "*(len(col_bench_rust_100) - len(col_bench_rust_100_vs)) + col_bench_rust_100_vs
-    newtable += " | " + " "*(len(col_bench_clojure_100) - len(col_bench_clojure_100_vs)) + col_bench_clojure_100_vs
-    newtable += " |\n"
+    newtable += " | " + " "*(8 - len(col_best_vs)) + col_best_vs
+    newtable += " | " + " "*(6 - len(col_bench_score_vs)) + col_bench_score_vs
+    newtable += " | " + " "*(6 - len(col_memory_score_vs)) + col_memory_score_vs
+    newtable += " | " + " "*(6 - len(col_size_vs)) + col_size_vs
+    newtable += " | " + " "*(4 - len(col_quant_vs)) + col_quant_vs
+    newtable += " | " + " "*(4 - len(col_context_vs)) + col_context_vs
+
+    benchdetails = ""
+    benchdetails += "Python: " + col_bench_python_100_vs + ", "
+    benchdetails += "Java: "   + col_bench_java_100_vs + ", "
+    benchdetails += "Rust: "   + col_bench_rust_100_vs + ", "
+    benchdetails += "Clojure: " + col_bench_clojure_100_vs
+    newtable += " | " + benchdetails + " |\n"
 
 newtable += "\n" # make sure that the table has an empty line again
 

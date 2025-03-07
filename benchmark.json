@@ -78,6 +78,13 @@
         "python-100": 13.92,
         "rust-100": 6.11
     },
+    "hf.co/bartowski/Dracarys2-72B-Instruct-GGUF:Q4_K_M": {
+        "_parameter_size": 72.7,
+        "clojure-100": 3.35,
+        "java-100": 8.54,
+        "python-100": 13.45,
+        "rust-100": 7.34
+    },
     "qwen2.5:72b-instruct-q8_0": {
         "_context_size": 128,
         "_parameter_size": 72.7,
@@ -215,6 +222,14 @@
     },
     "phi4:latest": {
         "_context_size": 16,
+        "_parameter_size": 14.7,
+        "_quantization_level": 4,
+        "clojure-100": 0.84,
+        "java-100": 6.91,
+        "python-100": 9.64,
+        "rust-100": 3.14
+    },
+    "Phi4:latest": {
         "_parameter_size": 14.7,
         "_quantization_level": 4,
         "clojure-100": 0.84,
@@ -1085,6 +1100,22 @@
         "java-100": 0.4,
         "python-100": 1.28,
         "rust-100": 0.03
+    },
+    "internlm2:1.8b-chat-v2.5-q4_K_M": {
+        "_parameter_size": 1.9,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.06,
+        "python-100": 1.24,
+        "rust-100": 0.0
+    },
+    "internlm2:7b-chat-v2.5-q4_K_M": {
+        "_parameter_size": 7.7,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.41,
+        "python-100": 1.1,
+        "rust-100": 0.47
     },
     "granite3.1-dense:2b-instruct-q8_0": {
         "_context_size": 128,

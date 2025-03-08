@@ -16,19 +16,20 @@ super-human performances in the domain of coding or "being a programmer". See "M
 The computed Benchmark ("PE-Bench-Python-100", "PE-Bench-Java-100", "PE-Bench-Rust-100", "PE-Bench-Clojure-100")  is the super-human performance factor to code in Python/Java/Rust/Clojure.
 The "Economic Score" is the average performance per bytes of model size (times 100). Results are:
 
-| Model                                                                | Best<br/>Model<br/>for<br/>Size (GB) | PE-<br/>Score | Mem-<br/>Score | Size<br/>(*10^9 Params) | Bits | Context Length<br/>(K) | PE-Bench-100 Details |
-| :------------------------------------------------------------------- | -----------------------------------: | ------------: | -------------: | ----------------------: | ---: | ---------------------: | -------------------: |
+| Model                                                                | Best<br/>Model<br/>for<br/>Size (GB) | PE-100-<br/>Score | Mem-<br/>Score | Size<br/>(*10^9 Params) | Bits | Context Length<br/>(K) | PE-Bench-100 Details |
+| :------------------------------------------------------------------- | -----------------------------------: | ----------------: | -------------: | ----------------------: | ---: | ---------------------: | -------------------: |
 | DeepSeek-V3                                                          |  1342.00 |  16.11 |      1 |  671.0 |   16 |   64 | Python: 20.01, Java: 16.95, Rust: 12.16, Clojure: 5.92 |
 | GPT-4o                                                               |          |  14.72 |        |        |   16 |  128 | Python: 17.05, Java: 13.87, Rust: 14.57, Clojure: 8.24 |
-| GPT-o1-Mini                                                          |          |  11.04 |        |        |   16 |      | Python: 17.44, Java: , Rust: , Clojure:  |
+| GPT-o1-Mini                                                          |          |  11.06 |        |        |   16 |      | Python: 17.44, Java: , Rust: , Clojure:  |
 | athene-v2:72b-q8_0                                                   |    72.70 |  10.97 |     15 |   72.7 |    8 |  128 | Python: 16.22, Java: 10.15, Rust: 5.55, Clojure: 3.32 |
 | hf.co/bartowski/Athene-V2-Agent-GGUF:Q4_K_M                          |    36.35 |  10.60 |     29 |   72.7 |    4 |  128 | Python: 14.49, Java: 10.56, Rust: 6.33, Clojure: 3.74 |
 | athene-v2:latest                                                     |    36.35 |  10.44 |     29 |   72.7 |    4 |  128 | Python: 14.07, Java: 11.14, Rust: 6.55, Clojure: 1.62 |
 | hf.co/bartowski/Sky-T1-32B-Preview-GGUF:Q4_K_M                       |    16.40 |  10.33 |     63 |   32.8 |    4 |   32 | Python: 12.72, Java: 11.67, Rust: 7.25, Clojure: 2.89 |
-| GPT-o1-Preview                                                       |          |  10.04 |        |        |   16 |      | Python: 15.86, Java: , Rust: , Clojure:  |
+| GPT-o1-Preview                                                       |          |  10.06 |        |        |   16 |      | Python: 15.86, Java: , Rust: , Clojure:  |
 | qwen2.5:72b-instruct-q4_K_M                                          |          |   9.78 |     27 |   72.7 |    4 |  128 | Python: 14.02, Java: 9.1, Rust: 5.97, Clojure: 2.46 |
 | qwen2.5:72b-instruct-q8_0                                            |          |   9.77 |     13 |   72.7 |    8 |  128 | Python: 12.98, Java: 10.5, Rust: 5.41, Clojure: 3.49 |
 | qwen2.5-coder:32b-instruct-q4_K_M                                    |    16.40 |   9.77 |     60 |   32.8 |    4 |   32 | Python: 14.05, Java: 8.82, Rust: 6.41, Clojure: 2.2 |
+| hf.co/bartowski/Dracarys2-72B-Instruct-GGUF:Q4_K_M                   |          |   9.74 |        |   72.7 |      |      | Python: 13.45, Java: 8.54, Rust: 7.34, Clojure: 3.35 |
 | hf.co/mradermacher/Qwen2.5-72B-Instruct-abliterated-GGUF:Q4_K_M      |          |   9.69 |     27 |   72.7 |    4 |  128 | Python: 13.92, Java: 8.65, Rust: 6.11, Clojure: 3.07 |
 | hf.co/bartowski/Sky-T1-32B-Flash-GGUF:Q4_K_M                         |    16.40 |   9.62 |     59 |   32.8 |    4 |   32 | Python: 12.04, Java: 10.75, Rust: 6.64, Clojure: 2.5 |
 | hf.co/mradermacher/Bespoke-Stratos-32B-GGUF:Q4_K_M                   |    16.40 |   9.61 |     59 |   32.8 |    4 |   32 | Python: 12.37, Java: 9.9, Rust: 7.58, Clojure: 1.78 |
@@ -48,6 +49,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | phi4:14b-q8_0                                                        |          |   6.68 |     45 |   14.7 |    8 |   16 | Python: 10.23, Java: 5.29, Rust: 4.52, Clojure: 0.97 |
 | phi4:14b                                                             |     7.35 |   6.64 |     90 |   14.7 |    4 |   16 | Python: 9.64, Java: 6.91, Rust: 3.14, Clojure: 0.84 |
 | phi4:latest                                                          |     7.35 |   6.64 |     90 |   14.7 |    4 |   16 | Python: 9.64, Java: 6.91, Rust: 3.14, Clojure: 0.84 |
+| Phi4:latest                                                          |     7.35 |   6.64 |     90 |   14.7 |    4 |      | Python: 9.64, Java: 6.91, Rust: 3.14, Clojure: 0.84 |
 | deepseek-coder:33b-instruct-q8_0                                     |          |   6.58 |     20 |   33.0 |    8 |   16 | Python: 8.35, Java: 10.2, Rust: 0.0, Clojure: 1.82 |
 | hf.co/mradermacher/Llama-3.1-SauerkrautLM-70b-Instruct-GGUF:Q4_K_M   |          |   6.49 |     18 |   70.6 |    4 |  128 | Python: 9.1, Java: 5.9, Rust: 4.69, Clojure: 1.37 |
 | mistral-large:123b-instruct-2407-q4_K_M                              |          |   6.34 |     10 |  122.6 |    4 |  128 | Python: 8.27, Java: 6.61, Rust: 4.44, Clojure: 1.61 |
@@ -106,6 +108,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/bartowski/Yi-1.5-6B-Chat-GGUF:Q8_0                             |          |   1.87 |     31 |   6.06 |    8 |    4 | Python: 3.92, Java: 0.92, Rust: 0.13, Clojure: 0.0 |
 | hf.co/bartowski/Yi-1.5-6B-Chat-GGUF:Q4_K_M                           |          |   1.81 |     60 |   6.06 |    4 |    4 | Python: 3.71, Java: 0.87, Rust: 0.32, Clojure: 0.0 |
 | deepseek-llm:67b-chat-q4_K_M                                         |          |   1.79 |      5 |   67.0 |    4 |    4 | Python: 2.94, Java: 1.63, Rust: 0.5, Clojure: 0.23 |
+| qwq:32b-q4_K_M                                                       |          |   1.74 |     11 |   32.8 |    4 |      | Python: 1.82, Java: 1.75, Rust: 1.32, Clojure: 2.23 |
 | qwen2.5:3b-instruct-q4_K_M                                           |     1.55 |   1.70 |    110 |    3.1 |    4 |  128 | Python: 2.95, Java: 1.35, Rust: 0.56, Clojure: 0.05 |
 | deepseek-r1:70b-llama-distill-q4_K_M                                 |          |   1.69 |      5 |   70.6 |    4 |  128 | Python: 2.17, Java: 2.49, Rust: 0.19, Clojure: 0.41 |
 | deepseek-r1:14b-qwen-distill-q4_K_M                                  |          |   1.69 |     23 |   14.8 |    4 |  128 | Python: 2.6, Java: 1.02, Rust: 1.19, Clojure: 1.02 |
@@ -140,10 +143,12 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/bartowski/OpenThinker-7B-GGUF:Q4_K_M                           |          |   0.75 |     20 |   7.62 |    4 |   32 | Python: 0.88, Java: 0.77, Rust: 0.53, Clojure: 0.62 |
 | command-r7b:7b-12-2024-q4_K_M                                        |          |   0.68 |     17 |    8.0 |    4 |  128 | Python: 1.54, Java: 0.03, Rust: 0.26, Clojure: 0.04 |
 | olmo2:13b-1124-instruct-q4_K_M                                       |          |   0.66 |     10 |   13.7 |    4 |    4 | Python: 1.59, Java: 0.06, Rust: 0.01, Clojure: 0.03 |
+| internlm2:7b-chat-v2.5-q4_K_M                                        |          |   0.66 |     17 |    7.7 |    4 |      | Python: 1.1, Java: 0.41, Rust: 0.47, Clojure: 0.0 |
 | hf.co/bartowski/agentica-org_DeepScaleR-1.5B-Preview-GGUF:Q4_K_M     |          |   0.64 |     72 |   1.78 |    4 |  128 | Python: 1.28, Java: 0.4, Rust: 0.03, Clojure: 0.05 |
 | qwen:72b-chat-v1.5-q4_K_M                                            |          |   0.64 |      2 |   72.0 |    4 |   32 | Python: 0.94, Java: 0.78, Rust: 0.13, Clojure: 0.0 |
 | olmo2:7b-1124-instruct-q4_K_M                                        |          |   0.60 |     16 |    7.3 |    4 |    4 | Python: 1.42, Java: 0.08, Rust: 0.02, Clojure: 0.0 |
 | qwen2.5:0.5b-instruct-q8_0                                           |     0.50 |   0.57 |    115 |    0.5 |    8 |  128 | Python: 1.33, Java: 0.0, Rust: 0.21, Clojure: 0.0 |
+| internlm2:1.8b-chat-v2.5-q4_K_M                                      |          |   0.51 |     54 |    1.9 |    4 |      | Python: 1.24, Java: 0.06, Rust: 0.0, Clojure: 0.0 |
 | granite3.1-dense:2b-instruct-q8_0                                    |          |   0.50 |     20 |    2.5 |    8 |  128 | Python: 1.07, Java: 0.11, Rust: 0.2, Clojure: 0.0 |
 | llama3.2:latest                                                      |          |   0.49 |     31 |   3.21 |    4 |  128 | Python: 0.99, Java: 0.18, Rust: 0.21, Clojure: 0.0 |
 | codellama:13b-instruct-q4_K_M                                        |          |   0.48 |      7 |   13.0 |    4 |   16 | Python: 0.52, Java: 0.84, Rust: 0.05, Clojure: 0.08 |

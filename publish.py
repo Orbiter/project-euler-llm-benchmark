@@ -85,7 +85,7 @@ print(table)
 
 # produce new markdown-table from benchmark json
 col_best = "Best<br/>Model<br/>for<br/>Size (GB)"
-col_bench_score = "PE-<br/>Score"
+col_bench_score = "PE-100-<br/>Score"
 col_memory_score = "Mem-<br/>Score"
 col_size = "Size<br/>(*10^9 Params)"
 col_quant = "Bits"

@@ -987,6 +987,14 @@
         "python-100": 1.84,
         "rust-100": 0.39
     },
+    "qwq:32b-q4_K_M": {
+        "_parameter_size": 32.8,
+        "_quantization_level": 4,
+        "clojure-100": 2.23,
+        "java-100": 1.75,
+        "python-100": 1.82,
+        "rust-100": 1.32
+    },
     "openchat:7b-v3.5-q8_0": {
         "_context_size": 8,
         "_parameter_size": 7.0,

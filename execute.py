@@ -126,6 +126,9 @@ def execute_clojure_code(code, timeout=10):
     except subprocess.TimeoutExpired:
         # Handle the timeout
         return "Error: Clojure program execution timed"
+    except Exception as e:
+        error_trace = traceback.format_exc()
+        return f"Error executing code: {e}\nTraceback:\n{error_trace}"
     
 def extract_class_name(java_code):
     """

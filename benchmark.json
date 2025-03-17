@@ -550,6 +550,15 @@
         "python-100": 6.31,
         "rust-100": 3.23
     },
+    "gemma3:27b": {
+        "_context_size": 128,
+        "_parameter_size": 27.4,
+        "_quantization_level": 4,
+        "clojure-100": 0.64,
+        "java-100": 0.14,
+        "python-100": 6.2,
+        "rust-100": 3.8
+    },
     "hf.co/smirki/UIGEN-T1.1-Qwen-7B-Q4_K_M-GGUF:latest": {
         "_parameter_size": 7.62,
         "clojure-100": 0.88,

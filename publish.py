@@ -91,12 +91,16 @@ col_size = "Size<br/>(*10^9 Params)"
 col_quant = "Bits"
 col_context = "Context Length<br/>(K)"
 col_bench_100 = "PE-Bench-100 Details"
+col_bench_100_python  = "Python"
+col_bench_100_java    = "Java"
+col_bench_100_rust    = "Rust"
+col_bench_100_clojure = "Clojure"
 
 lowest_memory_amount = 9999 # to identify the best model for its class
 
-newtable =  "| Model" + " "*(maxkey-5) + " | " + col_best + " | " + col_bench_score + " | " + col_memory_score + " | " + col_size + " | " + col_quant + " | " + col_context + " | " + col_bench_100 + " |\n"
+newtable =  "| Model" + " "*(maxkey-5) + " | " + col_best + " | " + col_bench_score + " | " + col_memory_score + " | " + col_size + " | " + col_quant + " | " + col_context + " | " + col_bench_100_python + " | " + col_bench_100_java + " | " + col_bench_100_rust + " | " + col_bench_100_clojure + " |\n"
 newtable += "| :" + "-"*(maxkey-1) + " | " + "-"*(len(col_best)-1) + ": | " + "-"*(len(col_bench_score)-1) + ": | " + "-"*(len(col_memory_score)-1) + ": | " + "-"*(len(col_size)-1) + ": | " + "-"*(len(col_quant)-1) + ": | " + "-"*(len(col_context)-1)
-newtable += ": | " + "-"*(len(col_bench_100)-1) + ": |\n"
+newtable += ": | " + "-"*(len(col_bench_100_python)-1) +": | " + "-"*(len(col_bench_100_java)-1) + ": | " + "-"*(len(col_bench_100_rust)-1) + ": | " + "-"*(len(col_bench_100_clojure)-1) + ": |\n"
 for key, value in benchmark.items():
     size_v = value.get('_parameter_size', '')
     quant_v = value.get('_quantization_level', '')
@@ -133,13 +137,12 @@ for key, value in benchmark.items():
     newtable += " | " + " "*(6 - len(col_size_vs)) + col_size_vs
     newtable += " | " + " "*(4 - len(col_quant_vs)) + col_quant_vs
     newtable += " | " + " "*(4 - len(col_context_vs)) + col_context_vs
+    newtable += " | " + " "*(4 - len(col_bench_python_100_vs)) + col_bench_python_100_vs
+    newtable += " | " + " "*(4 - len(col_bench_java_100_vs)) + col_bench_java_100_vs
+    newtable += " | " + " "*(4 - len(col_bench_rust_100_vs)) + col_bench_rust_100_vs
+    newtable += " | " + " "*(4 - len(col_bench_clojure_100_vs)) + col_bench_clojure_100_vs
 
-    benchdetails = ""
-    benchdetails += "Python: " + col_bench_python_100_vs + ", "
-    benchdetails += "Java: "   + col_bench_java_100_vs + ", "
-    benchdetails += "Rust: "   + col_bench_rust_100_vs + ", "
-    benchdetails += "Clojure: " + col_bench_clojure_100_vs
-    newtable += " | " + benchdetails + " |\n"
+    newtable += " |\n"
 
 newtable += "\n" # make sure that the table has an empty line again
 

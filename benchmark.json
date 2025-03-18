@@ -532,6 +532,12 @@
         "python-100": 6.37,
         "rust-100": 3.78
     },
+    "command-a:111b-03-2025-q4_K_M": {
+        "python-100": 6.33,
+        "java-100": 5.17,
+        "rust-100": 4.21,
+        "clojure-100": 1.32
+    },
     "mistral-small:24b-instruct-2501-q4_K_M": {
         "_context_size": 32,
         "_parameter_size": 23.6,
@@ -1034,6 +1040,12 @@
         "python-100": 1.82,
         "rust-100": 1.32
     },
+    "gemma3:4b": {
+        "_context_size": 128,
+        "_parameter_size": 4.0,
+        "_quantization_level": 4,
+        "python-100": 1.66
+    },
     "openchat:7b-v3.5-q8_0": {
         "_context_size": 8,
         "_parameter_size": 7.0,
@@ -1443,6 +1455,12 @@
         "java-100": 0.04,
         "python-100": 0.23,
         "rust-100": 0.01
+    },
+    "gemma3:1b": {
+        "_context_size": 32,
+        "_parameter_size": 1.0,
+        "_quantization_level": 4,
+        "python-100": 0.13
     },
     "vicuna:13b-q4_K_M": {
         "_context_size": 2,

@@ -904,6 +904,12 @@
         "python-100": 2.46,
         "rust-100": 0.86
     },
+    "hf.co/bartowski/open-r1_OlympicCoder-7B-GGUF:Q4_K_M": {
+        "python-100": 2.43,
+        "java-100": 2.86,
+        "rust-100": 0.28,
+        "clojure-100": 0.33
+    },
     "yi-coder:1.5b-chat-q8_0": {
         "_context_size": 128,
         "_parameter_size": 1.5,

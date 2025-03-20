@@ -469,6 +469,10 @@
         "python-100": 6.98,
         "rust-100": 0.76
     },
+    "hf.co/bartowski/mistralai_Mistral-Small-3.1-24B-Instruct-2503-GGUF:Q4_K_M": {
+        "_parameter_size": 23.6,
+        "python-100": 6.79
+    },
     "falcon3:7b-instruct-q8_0": {
         "_context_size": 32,
         "_parameter_size": 7.5,
@@ -1106,10 +1110,11 @@
         "rust-100": 0.13
     },
     "hf.co/bartowski/open-r1_OlympicCoder-32B-GGUF:Q4_K_M": {
-        "python-100": 1.54,
+        "_parameter_size": 32.8,
+        "clojure-100": 0.45,
         "java-100": 0.32,
-        "rust-100": 0.18,
-        "clojure-100": 0.45
+        "python-100": 1.54,
+        "rust-100": 0.18
     },
     "Bio-Medical-Llama-3-8B-GGUF:Q8_0": {
         "_context_size": 8,
@@ -1275,6 +1280,11 @@
         "java-100": 0.16,
         "python-100": 0.85,
         "rust-100": 0.15
+    },
+    "exaone-deep:32b-q4_K_M": {
+        "_parameter_size": 32.0,
+        "_quantization_level": 4,
+        "python-100": 0.85
     },
     "smallthinker:3b-preview-q8_0": {
         "_context_size": 128,
@@ -1659,9 +1669,5 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
-    },
-    "hf.co/mradermacher/Sky-T1-mini-GGUF:Q4_K_M": {
-        "_parameter_size": 7.62,
-        "java-100": 3.68
     }
 }

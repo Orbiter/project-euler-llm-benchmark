@@ -87,7 +87,7 @@ print(table)
 col_best = "Best<br/>Model<br/>for<br/>Size (GB)"
 col_bench_score = "PE-100-<br/>Score"
 col_memory_score = "Mem-<br/>Score"
-col_size = "Size<br/>(*10^9 Params)"
+col_size = "Size<br/>*10^9 Params"
 col_quant = "Bits"
 col_context = "Context Length<br/>(K)"
 col_bench_100 = "PE-Bench-100 Details"
@@ -120,7 +120,10 @@ for key, value in benchmark.items():
 
     col_bench_score_vs = '' if bench_score_v == '' else "{:.2f}".format(bench_score_v)
     col_memory_score_vs = '' if memory_score_v == '' else "{:.0f}".format(memory_score_v)
-    col_best_vs = "{:.2f}".format(memory_amount) if best_model else ''
+    if memory_amount >= 100.0:
+        col_best_vs = "{:.0f}".format(memory_amount) if best_model else ''
+    else:
+        col_best_vs = "{:.2f}".format(memory_amount) if best_model else ''
     col_size_vs = str(size_v)
     col_quant_vs = str(quant_v)
     col_context_vs = str(context_v)

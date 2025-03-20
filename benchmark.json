@@ -923,10 +923,10 @@
         "_context_size": 32,
         "_parameter_size": 7.0,
         "_quantization_level": 4,
-        "python-100": 2.43,
+        "clojure-100": 0.33,
         "java-100": 2.86,
-        "rust-100": 0.28,
-        "clojure-100": 0.33
+        "python-100": 2.43,
+        "rust-100": 0.28
     },
     "yi-coder:1.5b-chat-q8_0": {
         "_context_size": 128,
@@ -1044,6 +1044,12 @@
         "java-100": 1.27,
         "python-100": 1.84,
         "rust-100": 0.39
+    },
+    "exaone-deep:7.8b-q4_K_M": {
+        "_parameter_size": 7.8,
+        "_quantization_level": 4,
+        "java-100": 0.4,
+        "python-100": 1.83
     },
     "qwq:32b-q4_K_M": {
         "_context_size": 128,
@@ -1249,6 +1255,11 @@
         "java-100": 0.77,
         "python-100": 0.88,
         "rust-100": 0.53
+    },
+    "exaone-deep:2.4b-q4_K_M": {
+        "_parameter_size": 2.7,
+        "_quantization_level": 4,
+        "python-100": 0.88
     },
     "granite3.2:2b-instruct-q4_K_M": {
         "_context_size": 128,
@@ -1642,5 +1653,9 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
+    },
+    "hf.co/mradermacher/Sky-T1-mini-GGUF:Q4_K_M": {
+        "_parameter_size": 7.62,
+        "java-100": 3.68
     }
 }

@@ -1105,6 +1105,12 @@
         "python-100": 1.54,
         "rust-100": 0.13
     },
+    "hf.co/bartowski/open-r1_OlympicCoder-32B-GGUF:Q4_K_M": {
+        "python-100": 1.54,
+        "java-100": 0.32,
+        "rust-100": 0.18,
+        "clojure-100": 0.45
+    },
     "Bio-Medical-Llama-3-8B-GGUF:Q8_0": {
         "_context_size": 8,
         "_parameter_size": 8.0,

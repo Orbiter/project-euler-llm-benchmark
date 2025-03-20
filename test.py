@@ -8,37 +8,37 @@ def test(endpoint_name, model_name, language, skip_existing, max_problem_number=
     if endpoint_name:
         if skip_existing:
             if max_problem_number == 200:
-                os.system(f"python3 inference.py --endpoint {endpoint_name} --language {language} --n200 --skip_existing")
+                os.system(f"python3.12 inference.py --endpoint {endpoint_name} --language {language} --n200 --skip_existing")
             else:
-                os.system(f"python3 inference.py --endpoint {endpoint_name} --language {language} --skip_existing")
+                os.system(f"python3.12 inference.py --endpoint {endpoint_name} --language {language} --skip_existing")
         else:
             if max_problem_number == 200:
-                os.system(f"python3 inference.py --endpoint {endpoint_name} --language {language} --n200")
+                os.system(f"python3.12 inference.py --endpoint {endpoint_name} --language {language} --n200")
             else:
-                os.system(f"python3 inference.py --endpoint {endpoint_name} --language {language}")
+                os.system(f"python3.12 inference.py --endpoint {endpoint_name} --language {language}")
     else:
         if skip_existing:
             if max_problem_number == 200:
-                os.system(f"python3 inference.py --model {model_name} --language {language} --n200 --skip_existing")
+                os.system(f"python3.12 inference.py --model {model_name} --language {language} --n200 --skip_existing")
             else:
-                os.system(f"python3 inference.py --model {model_name} --language {language} --skip_existing")
+                os.system(f"python3.12 inference.py --model {model_name} --language {language} --skip_existing")
         else:
             if max_problem_number == 200:
-                os.system(f"python3 inference.py --model {model_name} --language {language} --n200")
+                os.system(f"python3.12 inference.py --model {model_name} --language {language} --n200")
             else:
-                os.system(f"python3 inference.py --model {model_name} --language {language}")
+                os.system(f"python3.12 inference.py --model {model_name} --language {language}")
 
     # call codeextraction.py
     if endpoint_name:
-        os.system(f"python3 codeextraction.py --endpoint {endpoint_name} --language {language}")
+        os.system(f"python3.12 codeextraction.py --endpoint {endpoint_name} --language {language}")
     else:
-        os.system(f"python3 codeextraction.py --model {model_name} --language {language}")
+        os.system(f"python3.12 codeextraction.py --model {model_name} --language {language}")
 
     # call execute.py
     if endpoint_name:
-        os.system(f"python3 execute.py --endpoint {endpoint_name} --language {language}")
+        os.system(f"python3.12 execute.py --endpoint {endpoint_name} --language {language}")
     else:
-        os.system(f"python3 execute.py --model {model_name} --language {language}")
+        os.system(f"python3.12 execute.py --model {model_name} --language {language}")
 
 def main():
     parser = ArgumentParser(description="Run the complete pipeline to execute solutions and store results in a JSON file.")

@@ -927,10 +927,10 @@
         "_context_size": 32,
         "_parameter_size": 7.0,
         "_quantization_level": 4,
-        "python-100": 2.43,
+        "clojure-100": 0.33,
         "java-100": 2.86,
-        "rust-100": 0.28,
-        "clojure-100": 0.33
+        "python-100": 2.43,
+        "rust-100": 0.28
     },
     "yi-coder:1.5b-chat-q8_0": {
         "_context_size": 128,
@@ -1048,6 +1048,12 @@
         "java-100": 1.27,
         "python-100": 1.84,
         "rust-100": 0.39
+    },
+    "exaone-deep:7.8b-q4_K_M": {
+        "_parameter_size": 7.8,
+        "_quantization_level": 4,
+        "java-100": 0.4,
+        "python-100": 1.83
     },
     "qwq:32b-q4_K_M": {
         "_context_size": 128,
@@ -1266,6 +1272,20 @@
         "python-100": 0.88,
         "rust-100": 0.53
     },
+    "exaone-deep:2.4b-q4_K_M": {
+        "_parameter_size": 2.7,
+        "_quantization_level": 4,
+        "python-100": 0.88
+    },
+    "deepseek-r1:1.5b-qwen-distill-q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 1.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.37,
+        "java-100": 0.24,
+        "python-100": 0.87,
+        "rust-100": 0.03
+    },
     "granite3.2:2b-instruct-q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 2.5,
@@ -1336,15 +1356,6 @@
         "clojure-100": 0.0,
         "java-100": 0.06,
         "python-100": 0.46,
-        "rust-100": 0.0
-    },
-    "deepseek-r1:1.5b-qwen-distill-q4_K_M": {
-        "_context_size": 128,
-        "_parameter_size": 1.8,
-        "_quantization_level": 4,
-        "clojure-100": 0.0,
-        "java-100": 0.1,
-        "python-100": 0.45,
         "rust-100": 0.0
     },
     "llama3.2:1b": {
@@ -1658,14 +1669,5 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
-    },
-    "hf.co/bartowski/nvidia_Llama-3_3-Nemotron-Super-49B-v1-GGUF:Q4_K_M": {
-        "_parameter_size": 49.9
-    },
-    "hf.co/bartowski/Sky-T1-32B-Preview-GGUF:Q8_0": {
-        "_parameter_size": 32.8
-    },
-    "hf.co/mradermacher/phi-4-abliterated-GGUF:Q8_0": {
-        "_parameter_size": 14.7
     }
 }

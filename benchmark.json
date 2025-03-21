@@ -1272,6 +1272,15 @@
         "_quantization_level": 4,
         "python-100": 0.88
     },
+    "deepseek-r1:1.5b-qwen-distill-q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 1.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.37,
+        "java-100": 0.24,
+        "python-100": 0.87,
+        "rust-100": 0.03
+    },
     "granite3.2:2b-instruct-q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 2.5,
@@ -1347,15 +1356,6 @@
         "clojure-100": 0.0,
         "java-100": 0.06,
         "python-100": 0.46,
-        "rust-100": 0.0
-    },
-    "deepseek-r1:1.5b-qwen-distill-q4_K_M": {
-        "_context_size": 128,
-        "_parameter_size": 1.8,
-        "_quantization_level": 4,
-        "clojure-100": 0.0,
-        "java-100": 0.1,
-        "python-100": 0.45,
         "rust-100": 0.0
     },
     "llama3.2:1b": {

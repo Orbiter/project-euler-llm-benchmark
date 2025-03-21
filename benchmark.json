@@ -451,6 +451,11 @@
         "python-100": 7.26,
         "rust-100": 4.49
     },
+    "hf.co/mradermacher/Sky-T1-mini-GGUF:Q4_K_M": {
+        "_parameter_size": 7.62,
+        "java-100": 3.68,
+        "python-100": 7.05
+    },
     "hf.co/mradermacher/calme-3.2-instruct-78b-GGUF:Q4_K_S": {
         "_context_size": 32,
         "_parameter_size": 78.0,
@@ -1270,6 +1275,7 @@
     "exaone-deep:2.4b-q4_K_M": {
         "_parameter_size": 2.7,
         "_quantization_level": 4,
+        "java-100": 0.32,
         "python-100": 0.88
     },
     "deepseek-r1:1.5b-qwen-distill-q4_K_M": {

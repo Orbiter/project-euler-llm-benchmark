@@ -1245,6 +1245,11 @@
         "python-100": 0.94,
         "rust-100": 0.13
     },
+    "exaone-deep:32b-q4_K_M": {
+        "_parameter_size": 32.0,
+        "_quantization_level": 4,
+        "python-100": 0.93
+    },
     "phi:2.7b-chat-v2-q4_K_M": {
         "_context_size": 2,
         "_parameter_size": 3.0,
@@ -1295,11 +1300,6 @@
         "java-100": 0.16,
         "python-100": 0.85,
         "rust-100": 0.15
-    },
-    "exaone-deep:32b-q4_K_M": {
-        "_parameter_size": 32.0,
-        "_quantization_level": 4,
-        "python-100": 0.85
     },
     "smallthinker:3b-preview-q8_0": {
         "_context_size": 128,

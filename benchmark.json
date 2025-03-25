@@ -453,8 +453,10 @@
     },
     "hf.co/mradermacher/Sky-T1-mini-GGUF:Q4_K_M": {
         "_parameter_size": 7.62,
+        "clojure-100": 0.55,
         "java-100": 3.68,
-        "python-100": 7.05
+        "python-100": 7.05,
+        "rust-100": 0.15
     },
     "hf.co/mradermacher/calme-3.2-instruct-78b-GGUF:Q4_K_S": {
         "_context_size": 32,
@@ -1057,8 +1059,10 @@
     "exaone-deep:7.8b-q4_K_M": {
         "_parameter_size": 7.8,
         "_quantization_level": 4,
+        "clojure-100": 0.0,
         "java-100": 0.4,
-        "python-100": 1.83
+        "python-100": 1.83,
+        "rust-100": 0.24
     },
     "qwq:32b-q4_K_M": {
         "_context_size": 128,
@@ -1280,8 +1284,10 @@
     "exaone-deep:2.4b-q4_K_M": {
         "_parameter_size": 2.7,
         "_quantization_level": 4,
+        "clojure-100": 0.28,
         "java-100": 0.32,
-        "python-100": 0.88
+        "python-100": 0.88,
+        "rust-100": 0.04
     },
     "deepseek-r1:1.5b-qwen-distill-q4_K_M": {
         "_context_size": 128,

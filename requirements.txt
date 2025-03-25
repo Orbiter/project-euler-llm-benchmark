@@ -1,3 +1,4 @@
+PIL
 sympy
 urllib3
 requests

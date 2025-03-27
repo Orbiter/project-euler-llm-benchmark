@@ -93,3 +93,17 @@ for i in range(1, 914):
                 continue
             else:
                 print(f"Failed to download {img_url}, status code: {img_response.status_code}")
+    
+    # find markup in text that has contained the images
+    # i.e. "<div class="center">.*</div>"
+    # each of this is replaced with (see image)
+    start = 0
+    while True:
+        start = text.find("<div class=\"center\">", start)
+        if start == -1: break
+        end = text.find("</div>", start)
+        text = text[:start] + "(see image)" + text[end + 6:]
+
+        # save text again because we removed the image tag
+        with open(filepath, 'w', encoding='utf-8') as file:
+            file.write(text)

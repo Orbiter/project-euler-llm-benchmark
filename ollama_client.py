@@ -162,15 +162,22 @@ def ollama_chat(endpoint, prompt='Hello World', base64_image=None, temperature=0
     except json.JSONDecodeError as e:
         raise Exception(f"Failed to parse JSON response from the API: {e}")
 
+multimodal_cache = {}
+
 def test_multimodal(endpoint):
+    modelname = endpoint["model"]
+    cached_result = multimodal_cache.get(modelname, None)
+    if cached_result is not None:
+        return cached_result
+
     image_path = "llmtest/testimage.png"
     with open(image_path, "rb") as image_file:
         base64_image = base64.b64encode(image_file.read()).decode('utf-8')
     try:
         answer, total_tokens, token_per_second = ollama_chat(endpoint, prompt="what is in the image", base64_image=base64_image)
-        if "42" in answer:
-            return True
-        return False
+        result = "42" in answer
+        multimodal_cache[modelname] = result
+        return result
     except Exception as e:
         return False
 
@@ -216,7 +223,7 @@ def main():
     # access the ollama API
     models_dict = ollama_list()
     for (model, attr) in models_dict.items():
-        print(f"Model: {model}")
+        print(f"Model: {model}: {attr}")
     try:
         if base64_image:
             answer, total_tokens, token_per_second = ollama_chat(endpoint, prompt="what is in the image", base64_image=base64_image)

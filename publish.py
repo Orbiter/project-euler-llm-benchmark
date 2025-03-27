@@ -1,10 +1,9 @@
 import json
 from argparse import ArgumentParser
+from benchmark import read_benchmark, write_benchmark
 
 # load benchmark and sort it by averge score
-with open('benchmark.json', 'r', encoding='utf-8') as json_file:
-    benchmark = json.load(json_file)
-
+benchmark = read_benchmark()
 
 # scan through the benchmark to find some attributes of the results
 maxkey = 0 # the maximum length of the model name

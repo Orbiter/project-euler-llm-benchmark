@@ -32,6 +32,14 @@ def get_extension(language):
     else:
         raise Exception(f"Unsupported language: {language}")
 
+def get_language_from_extension(extension):
+    if extension == 'java': return 'java'
+    elif extension == 'rs': return 'rust'
+    elif extension == 'py': return 'python'
+    elif extension == 'clj': return 'clojure'
+    else:
+        raise Exception(f"Unsupported extension: {extension}")
+
 def execute_python_code_worker(code, output_queue):
     # Define allowed built-ins
     safe_builtins = [
@@ -285,44 +293,9 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
         problem_number = program_file[:-extlen]  # Remove extension
         if int(problem_number) > max_problem_number: break
 
-        # load the program code
-        with open(program_file_path, 'r', encoding='utf-8') as file:
-            code = file.read()
-
-        # In some cases the code extraction does not find code and considers the whole file as code.
-        # Here it might be that the LLM did actually solve the problem by itself using reasoning.
-        # If that happens, the answer is in the last line and we consider that as the solution.
-        code = code.strip() # in case there are empty lines at the end
-        last_line_of_code = code.split('\n')[-1]
-        # sometimes the numbers in the last line are formatted with commas, we remove them
-        last_line_of_code = last_line_of_code.replace(',', '')
-        # we already know the actual solution, so we can check if the last line is the solution
         expected = expected_solutions.get(problem_number, None)
-        expected_solution = expected.get('solution', '') if expected else ''
-        # if the expected solution is in the last line of code, we consider this as solved
-        if expected_solution and len(expected_solution) > 0 and expected_solution in last_line_of_code:
-            # remembering the correct solution is the marking that this is solved
-            solutions[problem_number] = expected_solution
-            print(f"Executed {program_file_path}: Accepted solution {expected_solution} in last line of code: {last_line_of_code}")
-        else:
-            # Execute the code and capture the output
-            print(f"Running program: {program_file_path}")
-            output = ""
-            if language == 'python':
-                output = execute_python_code(code)
-            if language == 'clojure':
-                output = execute_clojure_code(code)
-            if language == 'java':
-                output = execute_java_code(code)
-            if language == 'rust':
-                output = execute_rust_code(code)
-        
-            # if the output has several lines, we only want the last one
-            #print(f"Executed {solution_code_path}, raw output:{output}")
-            output = output.strip().split('\n')[-1]
-            result = "** CORRECT **" if output == expected_solution else ".. incorrect .."
-            print(f"Executed {program_file_path}: {output} - {result}")
-            solutions[problem_number] = output
+        output = execute_solution(program_file_path, expected)
+        solutions[problem_number] = output
 
         # Write the solutions to a JSON file. We write this after each solution to avoid losing progress.
         with open(solutions_json_path, 'w', encoding='utf-8') as json_file:
@@ -330,6 +303,48 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
 
     print(f"Executed all {language} files and saved results to {solutions_json_path}")
     return solutions
+
+def execute_solution(program_file_path, expected):
+    extension = program_file_path.split('.')[-1]
+    language = get_language_from_extension(extension)
+
+    # load the program code
+    with open(program_file_path, 'r', encoding='utf-8') as file:
+        code = file.read()
+
+    # In some cases the code extraction does not find code and considers the whole file as code.
+    # Here it might be that the LLM did actually solve the problem by itself using reasoning.
+    # If that happens, the answer is in the last line and we consider that as the solution.
+    code = code.strip() # in case there are empty lines at the end
+    last_line_of_code = code.split('\n')[-1]
+    # sometimes the numbers in the last line are formatted with commas, we remove them
+    last_line_of_code = last_line_of_code.replace(',', '')
+    # we already know the actual solution, so we can check if the last line is the solution
+    expected_solution = expected.get('solution', '') if expected else ''
+    # if the expected solution is in the last line of code, we consider this as solved
+    if expected_solution and len(expected_solution) > 0 and expected_solution in last_line_of_code:
+        # remembering the correct solution is the marking that this is solved
+        print(f"Executed {program_file_path}: Accepted solution {expected_solution} in last line of code: {last_line_of_code}")
+        return expected_solution
+    else:
+        # Execute the code and capture the output
+        print(f"Running program: {program_file_path}")
+        output = ""
+        if language == 'python':
+            output = execute_python_code(code)
+        if language == 'clojure':
+            output = execute_clojure_code(code)
+        if language == 'java':
+            output = execute_java_code(code)
+        if language == 'rust':
+            output = execute_rust_code(code)
+    
+        # if the output has several lines, we only want the last one
+        #print(f"Executed {solution_code_path}, raw output:{output}")
+        output = output.strip().split('\n')[-1]
+        result = "** CORRECT **" if output == expected_solution else ".. incorrect .."
+        print(f"Executed {program_file_path}: {output} - {result}")
+        return output
 
 def evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions):
 
@@ -372,7 +387,7 @@ def main():
     parser = ArgumentParser(description="Execute solutions and store results in a JSON file.")
     parser.add_argument('--allmodels', action='store_true', help='loop over all models as provided by benchmark.json and run all of them')
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
-    parser.add_argument('--language', required=False, default='python', help='Name of the programming language to use, default is python')
+    parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the programming language to use, default is python')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     parser.add_argument('--n100', action='store_true', help='only 100 problems') # this is the default
     parser.add_argument('--n200', action='store_true', help='only 200 problems')
@@ -382,6 +397,7 @@ def main():
     args = parser.parse_args()
     model_name = args.model
     language = args.language
+    languages = language.split(',')
     max_problem_number = 100
     if args.n100: max_problem_number = 100
     if args.n200: max_problem_number = 200
@@ -400,16 +416,17 @@ def main():
     with open('solutions.json', 'r', encoding='utf-8') as json_file:
         expected_solutions = json.load(json_file)
 
-    if args.allmodels:
-        # iterate over all models provided by benchmark.json and run all of them
-        benchmark = read_benchmark()
-        # the keys are the model names
-        for model_name in benchmark:
+    for language in languages:
+        if args.allmodels:
+            # iterate over all models provided by benchmark.json and run all of them
+            benchmark = read_benchmark()
+            # the keys are the model names
+            for model_name in benchmark:
+                solutions = process_solutions(model_name, language, max_problem_number, expected_solutions)
+                evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions)
+        else:
             solutions = process_solutions(model_name, language, max_problem_number, expected_solutions)
             evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions)
-    else:
-        solutions = process_solutions(model_name, language, max_problem_number, expected_solutions)
-        evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions)
 
 if __name__ == "__main__":
     main()

@@ -1777,5 +1777,8 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
+    },
+    "hf.co/Mungert/Qwen2.5-VL-32B-Instruct-GGUF:Q4_K_M": {
+        "_parameter_size": 32.8
     }
 }

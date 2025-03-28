@@ -76,12 +76,15 @@ def main():
     if args.n400: max_problem_number = 400
     if args.nall: max_problem_number = 9999
 
+    # cd to the local path to this script
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
     # iterate over all languages
     languages = args.language.split(',')
     for language in languages:
         bench_name = f"{language}-{max_problem_number}"
         endpoint_name = args.endpoint
-
+        
         problems_dir = 'problems'
         template_path = os.path.join('templates', 'template_' + language + '.md')
 

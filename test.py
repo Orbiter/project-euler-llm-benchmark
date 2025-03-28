@@ -1,7 +1,8 @@
 import os
 import json
-from ollama_client import ollama_list
 from argparse import ArgumentParser
+from ollama_client import ollama_list
+from benchmark import read_benchmark, write_benchmark
 
 def test(endpoint_name, model_name, language, overwrite_existing, max_problem_number=100):
     # call inference.py
@@ -72,13 +73,13 @@ def main():
                 raise Exception("The --allmodels option cannot be used in combination with --endpoint.")
             
             # loop over all models provided by ollama and run those which are missing in benchmark.json
-            benchmark = load_benchmark()
+            benchmark = read_benchmark()
             # load models from ollama
             models = ollama_list()
             print(f"Found {len(models)} models in ollama.")
             for model in models:
                 # in every loop we load the benchmark.json again because it might have been updated
-                benchmark = load_benchmark()
+                benchmark = read_benchmark()
                 entry = benchmark.get(model, {})
 
                 # add metadata to benchmark.json
@@ -86,7 +87,7 @@ def main():
                     # run the model; this writes a news entry to benchmark.json
                     test(endpoint_name, model, language, overwrite_existing, max_problem_number)
                     # load benchmark.json again because the test has updated it
-                    benchmark = load_benchmark()
+                    benchmark = read_benchmark()
                     # because testing can be interrupted, there is no guarantee that the entry is present
                     entry = benchmark.get(model, {})
                     

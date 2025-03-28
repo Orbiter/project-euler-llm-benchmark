@@ -469,6 +469,12 @@
         "python-100": 6.98,
         "rust-100": 0.76
     },
+    "hf.co/bartowski/mistralai_Mistral-Small-3.1-24B-Instruct-2503-GGUF:Q4_K_M": {
+        "python-100": 6.79,
+        "java-100": 4.26,
+        "rust-100": 3.8,
+        "clojure-100": 0.95
+    },
     "falcon3:7b-instruct-q8_0": {
         "_context_size": 32,
         "_parameter_size": 7.5,
@@ -532,6 +538,15 @@
         "python-100": 6.37,
         "rust-100": 3.78
     },
+    "gemma3:27b": {
+        "_context_size": 128,
+        "_parameter_size": 27.4,
+        "_quantization_level": 4,
+        "clojure-100": 0.64,
+        "java-100": 0.14,
+        "python-100": 6.37,
+        "rust-100": 3.8
+    },
     "command-a:111b-03-2025-q4_K_M": {
         "_context_size": 256,
         "_parameter_size": 111.1,
@@ -558,15 +573,6 @@
         "java-100": 4.05,
         "python-100": 6.31,
         "rust-100": 3.23
-    },
-    "gemma3:27b": {
-        "_context_size": 128,
-        "_parameter_size": 27.4,
-        "_quantization_level": 4,
-        "clojure-100": 0.64,
-        "java-100": 0.14,
-        "python-100": 6.2,
-        "rust-100": 3.8
     },
     "hf.co/smirki/UIGEN-T1.1-Qwen-7B-Q4_K_M-GGUF:latest": {
         "_context_size": 32,

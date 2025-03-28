@@ -3,49 +3,49 @@ import json
 from ollama_client import ollama_list
 from argparse import ArgumentParser
 
-def test(endpoint_name, model_name, language, skip_existing, max_problem_number=100):
+def test(endpoint_name, model_name, language, overwrite_existing, max_problem_number=100):
     # call inference.py
     if endpoint_name:
-        if skip_existing:
+        if overwrite_existing:
             if max_problem_number == 200:
-                os.system(f"python3 inference.py --endpoint {endpoint_name} --language {language} --n200 --skip_existing")
+                os.system(f"python3.12 inference.py --endpoint {endpoint_name} --language {language} --n200 --overwrite_existing")
             else:
-                os.system(f"python3 inference.py --endpoint {endpoint_name} --language {language} --skip_existing")
+                os.system(f"python3.12 inference.py --endpoint {endpoint_name} --language {language} --overwrite_existing")
         else:
             if max_problem_number == 200:
-                os.system(f"python3 inference.py --endpoint {endpoint_name} --language {language} --n200")
+                os.system(f"python3.12 inference.py --endpoint {endpoint_name} --language {language} --n200")
             else:
-                os.system(f"python3 inference.py --endpoint {endpoint_name} --language {language}")
+                os.system(f"python3.12 inference.py --endpoint {endpoint_name} --language {language}")
     else:
-        if skip_existing:
+        if overwrite_existing:
             if max_problem_number == 200:
-                os.system(f"python3 inference.py --model {model_name} --language {language} --n200 --skip_existing")
+                os.system(f"python3.12 inference.py --model {model_name} --language {language} --n200 --overwrite_existing")
             else:
-                os.system(f"python3 inference.py --model {model_name} --language {language} --skip_existing")
+                os.system(f"python3.12 inference.py --model {model_name} --language {language} --overwrite_existing")
         else:
             if max_problem_number == 200:
-                os.system(f"python3 inference.py --model {model_name} --language {language} --n200")
+                os.system(f"python3.12 inference.py --model {model_name} --language {language} --n200")
             else:
-                os.system(f"python3 inference.py --model {model_name} --language {language}")
+                os.system(f"python3.12 inference.py --model {model_name} --language {language}")
 
     # call codeextraction.py
     if endpoint_name:
-        os.system(f"python3 codeextraction.py --endpoint {endpoint_name} --language {language}")
+        os.system(f"python3.12 codeextraction.py --endpoint {endpoint_name} --language {language}")
     else:
-        os.system(f"python3 codeextraction.py --model {model_name} --language {language}")
+        os.system(f"python3.12 codeextraction.py --model {model_name} --language {language}")
 
     # call execute.py
     if endpoint_name:
-        os.system(f"python3 execute.py --endpoint {endpoint_name} --language {language}")
+        os.system(f"python3.12 execute.py --endpoint {endpoint_name} --language {language}")
     else:
-        os.system(f"python3 execute.py --model {model_name} --language {language}")
+        os.system(f"python3.12 execute.py --model {model_name} --language {language}")
 
 def main():
     parser = ArgumentParser(description="Run the complete pipeline to execute solutions and store results in a JSON file.")
     parser.add_argument('--allmodels', action='store_true', help='loop over all models provided by ollama and run those which are missing in benchmark.json')
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
     parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the languages to test, default is python,java,rust,clojure')
-    parser.add_argument('--skip_existing', action='store_true', help='if set, skip problems that already have a solution')
+    parser.add_argument('--overwrite_existing', action='store_true', help='if set, re-calculate problems that already have an answer')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     parser.add_argument('--n100', action='store_true', help='only 100 problems') # this is the default
     parser.add_argument('--n200', action='store_true', help='only 200 problems')
@@ -59,7 +59,7 @@ def main():
     if args.n200: max_problem_number = 200
     if args.n400: max_problem_number = 400
     if args.nall: max_problem_number = 9999
-    skip_existing = args.skip_existing
+    overwrite_existing = args.overwrite_existing
     endpoint_name = args.endpoint
 
     # iterate over all languages
@@ -72,24 +72,21 @@ def main():
                 raise Exception("The --allmodels option cannot be used in combination with --endpoint.")
             
             # loop over all models provided by ollama and run those which are missing in benchmark.json
-            with open('benchmark.json', 'r', encoding='utf-8') as json_file:
-                benchmark = json.load(json_file)
+            benchmark = load_benchmark()
             # load models from ollama
             models = ollama_list()
             print(f"Found {len(models)} models in ollama.")
             for model in models:
                 # in every loop we load the benchmark.json again because it might have been updated
-                with open('benchmark.json', 'r', encoding='utf-8') as json_file:
-                    benchmark = json.load(json_file)
+                benchmark = load_benchmark()
                 entry = benchmark.get(model, {})
 
                 # add metadata to benchmark.json
                 if not model in benchmark or not bench_name in benchmark[model]:
                     # run the model; this writes a news entry to benchmark.json
-                    test(endpoint_name, model, language, skip_existing, max_problem_number)
+                    test(endpoint_name, model, language, overwrite_existing, max_problem_number)
                     # load benchmark.json again because the test has updated it
-                    with open('benchmark.json', 'r', encoding='utf-8') as json_file:
-                        benchmark = json.load(json_file)
+                    benchmark = load_benchmark()
                     # because testing can be interrupted, there is no guarantee that the entry is present
                     entry = benchmark.get(model, {})
                     
@@ -102,10 +99,9 @@ def main():
                 benchmark[model] = entry
 
                 # write the updated benchmark file
-                with open('benchmark.json', 'w', encoding='utf-8') as json_file:
-                    json.dump(benchmark, json_file, indent=4)
+                write_benchmark(benchmark)
         else:
-            test(endpoint_name, model_name, language, skip_existing)
+            test(endpoint_name, model_name, language, overwrite_existing, max_problem_number)
 
 if __name__ == "__main__":
     main()

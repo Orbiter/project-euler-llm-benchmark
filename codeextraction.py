@@ -32,12 +32,15 @@ def extract_code_block(markdown_content, language, extension):
     # Find all code blocks in the markdown content
     code_blocks = code_block_pattern.findall(markdown_content)
 
+    # if there are several code blocks, we look for the largest one
+    code_blocks.sort(key=len, reverse=True)
+
     # we only need the first block
     code_block = code_blocks[0] if len(code_blocks) > 0 else ""
 
     # remove first line from code block if it contains only one word, the name of the language
     first_line = code_block.split('\n')[0]
-    if first_line == extension or first_line == language:
+    if first_line == extension or first_line == language or first_line == "python3":
         # just get a substring starting from the first newline
         code_block = code_block[code_block.find('\n') + 1:]
 

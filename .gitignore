@@ -4,6 +4,7 @@ endpoints/OpenAI_GPT-4o.json
 endpoints/OpenAI_GPT-o1-Mini.json
 endpoints/OpenAI_GPT-o1.json
 .DS_Store
+*.tar.gz
 endpoints/DeepSeek-V3.json
 endpoints/DeepSeek-R1.json
 problems

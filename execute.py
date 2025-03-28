@@ -9,8 +9,7 @@ import multiprocessing
 from io import StringIO
 from argparse import ArgumentParser
 from contextlib import redirect_stdout
-
-benchmark_file = 'benchmark.json'
+from benchmark import read_benchmark, write_benchmark
 
 def get_extension(language):
     if language == 'c': return 'c'
@@ -50,8 +49,8 @@ def execute_python_code_worker(code, output_queue):
 
     # Define allowed modules
     allowed_module_names = [
-        'math', 'itertools', 'random', 'collections', 'string', 'sympy',
-        'heapq', 'decimal', 'numpy', 'fractions']
+        'math', 'itertools', 'random', 'collections', 'datetime', 'string',
+        'sympy', 'heapq', 'decimal', 'numpy', 'fractions']
     allowed_modules = {name: __import__(name) for name in allowed_module_names}
 
     # Custom __import__ function to restrict imports
@@ -293,6 +292,7 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
         # In some cases the code extraction does not find code and considers the whole file as code.
         # Here it might be that the LLM did actually solve the problem by itself using reasoning.
         # If that happens, the answer is in the last line and we consider that as the solution.
+        code = code.strip() # in case there are empty lines at the end
         last_line_of_code = code.split('\n')[-1]
         # sometimes the numbers in the last line are formatted with commas, we remove them
         last_line_of_code = last_line_of_code.replace(',', '')
@@ -303,7 +303,7 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
         if expected_solution and len(expected_solution) > 0 and expected_solution in last_line_of_code:
             # remembering the correct solution is the marking that this is solved
             solutions[problem_number] = expected_solution
-            print(f"Accepted solution {expected_solution} in last line of code: {last_line_of_code}")
+            print(f"Executed {program_file_path}: Accepted solution {expected_solution} in last line of code: {last_line_of_code}")
         else:
             # Execute the code and capture the output
             print(f"Running program: {program_file_path}")
@@ -321,7 +321,7 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
             #print(f"Executed {solution_code_path}, raw output:{output}")
             output = output.strip().split('\n')[-1]
             result = "** CORRECT **" if output == expected_solution else ".. incorrect .."
-            print(f"Executed {program_file_path}:{output} - {result}")
+            print(f"Executed {program_file_path}: {output} - {result}")
             solutions[problem_number] = output
 
         # Write the solutions to a JSON file. We write this after each solution to avoid losing progress.
@@ -352,9 +352,7 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
         print(f"Points: {points}")
 
         # open the benchmark file and update the points
-        benchmark = {}
-        with open(benchmark_file, 'r', encoding='utf-8') as json_file:
-            benchmark = json.load(json_file)
+        benchmark = read_benchmark()
 
         # update the benchmark entry
         entry = benchmark.get(model_name, {})
@@ -366,8 +364,7 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
         sorted_benchmark = dict(sorted(benchmark.items(), key=lambda item: -item[1].get("python-100", 0)))
 
         # write the updated benchmark file
-        with open(benchmark_file, 'w', encoding='utf-8') as json_file:
-            json.dump(sorted_benchmark, json_file, indent=4)
+        write_benchmark(sorted_benchmark)
     else:
         print("Not all solutions were executed, so the benchmark was not updated.")
 
@@ -405,12 +402,11 @@ def main():
 
     if args.allmodels:
         # iterate over all models provided by benchmark.json and run all of them
-        with open(benchmark_file, 'r', encoding='utf-8') as json_file:
-            benchmark = json.load(json_file)
-            # the keys are the model names
-            for model_name in benchmark:
-                solutions = process_solutions(model_name, language, max_problem_number, expected_solutions)
-                evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions)
+        benchmark = read_benchmark()
+        # the keys are the model names
+        for model_name in benchmark:
+            solutions = process_solutions(model_name, language, max_problem_number, expected_solutions)
+            evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions)
     else:
         solutions = process_solutions(model_name, language, max_problem_number, expected_solutions)
         evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions)

@@ -1,3 +1,4 @@
+Pillow
 sympy
 urllib3
 requests

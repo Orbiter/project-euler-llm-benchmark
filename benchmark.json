@@ -735,6 +735,15 @@
         "python-100": 4.63,
         "rust-100": 1.62
     },
+    "hf.co/katanemo/Arch-Function-7B.gguf:Q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 7.62,
+        "_quantization_level": 4,
+        "clojure-100": 0.61,
+        "java-100": 3.99,
+        "python-100": 4.63,
+        "rust-100": 1.17
+    },
     "gemma3:12b": {
         "_context_size": 128,
         "_parameter_size": 12.2,
@@ -933,6 +942,15 @@
         "python-100": 2.87,
         "rust-100": 0.44
     },
+    "hf.co/katanemo/Arch-Function-3B.gguf:Q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 3.09,
+        "_quantization_level": 4,
+        "clojure-100": 0.43,
+        "java-100": 1.55,
+        "python-100": 2.81,
+        "rust-100": 0.66
+    },
     "granite3.1-dense:8b-instruct-q8_0": {
         "_context_size": 128,
         "_parameter_size": 8.2,
@@ -995,6 +1013,15 @@
         "java-100": 1.55,
         "python-100": 2.46,
         "rust-100": 0.86
+    },
+    "hf.co/katanemo/Arch-Function-1.5B.gguf:Q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 1.54,
+        "_quantization_level": 4,
+        "clojure-100": 0.02,
+        "java-100": 1.6,
+        "python-100": 2.44,
+        "rust-100": 0.53
     },
     "hf.co/bartowski/open-r1_OlympicCoder-7B-GGUF:Q4_K_M": {
         "_context_size": 32,

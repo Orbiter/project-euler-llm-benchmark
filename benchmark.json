@@ -1,4 +1,12 @@
 {
+    "gpt-4.1-2025-04-14": {
+        "_parameter_size": 671.0,
+        "_quantization_level": 16,
+        "python-100": 22.41,
+        "java-100": 20.88,
+        "rust-100": 17.0,
+        "clojure-100": 12.08
+    },
     "DeepSeek-V3-0324": {
         "_context_size": 128,
         "_parameter_size": 671.0,
@@ -17,9 +25,16 @@
         "python-100": 20.01,
         "rust-100": 12.16
     },
+    "gpt-4.1-mini-2025-04-14": {
+        "_context_size": 1024,
+        "_quantization_level": 16,
+        "python-100": 18.34,
+        "java-100": 20.53,
+        "rust-100": 18.99,
+        "clojure-100": 7.56
+    },
     "GPT-o1-Mini": {
         "_context_size": 32,
-        "_parameter_size": 100.0,
         "_quantization_level": 16,
         "python-100": 17.44
     },
@@ -98,6 +113,14 @@
         "java-100": 8.65,
         "python-100": 13.92,
         "rust-100": 6.11
+    },
+    "gpt-4.1-nano-2025-04-14": {
+        "_context_size": 1024,
+        "_quantization_level": 16,
+        "python-100": 13.79,
+        "java-100": 10.36,
+        "rust-100": 7.83,
+        "clojure-100": 1.6
     },
     "hf.co/bartowski/Dracarys2-72B-Instruct-GGUF:Q4_K_M": {
         "_context_size": 128,

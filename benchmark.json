@@ -1184,6 +1184,15 @@
         "python-100": 1.64,
         "rust-100": 0.0
     },
+    "hf.co/bartowski/Zyphra_ZR1-1.5B-GGUF:Q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 1.5,
+        "_quantization_level": 4,
+        "python-100": 1.64,
+        "java-100": 0.34,
+        "rust-100": 1.04,
+        "clojure-100": 0.51
+    },
     "openchat:7b-v3.5-q8_0": {
         "_context_size": 8,
         "_parameter_size": 7.0,
@@ -1457,6 +1466,15 @@
         "java-100": 1.48,
         "python-100": 0.79,
         "rust-100": 0.62
+    },
+    "hf.co/TheBloke/Yi-34B-Chat-GGUF:Q4_K_M": {
+        "_context_size": 4,
+        "_parameter_size": 34.4,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.56,
+        "python-100": 0.67,
+        "rust-100": 0.03
     },
     "qwen2-math:1.5b-instruct-q8_0": {
         "_context_size": 4,

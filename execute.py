@@ -416,8 +416,7 @@ def main():
 
     args = parser.parse_args()
     model_name = args.model
-    language = args.language
-    languages = language.split(',')
+    languages = args.language.split(',')
     max_problem_number = 100
     if args.n100: max_problem_number = 100
     if args.n200: max_problem_number = 200

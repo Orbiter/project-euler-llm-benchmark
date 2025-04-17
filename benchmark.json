@@ -1201,6 +1201,15 @@
         "python-100": 2.17,
         "rust-100": 0.19
     },
+    "gemma3:4b": {
+        "_context_size": 128,
+        "_parameter_size": 4.3,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.61,
+        "python-100": 2.09,
+        "rust-100": 0.77
+    },
     "qwen2.5:1.5b-instruct-q8_0": {
         "_context_size": 128,
         "_parameter_size": 1.5,
@@ -1326,15 +1335,6 @@
         "java-100": 0.06,
         "python-100": 1.59,
         "rust-100": 0.01
-    },
-    "gemma3:4b": {
-        "_context_size": 128,
-        "_parameter_size": 4.3,
-        "_quantization_level": 4,
-        "clojure-100": 0.0,
-        "java-100": 0.55,
-        "python-100": 1.56,
-        "rust-100": 0.43
     },
     "command-r7b:7b-12-2024-q4_K_M": {
         "_context_size": 128,

@@ -9,7 +9,7 @@ from io import BytesIO
 from argparse import ArgumentParser
 
 
-def ollama_list(api_base='http://localhost:11434'):
+def ollama_list(api_base='http://localhost:11434') -> dict:
     # call api http://localhost:11434/api/tags with http get request
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     endpoint = f"{api_base}/api/tags"
@@ -40,7 +40,7 @@ def ollama_list(api_base='http://localhost:11434'):
         models_dict[model] = attr
     return models_dict
 
-def ollama_chat_endpoint(api_base='http://localhost:11434', model_name='llama3.2:latest'):
+def ollama_chat_endpoint(api_base='http://localhost:11434', model_name='llama3.2:latest') -> dict:
     endpoint = {
         "name": model_name,
         "model": model_name,
@@ -49,10 +49,10 @@ def ollama_chat_endpoint(api_base='http://localhost:11434', model_name='llama3.2
     }
     return endpoint
 
-def hex2base64(hex_string):
+def hex2base64(hex_string) -> str:
     return base64.b64encode(bytes.fromhex(hex_string)).decode('utf-8')
 
-def ollama_chat(endpoint, prompt='Hello World', base64_image=None, temperature=0.0, max_tokens=8192):
+def ollama_chat(endpoint, prompt='Hello World', base64_image=None, temperature=0.0, max_tokens=8192) -> tuple:
 
     # Disable SSL warnings
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -70,12 +70,12 @@ def ollama_chat(endpoint, prompt='Hello World', base64_image=None, temperature=0
 
     modelname = endpoint["model"]
     messages = []
+    messages.append({"role": "system", "content": "You are a helpful assistant"})
     
     # o1 has special requirements
     if modelname.startswith("o1") or modelname.startswith("gpt-o1"):
         temperature = 1.0 # o1 models need temperature 1.0
-    else:
-        messages.append({"role": "system", "content": "You are a helpful assistant"})
+
     if modelname.startswith("4o") or modelname.startswith("gpt-4o") or modelname.startswith("gpt-3.5"):
         # reduce number of stoptokes to 4
         stoptokens = ["[/INST]", "<|im_end|>", "<|end_of_turn|>", "<|eot_id|>"]
@@ -165,7 +165,7 @@ def ollama_chat(endpoint, prompt='Hello World', base64_image=None, temperature=0
 
 multimodal_cache = {}
 
-def test_multimodal(endpoint):
+def test_multimodal(endpoint) -> bool:
     modelname = endpoint["model"]
     cached_result = multimodal_cache.get(modelname, None)
     if cached_result is not None:

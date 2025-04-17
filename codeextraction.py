@@ -80,7 +80,7 @@ def process_markdown_files(model_name, language):
 def main():
     parser = ArgumentParser(description="Extract code blocks from Markdown files.")
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
-    parser.add_argument('--language', required=False, default='python', help='Name of the language to use, default is python')
+    parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the languages to test, default is python,java,rust,clojure')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     
     args = parser.parse_args()
@@ -96,7 +96,11 @@ def main():
         with open(endpoint_path, 'r', encoding='utf-8') as file:
             endpoint = json.load(file)
             model_name = endpoint.get('name', model_name)
-    process_markdown_files(model_name, language)
+
+    languages = args.language.split(',')
+    for language in languages:
+        print(f"Processing language: {language}")
+        process_markdown_files(model_name, language)
 
 if __name__ == "__main__":
     main()

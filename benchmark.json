@@ -1,4 +1,12 @@
 {
+    "gpt-4.1-2025-04-14": {
+        "_parameter_size": 671.0,
+        "_quantization_level": 16,
+        "python-100": 22.41,
+        "java-100": 20.88,
+        "rust-100": 17.0,
+        "clojure-100": 12.08
+    },
     "DeepSeek-V3-0324": {
         "_context_size": 128,
         "_parameter_size": 671.0,
@@ -17,9 +25,16 @@
         "python-100": 20.01,
         "rust-100": 12.16
     },
+    "gpt-4.1-mini-2025-04-14": {
+        "_context_size": 1024,
+        "_quantization_level": 16,
+        "python-100": 18.34,
+        "java-100": 20.53,
+        "rust-100": 18.99,
+        "clojure-100": 7.56
+    },
     "GPT-o1-Mini": {
         "_context_size": 32,
-        "_parameter_size": 100.0,
         "_quantization_level": 16,
         "python-100": 17.44
     },
@@ -64,6 +79,14 @@
         "python-100": 14.07,
         "rust-100": 6.55
     },
+    "athene-v2:72b-q4_K_M": {
+        "_parameter_size": 72.7,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 11.19,
+        "python-100": 14.07,
+        "rust-100": 6.55
+    },
     "qwen2.5-coder:32b-instruct-q4_K_M": {
         "_context_size": 32,
         "_parameter_size": 32.8,
@@ -90,6 +113,14 @@
         "java-100": 8.65,
         "python-100": 13.92,
         "rust-100": 6.11
+    },
+    "gpt-4.1-nano-2025-04-14": {
+        "_context_size": 1024,
+        "_quantization_level": 16,
+        "python-100": 13.79,
+        "java-100": 10.36,
+        "rust-100": 7.83,
+        "clojure-100": 1.6
     },
     "hf.co/bartowski/Dracarys2-72B-Instruct-GGUF:Q4_K_M": {
         "_context_size": 128,
@@ -178,6 +209,14 @@
         "java-100": 7.36,
         "clojure-100": 1.93,
         "rust-100": 5.19
+    },
+    "cogito:32b-v1-preview-qwen-q4_K_M": {
+        "_parameter_size": 32.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 7.12,
+        "python-100": 11.32,
+        "rust-100": 5.26
     },
     "yi-coder:9b-chat-q8_0": {
         "_context_size": 128,
@@ -393,6 +432,14 @@
         "python-100": 8.07,
         "rust-100": 2.59
     },
+    "cogito:14b-v1-preview-qwen-q4_K_M": {
+        "_parameter_size": 14.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 5.89,
+        "python-100": 7.9,
+        "rust-100": 3.41
+    },
     "hf.co/bartowski/Qwen2.5-14B-Instruct-1M-GGUF:Q4_K_M": {
         "_context_size": 986,
         "_parameter_size": 14.8,
@@ -410,6 +457,14 @@
         "java-100": 4.61,
         "python-100": 7.73,
         "rust-100": 3.09
+    },
+    "cogito:70b-v1-preview-llama-q4_K_M": {
+        "_parameter_size": 70.6,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 7.26,
+        "python-100": 7.7,
+        "rust-100": 3.54
     },
     "hf.co/ozone-ai/0x-lite-Q4_K_M-GGUF:latest": {
         "_context_size": 32,
@@ -662,6 +717,14 @@
         "java-100": 3.68,
         "python-100": 5.37,
         "rust-100": 0.94
+    },
+    "mistral-small3.1:24b-instruct-2503-q4_K_M": {
+        "_parameter_size": 24.0,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 4.38,
+        "python-100": 5.31,
+        "rust-100": 3.07
     },
     "hf.co/lmstudio-community/Mistral-Small-24B-Instruct-2501-GGUF:Q4_K_M": {
         "_context_size": 32,
@@ -1050,6 +1113,14 @@
         "python-100": 2.32,
         "rust-100": 0.42
     },
+    "cogito:8b-v1-preview-llama-q4_K_M": {
+        "_parameter_size": 8,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 1.02,
+        "python-100": 2.32,
+        "rust-100": 0.54
+    },
     "dolphin3:8b-llama3.1-q8_0": {
         "_context_size": 128,
         "_parameter_size": 8.0,
@@ -1139,6 +1210,15 @@
         "java-100": 0.26,
         "python-100": 1.94,
         "rust-100": 0.15
+    },
+    "deepcoder:1.5b-preview-q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 1.5,
+        "_quantization_level": 4,
+        "clojure-100": 0.08,
+        "java-100": 0.15,
+        "python-100": 1.93,
+        "rust-100": 0.0
     },
     "falcon3:3b-instruct-q8_0": {
         "_context_size": 32,
@@ -1342,6 +1422,14 @@
         "python-100": 1.07,
         "rust-100": 0.2
     },
+    "deepcoder:14b-preview-q4_K_M": {
+        "_parameter_size": 14.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.33,
+        "python-100": 1.03,
+        "rust-100": 0.28
+    },
     "llama3.2:latest": {
         "_context_size": 128,
         "_parameter_size": 3.21,
@@ -1377,6 +1465,14 @@
         "java-100": 0.78,
         "python-100": 0.94,
         "rust-100": 0.13
+    },
+    "cogito:3b-v1-preview-llama-q4_K_M": {
+        "_parameter_size": 3.21,
+        "_quantization_level": 4,
+        "clojure-100": 0.03,
+        "java-100": 0.25,
+        "python-100": 0.94,
+        "rust-100": 0.04
     },
     "exaone-deep:32b-q4_K_M": {
         "_context_size": 32,

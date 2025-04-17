@@ -48,11 +48,12 @@ def main():
 
     # find models to test
     models = []
+    model_dict = ollama_list()
     if args.allmodels:
         if endpoint_name:
             raise Exception("The --allmodels option cannot be used in combination with --endpoint.")
         
-        models = list(ollama_list().keys())
+        models = list(model_dict.keys())
         print(f"Found {len(models)} models in ollama.")
     else:
         models = [model_name]
@@ -83,10 +84,10 @@ def main():
                 entry = benchmark.get(model, {})
                 
             # check if attributes parameter_size and quantization_level are present in benchmark.json
-            if not '_parameter_size' in entry and models[model].get('parameter_size', None):
-                entry['_parameter_size'] = models[model].get('parameter_size', None)
-            if not '_quantization_level' in entry and models[model].get('quantization_level', None):
-                entry['_quantization_level'] = models[model].get('quantization_level', None)
+            if not '_parameter_size' in entry and model_dict[model].get('parameter_size', None):
+                entry['_parameter_size'] = model_dict[model].get('parameter_size', None)
+            if not '_quantization_level' in entry and model_dict[model].get('quantization_level', None):
+                entry['_quantization_level'] = model_dict[model].get('quantization_level', None)
             entry = dict(sorted(entry.items(), key=lambda item: item[0]))
             benchmark[model] = entry
 

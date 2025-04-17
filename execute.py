@@ -350,8 +350,12 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
 
     if len(solutions) == max_problem_number:
         # evaluate the solutions by comparing with the expected results
-        points = 0.0
-        count = 0
+        human_points = 0.0
+        candidate_points = 0.0
+        maxmimum_points = 0.0
+        total_count = 0
+        human_count = 0 # for comparison: using the likelihood of the human solution to virtually count the number of human solutions
+        candidate_count = 0
         for problem_number in solutions:
             if problem_number not in expected_solutions:
                 print(f"Problem {problem_number} not found in expected solutions.")
@@ -359,12 +363,28 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
             expected = expected_solutions[problem_number]
             solution = solutions[problem_number]
             expected_solution = expected['solution']
+            challenge_points = expected_solutions[problem_number]['points']
+            solution_likelihood = expected_solutions[problem_number]['percentage_solved'] * 0.01
+            human_count += solution_likelihood
+            human_points += challenge_points * solution_likelihood
+            maxmimum_points += challenge_points
             if solution == expected_solution:
-                points += expected_solutions[problem_number]['points']
-            count += 1
+                candidate_points += challenge_points
+                candidate_count += 1
+            total_count += 1
 
-        points = round(points / count, 2)
-        print(f"Points: {points}")
+        human_point_average = round(human_points / total_count, 2)
+        candidate_point_average = round(candidate_points / total_count, 2)
+        total_point_average = round(maxmimum_points / total_count, 2)
+        print(f"Maximum Points: {maxmimum_points}")
+        print(f"Maximum Solution Count: {total_count}")
+        print(f"Maximum Point Average: {total_point_average}")
+        print(f"Human Points: {human_points}")
+        print(f"Human Solution Count: {human_count}")
+        print(f"Human Point Average: {human_point_average}")
+        print(f"Candidate Points: {candidate_points}")
+        print(f"Candidate Solution Count: {candidate_count}")
+        print(f"Candidate Point Average: {candidate_point_average}")
 
         # open the benchmark file and update the points
         benchmark = read_benchmark()
@@ -372,7 +392,7 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
         # update the benchmark entry
         entry = benchmark.get(model_name, {})
         series_name = f"{language}-{max_problem_number}"
-        entry[series_name] = points
+        entry[series_name] = candidate_point_average
         benchmark[model_name] = entry
 
         # sort the benchmark with the highest points first, use the series name "python-100" as the key

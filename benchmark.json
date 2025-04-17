@@ -1,6 +1,14 @@
 {
+    "o4-mini-2025-04-16": {
+        "_context_size": 200,
+        "_quantization_level": 16,
+        "python-100": 22.71,
+        "java-100": 21.88,
+        "rust-100": 21.59,
+        "clojure-100": 13.71
+    },
     "gpt-4.1-2025-04-14": {
-        "_parameter_size": 671.0,
+        "_context_size": 1024,
         "_quantization_level": 16,
         "python-100": 22.41,
         "java-100": 20.88,
@@ -80,6 +88,7 @@
         "rust-100": 6.55
     },
     "athene-v2:72b-q4_K_M": {
+        "_context_size": 128,
         "_parameter_size": 72.7,
         "_quantization_level": 4,
         "clojure-100": 0.0,
@@ -141,7 +150,9 @@
         "rust-100": 5.41
     },
     "hf.co/bartowski/Sky-T1-32B-Preview-GGUF:Q8_0": {
+        "_context_size": 32,
         "_parameter_size": 32.8,
+        "_quantization_level": 8,
         "clojure-100": 3.43,
         "java-100": 10.75,
         "python-100": 12.76,
@@ -246,7 +257,9 @@
         "rust-100": 6.0
     },
     "hf.co/mradermacher/phi-4-abliterated-GGUF:Q8_0": {
+        "_context_size": 16,
         "_parameter_size": 14.7,
+        "_quantization_level": 8,
         "clojure-100": 0.52,
         "java-100": 6.67,
         "python-100": 10.06,
@@ -433,6 +446,7 @@
         "rust-100": 2.59
     },
     "cogito:14b-v1-preview-qwen-q4_K_M": {
+        "_context_size": 128,
         "_parameter_size": 14.8,
         "_quantization_level": 4,
         "clojure-100": 0.0,
@@ -459,6 +473,7 @@
         "rust-100": 3.09
     },
     "cogito:70b-v1-preview-llama-q4_K_M": {
+        "_context_size": 128,
         "_parameter_size": 70.6,
         "_quantization_level": 4,
         "clojure-100": 0.0,
@@ -719,6 +734,7 @@
         "rust-100": 0.94
     },
     "mistral-small3.1:24b-instruct-2503-q4_K_M": {
+        "_context_size": 128,
         "_parameter_size": 24.0,
         "_quantization_level": 4,
         "clojure-100": 0.0,
@@ -1114,6 +1130,7 @@
         "rust-100": 0.42
     },
     "cogito:8b-v1-preview-llama-q4_K_M": {
+        "_context_size": 128,
         "_parameter_size": 8,
         "_quantization_level": 4,
         "clojure-100": 0.0,
@@ -1165,6 +1182,15 @@
         "java-100": 1.47,
         "python-100": 2.2,
         "rust-100": 0.5
+    },
+    "granite3.3:2b": {
+        "_context_size": 128,
+        "_parameter_size": 2.0,
+        "_quantization_level": 4,
+        "python-100": 2.19,
+        "java-100": 0.54,
+        "rust-100": 0.02,
+        "clojure-100": 0.0
     },
     "deepseek-r1:70b-llama-distill-q4_K_M": {
         "_context_size": 128,
@@ -1239,6 +1265,7 @@
         "rust-100": 0.39
     },
     "exaone-deep:7.8b-q4_K_M": {
+        "_context_size": 32,
         "_parameter_size": 7.8,
         "_quantization_level": 4,
         "clojure-100": 0.0,
@@ -1254,6 +1281,15 @@
         "java-100": 1.75,
         "python-100": 1.82,
         "rust-100": 1.32
+    },
+    "granite3.3:8b": {
+        "_context_size": 128,
+        "_parameter_size": 8.0,
+        "_quantization_level": 4,
+        "python-100": 1.67,
+        "java-100": 0.78,
+        "rust-100": 0.25,
+        "clojure-100": 0.27
     },
     "hf.co/mradermacher/HelpingAI-9B-GGUF:Q4_K_M": {
         "_context_size": 4,
@@ -1319,7 +1355,9 @@
         "rust-100": 0.13
     },
     "hf.co/bartowski/open-r1_OlympicCoder-32B-GGUF:Q4_K_M": {
+        "_context_size": 32,
         "_parameter_size": 32.8,
+        "_quantization_level": 4,
         "clojure-100": 0.45,
         "java-100": 0.32,
         "python-100": 1.54,
@@ -1398,6 +1436,7 @@
         "rust-100": 0.03
     },
     "internlm2:1.8b-chat-v2.5-q4_K_M": {
+        "_context_size": 32,
         "_parameter_size": 1.9,
         "_quantization_level": 4,
         "clojure-100": 0.0,
@@ -1406,6 +1445,7 @@
         "rust-100": 0.0
     },
     "internlm2:7b-chat-v2.5-q4_K_M": {
+        "_context_size": 32,
         "_parameter_size": 7.7,
         "_quantization_level": 4,
         "clojure-100": 0.0,
@@ -1423,6 +1463,7 @@
         "rust-100": 0.2
     },
     "deepcoder:14b-preview-q4_K_M": {
+        "_context_size": 128,
         "_parameter_size": 14.8,
         "_quantization_level": 4,
         "clojure-100": 0.0,
@@ -1511,6 +1552,7 @@
         "rust-100": 0.53
     },
     "exaone-deep:2.4b-q4_K_M": {
+        "_context_size": 32,
         "_parameter_size": 2.7,
         "_quantization_level": 4,
         "clojure-100": 0.28,

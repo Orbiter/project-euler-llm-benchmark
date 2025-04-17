@@ -114,13 +114,14 @@ def ollama_chat(endpoint, prompt='Hello World', base64_image=None, temperature=0
     payload = {
         "model": modelname,
         "messages": messages,
-        "temperature": temperature,
         "response_format": { "type": "text" },
         "stream": False
     }
-    if len(stoptokens) > 0:
+    if not modelname.startswith("o4"):
+        payload["temperature"] = temperature
+    if len(stoptokens) > 0 and not modelname.startswith("o4"):
         payload["stop"] = stoptokens
-    if modelname.startswith("o1"):
+    if modelname.startswith("o1") or modelname.startswith("o4"):
         payload["max_completion_tokens"] = max_tokens
     else:
         payload["max_tokens"] = max_tokens
@@ -176,6 +177,8 @@ def test_multimodal(endpoint):
     try:
         answer, total_tokens, token_per_second = ollama_chat(endpoint, prompt="what is in the image", base64_image=base64_image)
         result = "42" in answer
+        if result:
+            print(f"Model {modelname} is multimodal.")
         multimodal_cache[modelname] = result
         return result
     except Exception as e:

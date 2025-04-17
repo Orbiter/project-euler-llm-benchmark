@@ -1,5 +1,6 @@
 import os
 import json
+import base64
 from argparse import ArgumentParser
 from benchmark import read_benchmark, write_benchmark
 from ollama_client import ollama_list, ollama_chat_endpoint, ollama_chat, test_multimodal
@@ -8,37 +9,68 @@ def read_template(template_path):
     with open(template_path, 'r', encoding='utf-8') as file:
         return file.read()
 
-def process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number=9999, overwrite_existing=False):
-    results_dir = os.path.join('solutions', endpoint["name"], language)
+def process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number=9999, overwrite_existing=False, overwrite_failed=False, expected_solutions={}):
+    model_name = endpoint["name"]
+    results_dir = os.path.join('solutions', model_name, language)
     os.makedirs(results_dir, exist_ok=True)
 
+    # get the solutions as computed so far (may be none at first run)
+    solutions_json_path = os.path.join(results_dir, 'solutions.json') # may not exist yet
+    solutions = {}
+    if os.path.exists(solutions_json_path):
+        with open(solutions_json_path, 'r', encoding='utf-8') as json_file:
+            solutions = json.load(json_file)
+
+    # iterate over all problem files
     for problem_file in sorted(os.listdir(problems_dir)):
         if problem_file.startswith('.') or not problem_file.endswith('.txt'): continue
         problem_number = problem_file[:-4]  # Remove .txt extension
         if int(problem_number) > max_problem_number: break
         problem_path = os.path.join(problems_dir, problem_file)
         result_file_path = os.path.join(results_dir, f"{problem_number}.md")
-        if not overwrite_existing and os.path.exists(result_file_path):
+        if not overwrite_existing and not overwrite_failed and os.path.exists(result_file_path):
             print(f"Skipping problem {problem_number} as it already has a solution.")
             continue
 
+        # check if the problem is already solved
+        actual_solution = expected_solutions.get(problem_number, {}).get('solution', None)
+        problem_is_solved = problem_number in solutions and solutions[problem_number] == actual_solution
+        #print(f"Problem {problem_number} expected solution: {actual_solution}")
+        #print(f"Problem {problem_number} current solution: {solutions.get(problem_number, None)}")
+        #print(f"Problem {problem_number} is solved: {problem_is_solved}")
+        
+        # if overwrite_failed is set, we skip this if it is solved and the flag is set
+        if overwrite_failed and problem_is_solved:
+            print(f"Skipping problem {problem_number} as it is already solved and overwrite_failed is set.")
+            continue
+        
+        # start computing the solution
         with open(problem_path, 'r', encoding='utf-8') as file:
             problem_content = file.read()
 
         # Construct the prompt using the template
         prompt = template_content.replace('$$$PROBLEM$$$', problem_content)
-        is_multimodal = test_multimodal(endpoint) # this is cached
+            
+        # check if there is also an image in the problem. We take the problem_file, remove the extension ".txt"
+        # and add either "-0.png", "-0.jpg" or "-0.gif"
         base64_image = None
-        if is_multimodal:
-            # check if there is also an image in the problem. We take the problem_file, remove the extension ".txt"
-            # and add either "-0.png", "-0.jpg" or "-0.gif"
-            possible_extensions = ["-0.png", "-0.jpg", "-0.gif"]
-            for ext in possible_extensions:
-                image_path = os.path.join(problems_dir, problem_number + ext)
-                if os.path.exists(image_path):
-                    with open(image_path, "rb") as image_file:
-                        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
-                    break
+        possible_extensions = ["-0.png", "-0.jpg", "-0.gif"]
+        for ext in possible_extensions:
+            image_path = os.path.join(problems_dir, problem_number + ext)
+            if os.path.exists(image_path):
+                with open(image_path, "rb") as image_file:
+                    base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+                break
+        
+        # check if the endpoint is multimodal, we do this only if we have an image
+        if base64_image:
+            is_multimodal = test_multimodal(endpoint) # this is cached
+            if is_multimodal:
+                print(f"Problem {problem_number} is handled with multimodal model.")
+            else:
+                print(f"Problem {problem_number} requires a multimodal model for image processing but the model is not multimodal.")
+                base64_image = None
+                 
         try:
             answer, total_tokens, token_per_second = ollama_chat(endpoint, prompt, base64_image=base64_image)
 
@@ -58,7 +90,8 @@ def main():
     parser.add_argument('--allmodels', action='store_true', help='loop over all models provided by ollama and run those which are missing in benchmark.json')
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
     parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the languages to test, default is python,java,rust,clojure')
-    parser.add_argument('--overwrite_existing', action='store_true', help='if set, re-calculate problems that already have an answer')
+    parser.add_argument('--overwrite_existing', action='store_true', help='if set, re-calculate all problems that already have an answer')
+    parser.add_argument('--overwrite_failed', action='store_true', help='if set, re-calculate those problems with wrong answers')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     parser.add_argument('--n100', action='store_true', help='only 100 problems') # this is the default
     parser.add_argument('--n200', action='store_true', help='only 200 problems')
@@ -79,6 +112,11 @@ def main():
     # cd to the local path to this script
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
+    # load the expected solutions from the solutions.json file; needed for option --overwrite_failed
+    expected_solutions = {}
+    with open('solutions.json', 'r', encoding='utf-8') as json_file:
+        expected_solutions = json.load(json_file)
+        
     # iterate over all languages
     languages = args.language.split(',')
     for language in languages:
@@ -112,7 +150,7 @@ def main():
                 if not model in benchmark or not bench_name in benchmark[model]:
                     print(f"Inference: Using model {model} and language {language}")
                     endpoint = ollama_chat_endpoint(api_base, model)
-                    process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number = max_problem_number, overwrite_existing = args.overwrite_existing)
+                    process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number = max_problem_number, overwrite_existing = args.overwrite_existing, overwrite_failed = args.overwrite_failed, expected_solutions = expected_solutions)
         else:
             # construct the endpoint object
             endpoint = {}
@@ -130,7 +168,7 @@ def main():
                 endpoint = ollama_chat_endpoint(api_base, model_name)
             
             # run the inference
-            process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number = max_problem_number, overwrite_existing = args.overwrite_existing)
+            process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number = max_problem_number, overwrite_existing = args.overwrite_existing, overwrite_failed = args.overwrite_failed, expected_solutions = expected_solutions)
 
 if __name__ == "__main__":
     main()

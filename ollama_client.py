@@ -40,19 +40,31 @@ def ollama_list(api_base='http://localhost:11434') -> dict:
         models_dict[model] = attr
     return models_dict
 
-def ollama_chat_endpoint(api_base='http://localhost:11434', model_name='llama3.2:latest') -> dict:
-    endpoint = {
-        "name": model_name,
-        "model": model_name,
-        "key": "",
-        "endpoint": f"{api_base}/v1/chat/completions",
-    }
-    return endpoint
+def ollama_chat_endpoints(api_base='http://localhost:11434', model_name='llama3.2:latest') -> dict:
+    # check if api_base is a string
+    if isinstance(api_base, str):
+        endpoint = {
+            "name": model_name,
+            "model": model_name,
+            "key": "",
+            "endpoints": [f"{api_base}/v1/chat/completions"],
+        }
+        return endpoint
+    # check if api_base is a list of strings
+    if isinstance(api_base, list):
+        endpoint = {
+            "name": model_name,
+            "model": model_name,
+            "key": "",
+            "endpoints": [f"{api_stub}/v1/chat/completions" for api_stub in api_base],
+        }
+        return endpoint
+    return {}
 
 def hex2base64(hex_string) -> str:
     return base64.b64encode(bytes.fromhex(hex_string)).decode('utf-8')
 
-def ollama_chat(endpoint, prompt='Hello World', base64_image=None, temperature=0.0, max_tokens=8192) -> tuple:
+def ollama_chat(endpoints, prompt='Hello World', base64_image=None, temperature=0.0, max_tokens=8192) -> tuple:
 
     # Disable SSL warnings
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -65,16 +77,16 @@ def ollama_chat(endpoint, prompt='Hello World', base64_image=None, temperature=0
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
-    if endpoint.get("key", ""):
-        headers['Authorization'] = 'Bearer ' + endpoint["key"]
+    if endpoints.get("key", ""):
+        headers['Authorization'] = 'Bearer ' + endpoints["key"]
 
-    modelname = endpoint["model"]
+    modelname = endpoints["model"]
     messages = []
     messages.append({"role": "system", "content": "You are a helpful assistant"})
     
-    # o1 has special requirements
-    if modelname.startswith("o1") or modelname.startswith("gpt-o1"):
-        temperature = 1.0 # o1 models need temperature 1.0
+    # special requirements of certain models
+    if modelname.startswith("o1") or modelname.startswith("gpt-o1"): temperature = 1.0
+    if modelname.startswith("qwen3"): temperature = 0.6
 
     if modelname.startswith("4o") or modelname.startswith("gpt-4o") or modelname.startswith("gpt-3.5"):
         # reduce number of stoptokes to 4
@@ -115,10 +127,12 @@ def ollama_chat(endpoint, prompt='Hello World', base64_image=None, temperature=0
         "model": modelname,
         "messages": messages,
         "response_format": { "type": "text" },
+        "temperature": temperature, # ollama default: 0.8
+        "top_k": 20,    # reduces the probability of generating nonsense: high = more diverse, low = more focused; ollama default: 40
+        "top_p": 0.95,  # works together with top_k: high = more diverse, low = more focused; ollama default: 0.9
+        "min_p": 0,     # alternative to top_p: p is minimum probability for a token to be considered; ollama default: 0.0
         "stream": False
     }
-    if not modelname.startswith("o4"):
-        payload["temperature"] = temperature
     if len(stoptokens) > 0 and not modelname.startswith("o4"):
         payload["stop"] = stoptokens
     if modelname.startswith("o1") or modelname.startswith("o4"):
@@ -129,7 +143,7 @@ def ollama_chat(endpoint, prompt='Hello World', base64_image=None, temperature=0
     try:
         #print(payload)
         t0 = time.time()
-        response = requests.post(endpoint["endpoint"], headers=headers, json=payload, verify=False)
+        response = requests.post(endpoints["endpoints"][0], headers=headers, json=payload, verify=False)
         t1 = time.time()
         #print(response)
         response.raise_for_status()
@@ -165,8 +179,8 @@ def ollama_chat(endpoint, prompt='Hello World', base64_image=None, temperature=0
 
 multimodal_cache = {}
 
-def test_multimodal(endpoint) -> bool:
-    modelname = endpoint["model"]
+def test_multimodal(endpoints) -> bool:
+    modelname = endpoints["model"]
     cached_result = multimodal_cache.get(modelname, None)
     if cached_result is not None:
         return cached_result
@@ -175,7 +189,7 @@ def test_multimodal(endpoint) -> bool:
     with open(image_path, "rb") as image_file:
         base64_image = base64.b64encode(image_file.read()).decode('utf-8')
     try:
-        answer, total_tokens, token_per_second = ollama_chat(endpoint, prompt="what is in the image", base64_image=base64_image)
+        answer, total_tokens, token_per_second = ollama_chat(endpoints, prompt="what is in the image", base64_image=base64_image)
         result = "42" in answer
         if result:
             print(f"Model {modelname} is multimodal.")
@@ -193,13 +207,13 @@ def main():
     
     # parse the arguments
     args = parser.parse_args()
-    api_base = args.api_base
+    api_base = args.api_base.split(",") if "," in args.api_base else [args.api_base]
     endpoint_name = args.endpoint
     model_name = args.model
     image_path = args.image
 
     # load the endpoint file
-    endpoint = {}
+    endpoints = {}
     if endpoint_name:
         print(f"Using endpoint {endpoint_name}")
         endpoint_path = os.path.join('endpoints', f"{endpoint_name}.json")
@@ -207,12 +221,12 @@ def main():
         if not os.path.exists(endpoint_path):
             raise Exception(f"Endpoint file {endpoint_path} does not exist.")
         with open(endpoint_path, 'r', encoding='utf-8') as file:
-            endpoint = json.load(file)
+            endpoints = json.load(file)
     else:
-        endpoint = ollama_chat_endpoint(api_base, model_name)
+        endpoints = ollama_chat_endpoints(api_base, model_name)
     
     # test if the endpoint is a multimodal model
-    if test_multimodal(endpoint):
+    if test_multimodal(endpoints):
         print("Endpoint is a multimodal model.")
     else:
         print("Endpoint is not a multimodal model.")
@@ -224,14 +238,14 @@ def main():
             base64_image = base64.b64encode(image_file.read()).decode('utf-8')
 
     # access the ollama API
-    models_dict = ollama_list()
+    models_dict = ollama_list(api_base[0])
     for (model, attr) in models_dict.items():
         print(f"Model: {model}: {attr}")
     try:
         if base64_image:
-            answer, total_tokens, token_per_second = ollama_chat(endpoint, prompt="what is in the image", base64_image=base64_image)
+            answer, total_tokens, token_per_second = ollama_chat(endpoints, prompt="what is in the image", base64_image=base64_image)
         else:
-            answer, total_tokens, token_per_second = ollama_chat(endpoint)
+            answer, total_tokens, token_per_second = ollama_chat(endpoints)
     except Exception as e:
         answer = f"Error: {str(e)}"
     print(answer)

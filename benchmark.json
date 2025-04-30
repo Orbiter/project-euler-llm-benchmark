@@ -247,6 +247,15 @@
         "python-100": 11.08,
         "rust-100": 4.32
     },
+    "qwen3:32b-q4_K_M-no_think": {
+        "_context_size": 128,
+        "_parameter_size": 32.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 8.94,
+        "python-100": 10.25,
+        "rust-100": 3.93
+    },
     "phi4:14b-q8_0": {
         "_context_size": 16,
         "_parameter_size": 14.7,
@@ -427,6 +436,13 @@
         "python-100": 8.27,
         "rust-100": 4.44
     },
+    "qwen3:30b-a3b-q4_K_M-no_think": {
+        "_context_size": 128,
+        "_parameter_size": 30.5,
+        "_quantization_level": 4,
+        "java-100": 8.01,
+        "python-100": 8.22
+    },
     "llama3.1:70b-instruct-q8_0": {
         "_context_size": 128,
         "_parameter_size": 70.6,
@@ -589,6 +605,15 @@
         "python-100": 6.98,
         "rust-100": 0.76
     },
+    "qwen3:8b-q4_K_M-no_think": {
+        "_context_size": 128,
+        "_parameter_size": 8.2,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 4.84,
+        "python-100": 6.98,
+        "rust-100": 1.92
+    },
     "hf.co/bartowski/mistralai_Mistral-Small-3.1-24B-Instruct-2503-GGUF:Q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 23.6,
@@ -741,6 +766,15 @@
         "java-100": 5.13,
         "python-100": 5.78,
         "rust-100": 4.22
+    },
+    "qwen3:4b-q4_K_M-no_think": {
+        "_context_size": 32,
+        "_parameter_size": 4.0,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 3.72,
+        "python-100": 5.44,
+        "rust-100": 1.71
     },
     "deepseek-coder:6.7b-instruct-q8_0": {
         "_context_size": 16,
@@ -1516,6 +1550,15 @@
         "python-100": 1.1,
         "rust-100": 0.47
     },
+    "qwen3:1.7b-q4_K_M-no_think": {
+        "_context_size": 32,
+        "_parameter_size": 2.0,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.99,
+        "python-100": 1.08,
+        "rust-100": 0.18
+    },
     "granite3.1-dense:2b-instruct-q8_0": {
         "_context_size": 128,
         "_parameter_size": 2.5,
@@ -1695,6 +1738,14 @@
         "python-100": 0.65,
         "rust-100": 0.0
     },
+    "qwen3:0.6b-q4_K_M-think": {
+        "_context_size": 32,
+        "_parameter_size": 751.63,
+        "_quantization_level": 4,
+        "java-100": 0.0,
+        "python-100": 0.53,
+        "rust-100": 0.36
+    },
     "codellama:13b-instruct-q4_K_M": {
         "_context_size": 16,
         "_parameter_size": 13.0,
@@ -1712,6 +1763,15 @@
         "java-100": 0.71,
         "python-100": 0.48,
         "rust-100": 0.04
+    },
+    "qwen3:0.6b-q4_K_M-no_think": {
+        "_context_size": 32,
+        "_parameter_size": 751.63,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.1,
+        "python-100": 0.48,
+        "rust-100": 0.0
     },
     "deepseek-llm:7b-chat-q8_0": {
         "_context_size": 4,
@@ -1990,6 +2050,11 @@
         "python-100": 0.01,
         "rust-100": 0.0
     },
+    "qwen3:235b-a22b-q4_K_M-no_think": {
+        "_context_size": 128,
+        "_parameter_size": 235.1,
+        "_quantization_level": 4
+    },
     "deepseek-coder:1.3b-instruct-q8_0": {
         "_context_size": 16,
         "_parameter_size": 1.0,
@@ -2068,5 +2133,15 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
+    },
+    "qwen3:1.7b-q4_K_M-think": {
+        "_context_size": 32,
+        "_parameter_size": 2.0,
+        "_quantization_level": 4
+    },
+    "qwen3:235b-a22b-q4_K_M-think": {
+        "_context_size": 128,
+        "_parameter_size": 235.1,
+        "_quantization_level": 4
     }
 }

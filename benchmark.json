@@ -427,6 +427,13 @@
         "python-100": 8.35,
         "rust-100": 0.0
     },
+    "qwen3:30b-a3b-q4_K_M-think": {
+        "_parameter_size": 30.5,
+        "_quantization_level": 4,
+        "java-100": 5.59,
+        "python-100": 8.3,
+        "rust-100": 4.32
+    },
     "mistral-large:123b-instruct-2407-q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 122.6,
@@ -440,8 +447,10 @@
         "_context_size": 128,
         "_parameter_size": 30.5,
         "_quantization_level": 4,
+        "clojure-100": 0.0,
         "java-100": 8.01,
-        "python-100": 8.22
+        "python-100": 8.22,
+        "rust-100": 5.11
     },
     "llama3.1:70b-instruct-q8_0": {
         "_context_size": 128,
@@ -983,6 +992,15 @@
         "python-100": 4.04,
         "rust-100": 0.39
     },
+    "qwen3:1.7b-q4_K_M-think": {
+        "_context_size": 32,
+        "_parameter_size": 2.0,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.93,
+        "python-100": 3.97,
+        "rust-100": 0.48
+    },
     "exaone3.5:32b-instruct-q8_0": {
         "_context_size": 32,
         "_parameter_size": 32.0,
@@ -1108,6 +1126,13 @@
         "java-100": 0.59,
         "python-100": 2.87,
         "rust-100": 0.44
+    },
+    "qwen3:235b-a22b-q4_K_M-think": {
+        "_context_size": 128,
+        "_parameter_size": 235.1,
+        "_quantization_level": 4,
+        "java-100": 2.27,
+        "python-100": 2.86
     },
     "hf.co/katanemo/Arch-Function-3B.gguf:Q4_K_M": {
         "_context_size": 32,
@@ -1742,6 +1767,7 @@
         "_context_size": 32,
         "_parameter_size": 751.63,
         "_quantization_level": 4,
+        "clojure-100": 0.0,
         "java-100": 0.0,
         "python-100": 0.53,
         "rust-100": 0.36
@@ -2053,7 +2079,8 @@
     "qwen3:235b-a22b-q4_K_M-no_think": {
         "_context_size": 128,
         "_parameter_size": 235.1,
-        "_quantization_level": 4
+        "_quantization_level": 4,
+        "java-100": 15.17
     },
     "deepseek-coder:1.3b-instruct-q8_0": {
         "_context_size": 16,
@@ -2133,15 +2160,5 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
-    },
-    "qwen3:1.7b-q4_K_M-think": {
-        "_context_size": 32,
-        "_parameter_size": 2.0,
-        "_quantization_level": 4
-    },
-    "qwen3:235b-a22b-q4_K_M-think": {
-        "_context_size": 128,
-        "_parameter_size": 235.1,
-        "_quantization_level": 4
     }
 }

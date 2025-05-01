@@ -407,6 +407,8 @@ def main():
     parser = ArgumentParser(description="Execute solutions and store results in a JSON file.")
     parser.add_argument('--allmodels', action='store_true', help='loop over all models as provided by benchmark.json and run all of them')
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
+    parser.add_argument('--think', action='store_true', help='if set, the prompt will get an additional "/think" appended at the end')
+    parser.add_argument('--no_think', action='store_true', help='if set, the prompt will get an additional "/no_think" appended at the end')
     parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the programming language to use, default is python')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     parser.add_argument('--n100', action='store_true', help='only 100 problems') # this is the default
@@ -432,6 +434,10 @@ def main():
             endpoint = json.load(file)
             model_name = endpoint.get('name', model_name)
 
+    # modify the model name in case soft thinking switches are given
+    if args.think: model_name += "-think"
+    if args.no_think: model_name += "-no_think"
+    
     with open('solutions.json', 'r', encoding='utf-8') as json_file:
         expected_solutions = json.load(json_file)
 

@@ -80,6 +80,8 @@ def process_markdown_files(model_name, language):
 def main():
     parser = ArgumentParser(description="Extract code blocks from Markdown files.")
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
+    parser.add_argument('--think', action='store_true', help='if set, the prompt will get an additional "/think" appended at the end')
+    parser.add_argument('--no_think', action='store_true', help='if set, the prompt will get an additional "/no_think" appended at the end')
     parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the languages to test, default is python,java,rust,clojure')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     
@@ -88,6 +90,7 @@ def main():
     language = args.language
     endpoint_name = args.endpoint
 
+    # in case no model name is given but an endpoint name, read the model name from the endpoint file
     if endpoint_name:
         endpoint_path = os.path.join('endpoints', f"{endpoint_name}.json")
         print(f"Using endpoint file {endpoint_path}")
@@ -96,6 +99,10 @@ def main():
         with open(endpoint_path, 'r', encoding='utf-8') as file:
             endpoint = json.load(file)
             model_name = endpoint.get('name', model_name)
+
+    # modify the model name in case soft thinking switches are given
+    if args.think: model_name += "-think"
+    if args.no_think: model_name += "-no_think"
 
     languages = args.language.split(',')
     for language in languages:

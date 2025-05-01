@@ -3,29 +3,41 @@ from argparse import ArgumentParser
 from benchmark import read_benchmark, write_benchmark
 from ollama_client import ollama_list
 
-def test(endpoint_name, model_name, language, overwrite_existing, overwrite_failed, max_problem_number=100):
+def test(api_base, endpoint_name, model_name, language, overwrite_existing, overwrite_failed, max_problem_number=100, think=False, no_think=False):
     # call inference.py
-    cmd = f"python3.12 inference.py --language {language}"
+    cmd = f"python3.12 inference.py --language {language} --api_base {api_base}"
     cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
     if max_problem_number == 200: cmd += " --n200"
     if overwrite_existing: cmd += " --overwrite_existing"
     if overwrite_failed: cmd += " --overwrite_failed"
+    if think: cmd += " --think"
+    if no_think: cmd += " --no_think"
+    print(f"Running command: {cmd}")
     os.system(cmd)
 
     # call codeextraction.py
     cmd = f"python3.12 codeextraction.py --language {language}"
     cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
+    if think: cmd += " --think"
+    if no_think: cmd += " --no_think"
+    print(f"Running command: {cmd}")
     os.system(cmd)
 
     # call execute.py
     cmd = f"python3.12 execute.py --language {language}"
     cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
+    if think: cmd += " --think"
+    if no_think: cmd += " --no_think"
+    print(f"Running command: {cmd}")
     os.system(cmd)
 
 def main():
     parser = ArgumentParser(description="Run the complete pipeline to execute solutions and store results in a JSON file.")
+    parser.add_argument('--api_base', required=False, default='http://localhost:11434', help='API base URL for the LLM, default is http://localhost:11434')
     parser.add_argument('--allmodels', action='store_true', help='loop over all models provided by ollama and run those which are missing in benchmark.json')
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
+    parser.add_argument('--think', action='store_true', help='if set, the prompt will get an additional "/think" appended at the end')
+    parser.add_argument('--no_think', action='store_true', help='if set, the prompt will get an additional "/no_think" appended at the end')
     parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the languages to test, default is python,java,rust,clojure')
     parser.add_argument('--overwrite_existing', action='store_true', help='if set, re-calculate all problems that already have an answer')
     parser.add_argument('--overwrite_failed', action='store_true', help='if set, re-calculate those problems with wrong answers')
@@ -36,6 +48,7 @@ def main():
     parser.add_argument('--nall', action='store_true', help='all problems')
 
     args = parser.parse_args()
+    api_base = args.api_base
     model_name = args.model
     max_problem_number = 100
     if args.n100: max_problem_number = 100
@@ -72,16 +85,19 @@ def main():
 
             # in every loop we load the benchmark.json again because it might have been updated
             benchmark = read_benchmark()
-            entry = benchmark.get(model, {})
+            model_benchmark_name = model
+            if args.think: model_benchmark_name += "-think"
+            if args.no_think: model_benchmark_name += "-no_think"
+            entry = benchmark.get(model_benchmark_name, {})
 
             # add metadata to benchmark.json
-            if not model in benchmark or not bench_name in benchmark[model] or overwrite_existing or overwrite_failed:
+            if not model_benchmark_name in benchmark or not bench_name in benchmark[model_benchmark_name] or overwrite_existing or overwrite_failed:
                 # run the model; this writes a news entry to benchmark.json
-                test(endpoint_name, model, language, overwrite_existing, overwrite_failed, max_problem_number)
+                test(api_base, endpoint_name, model, language, overwrite_existing, overwrite_failed, max_problem_number, think = args.think, no_think = args.no_think)
                 # load benchmark.json again because the test has updated it
                 benchmark = read_benchmark()
                 # because testing can be interrupted, there is no guarantee that the entry is present
-                entry = benchmark.get(model, {})
+                entry = benchmark.get(model_benchmark_name, {})
                 
             # check if attributes parameter_size and quantization_level are present in benchmark.json
             if not '_parameter_size' in entry and model_dict[model].get('parameter_size', None):
@@ -89,7 +105,7 @@ def main():
             if not '_quantization_level' in entry and model_dict[model].get('quantization_level', None):
                 entry['_quantization_level'] = model_dict[model].get('quantization_level', None)
             entry = dict(sorted(entry.items(), key=lambda item: item[0]))
-            benchmark[model] = entry
+            benchmark[model_benchmark_name] = entry
 
             # write the updated benchmark file
             write_benchmark(benchmark)

@@ -25,7 +25,40 @@ def get_extension(language):
     else:
         raise Exception(f"Unsupported language: {language}")
 
+thinking_remove_tags = [
+    ["<|begin_of_thought|>", "<|end_of_thought|>"],
+    ["<think>", "</think>"],
+    ["<think>", "<|im_start|>"],
+    ["<thinking>", "</thinking>"],
+    ["<thought>", "</thought>"],
+    ["<Thought>", "</Thought>"],
+    ["<reason>", "</reason>"],
+    ["<reasoning>", "</reasoning>"]
+]
+
+thinking_keep_tags = [
+    ["<|begin_of_solution|>", "<|end_of_solution|>"]
+]
+
 def extract_code_block(markdown_content, language, extension):
+    # remove thinking parts from the markdown content
+    for tag_pair in thinking_remove_tags:
+        start_tag, end_tag = tag_pair
+        start = markdown_content.find(start_tag)
+        if start != -1:
+            end = markdown_content.find(end_tag, start)
+            if end != -1:
+                # remove everything from the beginning of the text to the end of the thought
+                markdown_content = markdown_content[end + len(end_tag):]
+    for tag_pair in thinking_keep_tags:
+        start_tag, end_tag = tag_pair
+        start = markdown_content.find(start_tag)
+        if start != -1:
+            end = markdown_content.find(end_tag, start)
+            if end != -1:
+                # now we want to keep what is between the two tags
+                markdown_content = markdown_content[start + len(start_tag):end]
+
     # Regular expression to find code blocks between triple backticks
     code_block_pattern = re.compile(r'```(.*?)```', re.DOTALL)
 

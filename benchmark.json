@@ -91,7 +91,7 @@
         "_context_size": 128,
         "_parameter_size": 72.7,
         "_quantization_level": 4,
-        "clojure-100": 0.0,
+        "clojure-100": 1.83,
         "java-100": 11.19,
         "python-100": 14.07,
         "rust-100": 6.55
@@ -148,6 +148,15 @@
         "java-100": 8.54,
         "python-100": 13.45,
         "rust-100": 7.34
+    },
+    "qwen3:235b-a22b-q4_K_M-no_think": {
+        "_context_size": 128,
+        "_parameter_size": 235.1,
+        "_quantization_level": 4,
+        "java-100": 15.17,
+        "python-100": 13.27,
+        "rust-100": 3.33,
+        "clojure-100": 2.35
     },
     "qwen2.5:72b-instruct-q8_0": {
         "_context_size": 128,
@@ -233,7 +242,7 @@
     "cogito:32b-v1-preview-qwen-q4_K_M": {
         "_parameter_size": 32.8,
         "_quantization_level": 4,
-        "clojure-100": 0.0,
+        "clojure-100": 1.19,
         "java-100": 7.12,
         "python-100": 11.32,
         "rust-100": 5.26
@@ -247,11 +256,19 @@
         "python-100": 11.08,
         "rust-100": 4.32
     },
+    "qwen3:14b-q4_K_M-no_think": {
+        "_parameter_size": 14.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.86,
+        "java-100": 6.37,
+        "python-100": 10.94,
+        "rust-100": 2.99
+    },
     "qwen3:32b-q4_K_M-no_think": {
         "_context_size": 128,
         "_parameter_size": 32.8,
         "_quantization_level": 4,
-        "clojure-100": 0.0,
+        "clojure-100": 1.07,
         "java-100": 8.94,
         "python-100": 10.25,
         "rust-100": 3.93
@@ -430,6 +447,7 @@
     "qwen3:30b-a3b-q4_K_M-think": {
         "_parameter_size": 30.5,
         "_quantization_level": 4,
+        "clojure-100": 1.17,
         "java-100": 5.59,
         "python-100": 8.3,
         "rust-100": 4.32
@@ -447,7 +465,7 @@
         "_context_size": 128,
         "_parameter_size": 30.5,
         "_quantization_level": 4,
-        "clojure-100": 0.0,
+        "clojure-100": 0.97,
         "java-100": 8.01,
         "python-100": 8.22,
         "rust-100": 5.11
@@ -483,10 +501,18 @@
         "_context_size": 128,
         "_parameter_size": 14.8,
         "_quantization_level": 4,
-        "clojure-100": 0.0,
+        "clojure-100": 0.91,
         "java-100": 5.89,
         "python-100": 7.9,
         "rust-100": 3.41
+    },
+    "qwen3:4b-q4_K_M-think": {
+        "_parameter_size": 4.0,
+        "_quantization_level": 4,
+        "clojure-100": 0.91,
+        "java-100": 4.61,
+        "python-100": 7.89,
+        "rust-100": 2.73
     },
     "hf.co/bartowski/Qwen2.5-14B-Instruct-1M-GGUF:Q4_K_M": {
         "_context_size": 986,
@@ -510,7 +536,7 @@
         "_context_size": 128,
         "_parameter_size": 70.6,
         "_quantization_level": 4,
-        "clojure-100": 0.0,
+        "clojure-100": 0.86,
         "java-100": 7.26,
         "python-100": 7.7,
         "rust-100": 3.54
@@ -578,6 +604,14 @@
         "python-100": 7.26,
         "rust-100": 4.49
     },
+    "qwen3:14b-q4_K_M-think": {
+        "_parameter_size": 14.8,
+        "_quantization_level": 4,
+        "clojure-100": 1.51,
+        "java-100": 7.5,
+        "python-100": 7.16,
+        "rust-100": 4.66
+    },
     "gemma3:27b": {
         "_context_size": 128,
         "_parameter_size": 27.4,
@@ -618,7 +652,7 @@
         "_context_size": 128,
         "_parameter_size": 8.2,
         "_quantization_level": 4,
-        "clojure-100": 0.0,
+        "clojure-100": 0.51,
         "java-100": 4.84,
         "python-100": 6.98,
         "rust-100": 1.92
@@ -784,6 +818,22 @@
         "python-100": 5.78,
         "rust-100": 4.22
     },
+    "qwen3:32b-q4_K_M-think": {
+        "_parameter_size": 32.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.19,
+        "java-100": 6.75,
+        "python-100": 5.78,
+        "rust-100": 4.78
+    },
+    "qwen3:8b-q4_K_M-think": {
+        "_parameter_size": 8.2,
+        "_quantization_level": 4,
+        "clojure-100": 1.27,
+        "java-100": 6.48,
+        "python-100": 5.69,
+        "rust-100": 4.77
+    },
     "llama3.2-vision:90b-instruct-q4_K_M": {
         "_parameter_size": 87.7,
         "_quantization_level": 4,
@@ -796,7 +846,7 @@
         "_context_size": 32,
         "_parameter_size": 4.0,
         "_quantization_level": 4,
-        "clojure-100": 0.0,
+        "clojure-100": 0.38,
         "java-100": 3.72,
         "python-100": 5.44,
         "rust-100": 1.71
@@ -814,7 +864,7 @@
         "_context_size": 128,
         "_parameter_size": 24.0,
         "_quantization_level": 4,
-        "clojure-100": 0.0,
+        "clojure-100": 1.0,
         "java-100": 4.38,
         "python-100": 5.31,
         "rust-100": 3.07
@@ -1012,8 +1062,8 @@
         "_context_size": 32,
         "_parameter_size": 2.0,
         "_quantization_level": 4,
-        "clojure-100": 0.0,
-        "java-100": 0.93,
+        "clojure-100": 0.04,
+        "java-100": 0.94,
         "python-100": 3.97,
         "rust-100": 0.48
     },
@@ -1155,8 +1205,10 @@
         "_context_size": 128,
         "_parameter_size": 235.1,
         "_quantization_level": 4,
+        "clojure-100": 0.25,
         "java-100": 2.27,
-        "python-100": 2.86
+        "python-100": 2.86,
+        "rust-100": 2.17
     },
     "hf.co/katanemo/Arch-Function-3B.gguf:Q4_K_M": {
         "_context_size": 32,
@@ -2099,12 +2151,6 @@
         "java-100": 0.0,
         "python-100": 0.01,
         "rust-100": 0.0
-    },
-    "qwen3:235b-a22b-q4_K_M-no_think": {
-        "_context_size": 128,
-        "_parameter_size": 235.1,
-        "_quantization_level": 4,
-        "java-100": 15.17
     },
     "deepseek-coder:1.3b-instruct-q8_0": {
         "_context_size": 16,

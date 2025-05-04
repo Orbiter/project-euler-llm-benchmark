@@ -596,6 +596,15 @@
         "python-100": 7.04,
         "rust-100": 3.6
     },
+    "hf.co/Tesslate/Tessa-Rust-T1-7B-Q8_0-GGUF:Q8_0": {
+        "_context_size": 32,
+        "_parameter_size": 7.62,
+        "_quantization_level": 8,
+        "clojure-100": 0.86,
+        "java-100": 5.0,
+        "python-100": 7.04,
+        "rust-100": 4.84
+    },
     "hf.co/bartowski/Athene-70B-GGUF:Q4_K_M": {
         "_context_size": 8,
         "_parameter_size": 70.6,
@@ -631,6 +640,15 @@
         "python-100": 6.78,
         "rust-100": 3.55
     },
+    "hf.co/Tesslate/Synthia-S1-27b-Q4_K_M-GGUF:Q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 27.0,
+        "_quantization_level": 4,
+        "clojure-100": 0.53,
+        "java-100": 2.21,
+        "python-100": 6.78,
+        "rust-100": 3.19
+    },
     "falcon3:7b-instruct-q8_0": {
         "_context_size": 32,
         "_parameter_size": 7.5,
@@ -639,6 +657,15 @@
         "java-100": 3.91,
         "python-100": 6.76,
         "rust-100": 2.16
+    },
+    "phi4-reasoning:14b-q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 14.7,
+        "_quantization_level": 4,
+        "clojure-100": 3.05,
+        "java-100": 7.73,
+        "python-100": 6.73,
+        "rust-100": 5.2
     },
     "hf.co/bartowski/Qwen2.5-Math-72B-Instruct-GGUF:Q4_K_M": {
         "_context_size": 4,
@@ -774,6 +801,24 @@
         "java-100": 5.13,
         "python-100": 5.78,
         "rust-100": 4.22
+    },
+    "hf.co/Tesslate/UIGEN-T2-7B-Q8_0-GGUF:Q8_0": {
+        "_parameter_size": 7.62,
+        "_quantization_level": 8,
+        "_context_size": 32,
+        "clojure-100": 0.52,
+        "java-100": 3.99,
+        "python-100": 5.73,
+        "rust-100": 3.99
+    },
+    "phi4-reasoning:14b-plus-q4_K_M": {
+        "_parameter_size": 14.7,
+        "_quantization_level": 4,
+        "_context_size": 32,
+        "clojure-100": 2.71,
+        "java-100": 2.48,
+        "python-100": 5.67,
+        "rust-100": 2.3
     },
     "llama3.2-vision:90b-instruct-q4_K_M": {
         "_parameter_size": 87.7,
@@ -1165,7 +1210,7 @@
         "_parameter_size": 7.6,
         "_quantization_level": 4,
         "clojure-100": 0.46,
-        "java-100": 1.08,
+        "java-100": 1.1,
         "python-100": 2.64,
         "rust-100": 0.0
     },
@@ -1173,7 +1218,7 @@
         "_context_size": 128,
         "_parameter_size": 14.8,
         "_quantization_level": 4,
-        "clojure-100": 1.02,
+        "clojure-100": 1.04,
         "java-100": 1.02,
         "python-100": 2.6,
         "rust-100": 1.19
@@ -1230,7 +1275,7 @@
         "clojure-100": 0.33,
         "java-100": 2.86,
         "python-100": 2.43,
-        "rust-100": 0.28
+        "rust-100": 0.31
     },
     "hf.co/mradermacher/HelpingAI-15B-GGUF:Q4_K_M": {
         "_context_size": 4,
@@ -1479,10 +1524,10 @@
         "_context_size": 32,
         "_parameter_size": 32.8,
         "_quantization_level": 4,
-        "clojure-100": 0.45,
+        "clojure-100": 0.53,
         "java-100": 0.32,
         "python-100": 1.54,
-        "rust-100": 0.18
+        "rust-100": 0.58
     },
     "Bio-Medical-Llama-3-8B-GGUF:Q8_0": {
         "_context_size": 8,
@@ -2167,5 +2212,14 @@
         "_context_size": 128,
         "_parameter_size": 235.1,
         "_quantization_level": 4
+    },
+    "phi4-mini-reasoning:3.8b-q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 3.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.0,
+        "python-100": 0.0,
+        "rust-100": 0.0
     }
 }

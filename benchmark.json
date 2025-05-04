@@ -845,7 +845,6 @@
         "python-100": 5.78,
         "rust-100": 4.22
     },
-<<<<<<< HEAD
     "qwen3:32b-q4_K_M-think": {
         "_parameter_size": 32.8,
         "_quantization_level": 4,
@@ -861,7 +860,7 @@
         "java-100": 6.48,
         "python-100": 5.69,
         "rust-100": 4.77
-=======
+    },
     "hf.co/Tesslate/UIGEN-T2-7B-Q8_0-GGUF:Q8_0": {
         "_parameter_size": 7.62,
         "_quantization_level": 8,
@@ -879,7 +878,6 @@
         "java-100": 2.48,
         "python-100": 5.67,
         "rust-100": 2.3
->>>>>>> c0faa73ef79aed4e9e0edb05a10d2203bbc6dc59
     },
     "llama3.2-vision:90b-instruct-q4_K_M": {
         "_parameter_size": 87.7,
@@ -2277,18 +2275,6 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
-<<<<<<< HEAD
-=======
-    },
-    "qwen3:1.7b-q4_K_M-think": {
-        "_context_size": 32,
-        "_parameter_size": 2.0,
-        "_quantization_level": 4
-    },
-    "qwen3:235b-a22b-q4_K_M-think": {
-        "_context_size": 128,
-        "_parameter_size": 235.1,
-        "_quantization_level": 4
     },
     "phi4-mini-reasoning:3.8b-q4_K_M": {
         "_context_size": 128,
@@ -2298,6 +2284,5 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
->>>>>>> c0faa73ef79aed4e9e0edb05a10d2203bbc6dc59
     }
 }

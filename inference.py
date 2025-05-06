@@ -273,7 +273,9 @@ def process_problem_files(problems_dir, template_content, endpoints, language, m
 
 def main():
     parser = ArgumentParser(description="Process Euler problems and send them to an LLM.")
-    parser.add_argument('--api_base', required=False, default='http://localhost:11434', help='API base URL for the LLM, default is http://localhost:11434')
+    parser.add_argument('--api', action='append', help="Specify (multiple) backend OpenAI API endpoints (i.e. ollama); can be used multiple times")
+    parser.add_argument('--api_base', required=False, default='http://localhost:11434', help='API base URL for the LLM or a list of such urls (comma-separated), default is http://localhost:11434')
+    parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     parser.add_argument('--allmodels', action='store_true', help='loop over all models provided by ollama and run those which are missing in benchmark.json')
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
     parser.add_argument('--think', action='store_true', help='if set, the prompt will get an additional "/think" appended at the end')
@@ -281,15 +283,14 @@ def main():
     parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the languages to test, default is python,java,rust,clojure')
     parser.add_argument('--overwrite_existing', action='store_true', help='if set, re-calculate all problems that already have an answer')
     parser.add_argument('--overwrite_failed', action='store_true', help='if set, re-calculate those problems with wrong answers')
-    parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     parser.add_argument('--n100', action='store_true', help='only 100 problems') # this is the default
     parser.add_argument('--n200', action='store_true', help='only 200 problems')
     parser.add_argument('--n400', action='store_true', help='only 400 problems')
     parser.add_argument('--nall', action='store_true', help='all problems')
 
     args = parser.parse_args()
-
-    api_base = args.api_base.split(",") if "," in args.api_base else [args.api_base]
+    
+    api_base = args.api if args.api else args.api_base.split(",") if "," in args.api_base else [args.api_base]
     model_name = args.model
     language = args.language
     max_problem_number = 100

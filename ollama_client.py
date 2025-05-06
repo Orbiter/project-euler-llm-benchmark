@@ -8,58 +8,61 @@ from PIL import Image
 from io import BytesIO
 from argparse import ArgumentParser
 
-
-def ollama_list(api_base='http://localhost:11434') -> dict:
-    # call api http://localhost:11434/api/tags with http get request
+def ollama_pull(api_base='http://localhost:11434', model='llama3.2:latest') -> bool:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    endpoint = f"{api_base}/api/tags"
-    response = requests.get(endpoint, verify=False)
+    response = requests.request("POST", f"{api_base}/api/pull", verify=False,
+                                headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
+                                json={"model": model, "stream": False})
     response.raise_for_status()
     data = response.json()
-    models_list = data['models']
-    models_dict = {}
-    for entry in models_list:
-        # get parameter_size and quantization_level from data
-        model = entry['model']
-        details = entry['details']
-        attr = {}
-        parameter_size = details['parameter_size']
-        quantization_level = details['quantization_level']
-        parameter_size = parameter_size[:-1]
-        try:
-            parameter_size = float(parameter_size)
-            attr['parameter_size'] = parameter_size
-        except ValueError:
-            pass
-        quantization_level_char = quantization_level[1:2]
-        try:
-            quantization_level = int(quantization_level_char)
-            attr['quantization_level'] = quantization_level
-        except ValueError:
-            pass
-        models_dict[model] = attr
-    return models_dict
+    return not data.get("error", False)
+
+def ollama_delete(api_base='http://localhost:11434', model='llama3.2:latest') -> bool:
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
+    response = requests.request("DELETE", f"{api_base}/api/delete", verify=False,
+                                headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
+                                json={"model": model})
+    return response.status_code == 200
+
+def ollama_list(api_base='http://localhost:11434') -> dict:
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.get(f"{api_base}/api/tags", verify=False)
+    response.raise_for_status()
+    data = response.json()
+    return {
+        entry['model']: {
+            'parameter_size': entry['details']['parameter_size'][:-1],
+            'quantization_level': entry['details']['quantization_level'][1:2]
+        }
+        for entry in data['models']
+    }
 
 def ollama_chat_endpoints(api_base='http://localhost:11434', model_name='llama3.2:latest') -> dict:
-    # check if api_base is a string
-    if isinstance(api_base, str):
-        endpoint = {
-            "name": model_name,
-            "model": model_name,
-            "key": "",
-            "endpoints": [f"{api_base}/v1/chat/completions"],
-        }
-        return endpoint
-    # check if api_base is a list of strings
-    if isinstance(api_base, list):
-        endpoint = {
-            "name": model_name,
-            "model": model_name,
-            "key": "",
-            "endpoints": [f"{api_stub}/v1/chat/completions" for api_stub in api_base],
-        }
-        return endpoint
-    return {}
+    if isinstance(api_base, str): api_base = [api_base]
+    
+    # check if the endpoint servers are online and the model is available
+    for api_stub in api_base:
+        try:
+            list = ollama_list(api_stub)
+            if model_name not in list:
+                # pull the model if it is not available
+                print(f"Model {model_name} is not available on server {api_stub}. Pulling the model...")
+                ollama_pull(api_stub, model_name)
+                print(f"Model {model_name} is now available on server {api_stub}.")
+        except Exception as e:
+            # the server is not available
+            # remove the server from the list
+            print(f"Server {api_stub} is not available: {e}")
+            api_base.remove(api_stub)
+
+    # return the endpoint object with the model name    
+    return {
+        "name": model_name,
+        "model": model_name,
+        "key": "",
+        "endpoints": [f"{api_stub}/v1/chat/completions" for api_stub in api_base],
+    }
 
 def hex2base64(hex_string) -> str:
     return base64.b64encode(bytes.fromhex(hex_string)).decode('utf-8')

@@ -809,6 +809,15 @@
         "python-100": 6.14,
         "rust-100": 2.28
     },
+    "llama4:17b-scout-16e-instruct-q4_K_M": {
+        "_context_size": 10240,
+        "_parameter_size": 109,
+        "_quantization_level": 4,
+        "java-100": 3.16,
+        "rust-100": 1.99,
+        "python-100": 6.07,
+        "clojure-100": 1.58
+    },
     "hf.co/smirki/UIGEN-T1.1-Qwen-7B-Q4_K_M-GGUF:latest": {
         "_context_size": 32,
         "_parameter_size": 7.62,
@@ -853,14 +862,6 @@
         "python-100": 5.78,
         "rust-100": 4.78
     },
-    "qwen3:8b-q4_K_M-think": {
-        "_parameter_size": 8.2,
-        "_quantization_level": 4,
-        "clojure-100": 1.27,
-        "java-100": 6.48,
-        "python-100": 5.69,
-        "rust-100": 4.77
-    },
     "hf.co/Tesslate/UIGEN-T2-7B-Q8_0-GGUF:Q8_0": {
         "_parameter_size": 7.62,
         "_quantization_level": 8,
@@ -869,6 +870,14 @@
         "java-100": 3.99,
         "python-100": 5.73,
         "rust-100": 3.99
+    },
+    "qwen3:8b-q4_K_M-think": {
+        "_parameter_size": 8.2,
+        "_quantization_level": 4,
+        "clojure-100": 1.27,
+        "java-100": 6.48,
+        "python-100": 5.69,
+        "rust-100": 4.77
     },
     "phi4-reasoning:14b-plus-q4_K_M": {
         "_parameter_size": 14.7,

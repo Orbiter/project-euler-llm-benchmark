@@ -44,6 +44,7 @@ def ollama_chat_endpoints(api_base='http://localhost:11434', model_name='llama3.
     # check if the endpoint servers are online and the model is available
     for api_stub in api_base:
         try:
+            print(f"Loading model list from server {api_stub} to check for model {model_name}...")
             list = ollama_list(api_stub)
             if model_name not in list:
                 # pull the model if it is not available

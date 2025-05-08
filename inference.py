@@ -11,7 +11,7 @@ from typing import List, Dict, Optional
 from benchmark import read_benchmark
 from ollama_client import ollama_list, ollama_chat_endpoints, ollama_chat, test_multimodal
 
-busy_waiting_time = 5 # seconds
+busy_waiting_time = 1 # seconds
 
 class ServerStatus(Enum):
     AVAILABLE = auto()

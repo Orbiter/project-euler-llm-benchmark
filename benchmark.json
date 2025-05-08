@@ -1157,6 +1157,14 @@
         "python-100": 3.76,
         "rust-100": 0.17
     },
+    "hf.co/jedisct1/MiMo-7B-RL-GGUF:Q4_K_M": {
+        "_parameter_size": 7,
+        "_quantization_level": 4,
+        "python-100": 3.74,
+        "java-100": 1.94,
+        "rust-100": 0.13,
+        "clojure-100": 0.0
+    },
     "hf.co/bartowski/Yi-1.5-6B-Chat-GGUF:Q4_K_M": {
         "_context_size": 4,
         "_parameter_size": 6.06,

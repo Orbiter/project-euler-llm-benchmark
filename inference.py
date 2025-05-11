@@ -97,7 +97,7 @@ class LoadBalancer:
                 "endpoints": [server.endpoint]  # Note: This must be a list
             }
             
-            print(f"Processing problem {task.data["problem_number"]}, language {task.data["language"]} on {server.endpoint} with model {task.data['model']}")
+            #print(f"Processing problem {task.data["problem_number"]}, language {task.data["language"]} on {server.endpoint} with model {task.data['model']}")
             t0 = time.time()
             answer, total_tokens, token_per_second = ollama_chat(
                 endpoint, 

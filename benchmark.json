@@ -390,6 +390,15 @@
         "python-100": 9.06,
         "rust-100": 3.52
     },
+    "hf.co/gaianet/Seed-Coder-8B-Instruct-GGUF:Q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 8,
+        "_quantization_level": 4,
+        "python-100": 9.0,
+        "java-100": 4.99,
+        "rust-100": 4.09,
+        "clojure-100": 1.81
+    },
     "llama3.3:70b-instruct-q8_0": {
         "_context_size": 128,
         "_parameter_size": 70.6,
@@ -929,7 +938,10 @@
         "_parameter_size": 7.62,
         "_quantization_level": 4,
         "_context_size": 32,
-        "python-100": 5.53
+        "python-100": 5.53,
+        "java-100": 2.99,
+        "rust-100": 2.08,
+        "clojure-100": 0.52
     },
     "qwen3:4b-q4_K_M-no_think": {
         "_context_size": 32,
@@ -1029,6 +1041,15 @@
         "java-100": 3.0,
         "python-100": 4.87,
         "rust-100": 1.18
+    },
+    "hf.co/bartowski/cognitivecomputations_Dolphin-Mistral-24B-Venice-Edition-GGUF:Q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 24.0,
+        "_quantization_level": 4,
+        "python-100": 4.78,
+        "java-100": 3.2,
+        "rust-100": 2.18,
+        "clojure-100": 1.21
     },
     "qwen2.5-coder:7b-instruct-q4_K_M": {
         "_context_size": 32,

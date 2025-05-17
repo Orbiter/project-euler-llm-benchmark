@@ -1,12 +1,17 @@
 import os
 import json
 import time
+import queue
 import base64
 import urllib3
 import requests
+import threading
 from PIL import Image
 from io import BytesIO
+from enum import Enum, auto
+from dataclasses import dataclass
 from argparse import ArgumentParser
+from typing import List, Dict, Optional
 
 def ollama_pull(api_base='http://localhost:11434', model='llama3.2:latest') -> bool:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -68,7 +73,26 @@ def ollama_chat_endpoints(api_base='http://localhost:11434', model_name='llama3.
 def hex2base64(hex_string) -> str:
     return base64.b64encode(bytes.fromhex(hex_string)).decode('utf-8')
 
-def ollama_chat(endpoints, prompt='Hello World', base64_image=None, temperature=0.0, max_tokens=8192) -> tuple:
+def ollama_chat(
+    endpoint,
+    prompt: str = 'Hello World',
+    base64_image: str = None,
+    temperature: float = 0.0,
+    max_tokens: int = 8192
+) -> tuple[str, int, float]:
+    """
+    Function to interact with the Ollama API for chat completions.
+    
+    Args:
+        endpoint (dict): Dictionary containing endpoint information.
+        prompt (str): The prompt to send to the model.
+        base64_image (str): Base64 encoded image string (optional).
+        temperature (float): Temperature for randomness in response.
+        max_tokens (int): Maximum number of tokens for the response.
+        
+    Returns:
+        tuple: A tuple containing the model's response, total tokens used, and tokens per second.
+    """
 
     # Disable SSL warnings
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -81,10 +105,10 @@ def ollama_chat(endpoints, prompt='Hello World', base64_image=None, temperature=
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
-    if endpoints.get("key", ""):
-        headers['Authorization'] = 'Bearer ' + endpoints["key"]
+    if endpoint.get("key", ""):
+        headers['Authorization'] = 'Bearer ' + endpoint["key"]
 
-    modelname = endpoints["model"]
+    modelname = endpoint["model"]
     messages = []
     messages.append({"role": "system", "content": "You are a helpful assistant"})
     
@@ -144,42 +168,53 @@ def ollama_chat(endpoints, prompt='Hello World', base64_image=None, temperature=
     else:
         payload["max_tokens"] = max_tokens
 
-    try:
-        #print(payload)
-        t0 = time.time()
-        response = requests.post(endpoints["endpoints"][0], headers=headers, json=payload, verify=False)
-        t1 = time.time()
-        #print(response)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        # print(f"Failed to access api: {e}")
-        # Get the error message from the response
-        if response:
-            try:
-                #print(response.text)
-                data = response.json()
-                message = data.get('message', {})
-                content = message.get('content', '')
-                raise Exception(f"API request failed: {content}")
-            except json.JSONDecodeError:
-                raise Exception(f"API request failed: {e}")
+    # use the endpoints array as failover mechanism
+    endpoint_url_list = endpoint["endpoints"]
+    failure_exception = Exception("No endpoint available or failure without exception")
+    for failover_count in range(len(endpoint_url_list)):
+        try:
+            #print(payload)
+            t0 = time.time()
+            response = requests.post(endpoint["endpoints"][failover_count], headers=headers, json=payload, verify=False)
+            t1 = time.time()
+            #print(response)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            # print(f"Failed to access api: {e}")
+            # Get the error message from the response
+            if response:
+                try:
+                    #print(response.text)
+                    data = response.json()
+                    message = data.get('message', {})
+                    content = message.get('content', '')
+                    failure_exception = Exception(f"API request failed: {content}")
+                    continue
+                except json.JSONDecodeError:
+                    failure_exception = Exception(f"API request failed: {e}")
+                    continue
 
-    # Parse the response
-    try:
-        #print(response.text)
-        data = response.json()
-        usage = data.get('usage', {})
-        total_tokens = usage.get('total_tokens', 0)
-        token_per_second = total_tokens / (t1 - t0)
-        #print(f"Total tokens: {total_tokens}, tokens per second: {token_per_second:.2f}")
-        choices = data.get('choices', [])
-        if len(choices) == 0:
-            raise Exception("No response from the API: " + str(data))
-        message = choices[0].get('message', {})
-        answer = message.get('content', '')
-        return answer, total_tokens, token_per_second
-    except json.JSONDecodeError as e:
-        raise Exception(f"Failed to parse JSON response from the API: {e}")
+        # Parse the response
+        try:
+            #print(response.text)
+            data = response.json()
+            usage = data.get('usage', {})
+            total_tokens = usage.get('total_tokens', 0)
+            token_per_second = total_tokens / (t1 - t0)
+            #print(f"Total tokens: {total_tokens}, tokens per second: {token_per_second:.2f}")
+            choices = data.get('choices', [])
+            if len(choices) == 0:
+                failure_exception = Exception("No response from the API: " + str(data))
+                continue
+            message = choices[0].get('message', {})
+            answer = message.get('content', '')
+            return answer, total_tokens, token_per_second
+        except json.JSONDecodeError as e:
+            failure_exception = Exception(f"Failed to parse JSON response from the API: {e}")
+            continue
+
+    # If we reach here, all endpoints failed
+    raise failure_exception
 
 multimodal_cache = {}
 
@@ -201,6 +236,190 @@ def test_multimodal(endpoints) -> bool:
         return result
     except Exception as e:
         return False
+
+
+busy_waiting_time = 1 # seconds
+
+
+class ServerStatus(Enum):
+    """
+    Enum for server status.
+    This enum is used to track the status of each server in the load balancer.
+    The status can be either AVAILABLE or BUSY.
+    This is used to manage the load balancing of tasks across multiple servers.
+    The load balancer will only assign tasks to servers that are AVAILABLE.
+    The status of each server is updated as tasks are assigned and completed.
+    The status is also used to track the current task being processed by each server.
+
+    Args:
+        Enum (_type_): _description_
+    """
+    AVAILABLE = auto()
+    BUSY = auto()
+
+@dataclass
+class Task:
+    """
+    Dataclass for task.
+    This dataclass is used to represent a task that needs to be processed by a server.
+    Each task has an ID and a dictionary of data that contains the actual task data.
+    """
+    id: int               # Unique identifier for the task
+    description: str      # a short description of the task (for logging)
+    model_name: str       # the model storage name
+    model: str            # the actual model name
+    prompt: str           # the prompt to be sent to the model
+    base64_image: str     # the base64 encoded image to be sent to the model
+    result_file_path: str # the path to the file where the result will be saved
+
+@dataclass
+class Server:
+    """
+    Dataclass for server.
+    This dataclass is used to represent a server that can process tasks.
+    Each server has an ID, an endpoint (URL), and a status that indicates whether the server is available or busy.
+    The status is used to track the current task being processed by the server.
+    """
+    id: int # Unique identifier for the server
+    endpoint: str # The endpoint (URL) of the server
+    status: ServerStatus = ServerStatus.AVAILABLE # The status of the server (available or busy)
+    current_task: Task = None  # Track the current task being processed
+
+class LoadBalancer:
+    """
+    LoadBalancer class for managing task distribution across multiple servers.
+    This class is responsible for distributing tasks to available servers and managing their status.
+    - It uses a queue to manage tasks and a list of servers to distribute the load.
+    - It will only assign tasks to servers that are AVAILABLE.
+    - It implements backpressure to prevent overloading the servers.
+    - It will wait for a server to become available before assigning a new task.
+    - It will also retry failed tasks after a short delay.
+    - The status of each server is updated as tasks are assigned and completed.
+    """
+    def __init__(self, servers: List[Server], max_queue_size: int = 1000):
+        self.servers = servers
+        self.task_queue = queue.Queue(maxsize=max_queue_size)
+        self.available_servers = queue.Queue(maxsize=len(servers))
+        self.lock = threading.Lock()
+        self.results = {}
+        
+        # Initialize available servers queue
+        for server in servers:
+            self.available_servers.put(server)
+        
+    def add_task(self, task: Task):
+        """Add a task to the processing queue with backpressure"""
+        try:
+            self.task_queue.put(task, block=True, timeout=1)
+            return True
+        except queue.Full:
+            print("Task queue full - applying backpressure")
+            return False
+    
+    def mark_server_available(self, server: Server):
+        """Mark a server as available for new tasks"""
+        with self.lock:
+            server.status = ServerStatus.AVAILABLE
+            server.current_task = None
+            self.available_servers.put(server)
+    
+    def get_available_server(self, timeout: float = 10.0) -> Optional[Server]:
+        """Get the next available server with timeout"""
+        try:
+            return self.available_servers.get(timeout=timeout)
+        except queue.Empty:
+            return None
+    
+    def assign_task_to_server(self, task: Task, server: Server):
+        """Assign task to server and mark it as busy"""
+        with self.lock:
+            server.status = ServerStatus.BUSY
+            server.current_task = task
+        
+        threading.Thread(
+            target=self.process_task_remote,
+            args=(server,),
+            daemon=True
+        ).start()
+    
+    def process_task_remote(self, server: Server):
+        """Process task on remote server"""
+        task = server.current_task
+        try:
+            print(f"Processing task ID {task.id} on server {server.endpoint} with model {task.model}")
+            
+            t0 = time.time()
+            answer, total_tokens, token_per_second = ollama_chat(
+                {"name": task.model_name, "model": task.model, "key": "", "endpoints": [server.endpoint]}, 
+                task.prompt, 
+                base64_image=task.base64_image
+            )
+            t1 = time.time()
+            print(f"Processed {task.description}, on {server.endpoint} with model {task.model} in {t1 - t0:.2f} seconds with {total_tokens} tokens ({token_per_second:.2f} tokens/sec)")
+            
+            # Save the response to a file
+            with open(task.result_file_path, 'w', encoding='utf-8') as result_file:
+                result_file.write(answer)
+            
+            # Store result and mark server available
+            with self.lock:
+                self.results[task.id] = answer
+            self.mark_server_available(server)
+                
+        except Exception as e:
+            # write a stack trace to std out
+            import traceback
+            traceback.print_exc()
+            # Log the error and mark server available
+            error_msg = f"Failed to process task ID {task.id} on {server.endpoint}: {str(e)}"
+            if hasattr(e, 'response'):
+                try:
+                    error_details = e.response.json()
+                    error_msg += f" | API Response: {error_details}"
+                except:
+                    error_msg += f" | Raw Response: {e.response.text}"
+            print(error_msg)
+            
+            # Requeue the task if there was an error
+            if task.id not in self.results:  # Only retry if not already succeeded
+                self.add_task(task)
+            self.mark_server_available(server)
+    
+    def start_distribution(self):
+        """Start the task distribution process"""
+        def distributor():
+            while True:
+                task = self.task_queue.get()
+                assigned = False
+                
+                while not assigned:
+                    server = self.get_available_server()
+                    if server:
+                        self.assign_task_to_server(task, server)
+                        assigned = True
+                    else:
+                        # All servers busy, wait and try again
+                        time.sleep(busy_waiting_time)
+                
+                self.task_queue.task_done()
+        
+        # Start distributor thread
+        threading.Thread(target=distributor, daemon=True).start()
+    
+    def wait_completion(self):
+        """Wait for all tasks to be processed"""
+        self.task_queue.join()
+        # Wait for all servers to finish their current tasks
+        print("Waiting for all servers to finish processing...")
+        while any(s.current_task != None for s in self.servers):
+            time.sleep(busy_waiting_time)
+            print("Still waiting for servers to finish...")
+            # print out the current status of all servers
+            for server in self.servers:
+                if server.current_task:
+                    print(f"Server {server.endpoint} - Status: {server.status.name}, Current task ID: {server.current_task.id}")
+
+        print("All servers finished processing.")
 
 def main():
     parser = ArgumentParser(description="Testing the ollama API.")

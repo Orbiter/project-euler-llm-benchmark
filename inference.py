@@ -1,175 +1,10 @@
 import os
 import json
 import time
-import queue
 import base64
-import threading
-from enum import Enum, auto
-from dataclasses import dataclass
 from argparse import ArgumentParser
-from typing import List, Dict, Optional
 from benchmark import read_benchmark
-from ollama_client import ollama_list, ollama_chat_endpoints, ollama_chat, test_multimodal
-
-busy_waiting_time = 1 # seconds
-
-class ServerStatus(Enum):
-    AVAILABLE = auto()
-    BUSY = auto()
-
-@dataclass
-class Task:
-    id: int
-    data: dict  # The actual task data to be processed
-
-@dataclass
-class Server:
-    id: int
-    endpoint: str
-    status: ServerStatus = ServerStatus.AVAILABLE
-    current_task: Task = None  # Track the current task being processed
-
-class LoadBalancer:
-    def __init__(self, servers: List[Server], max_queue_size: int = 1000):
-        self.servers = servers
-        self.task_queue = queue.Queue(maxsize=max_queue_size)
-        self.available_servers = queue.Queue(maxsize=len(servers))
-        self.lock = threading.Lock()
-        self.results = {}
-        
-        # Initialize available servers queue
-        for server in servers:
-            self.available_servers.put(server)
-        
-    def add_task(self, task: Task):
-        """Add a task to the processing queue with backpressure"""
-        try:
-            self.task_queue.put(task, block=True, timeout=1)
-            return True
-        except queue.Full:
-            print("Task queue full - applying backpressure")
-            return False
-    
-    def mark_server_available(self, server: Server):
-        """Mark a server as available for new tasks"""
-        with self.lock:
-            server.status = ServerStatus.AVAILABLE
-            server.current_task = None
-            self.available_servers.put(server)
-    
-    def get_available_server(self, timeout: float = 10.0) -> Optional[Server]:
-        """Get the next available server with timeout"""
-        try:
-            return self.available_servers.get(timeout=timeout)
-        except queue.Empty:
-            return None
-    
-    def assign_task_to_server(self, task: Task, server: Server):
-        """Assign task to server and mark it as busy"""
-        with self.lock:
-            server.status = ServerStatus.BUSY
-            server.current_task = task
-        
-        threading.Thread(
-            target=self.process_task_remote,
-            args=(server,),
-            daemon=True
-        ).start()
-    
-    def process_task_remote(self, server: Server):
-        """Process task on remote server"""
-        task = server.current_task
-        try:
-            # Construct the prompt using the template
-            prompt = task.data["template_content"].replace('$$$PROBLEM$$$', task.data["problem_content"])
-
-            # attach soft thinking switches if asked
-            if task.data["think"]: 
-                prompt += " /think"
-            if task.data["no_think"]: 
-                prompt += " /no_think"
-            
-            # Create complete endpoint object that ollama_chat expects
-            endpoint = {
-                "name": task.data["model_name"],
-                "model": task.data["model"],
-                "key": "",
-                "endpoints": [server.endpoint]  # Note: This must be a list
-            }
-            
-            #print(f"Processing problem {task.data["problem_number"]}, language {task.data["language"]} on {server.endpoint} with model {task.data['model']}")
-            t0 = time.time()
-            answer, total_tokens, token_per_second = ollama_chat(
-                endpoint, 
-                prompt, 
-                base64_image=task.data["base64_image"]
-            )
-            t1 = time.time()
-            print(f"Processed problem  {task.data["problem_number"]}, language {task.data["language"]} on {server.endpoint} with model {task.data['model']} in {t1 - t0:.2f} seconds with {total_tokens} tokens ({token_per_second:.2f} tokens/sec)")
-            
-            # Save the response to a file
-            with open(task.data["result_file_path"], 'w', encoding='utf-8') as result_file:
-                result_file.write(answer)
-            
-            # Store result and mark server available
-            with self.lock:
-                self.results[task.data["problem_number"]] = answer
-            self.mark_server_available(server)
-                
-        except Exception as e:
-            # write a stack trace to std out
-            import traceback
-            traceback.print_exc()
-            # Log the error and mark server available
-            error_msg = f"Failed to process problem {task.data["problem_number"]} on {server.endpoint}: {str(e)}"
-            if hasattr(e, 'response'):
-                try:
-                    error_details = e.response.json()
-                    error_msg += f" | API Response: {error_details}"
-                except:
-                    error_msg += f" | Raw Response: {e.response.text}"
-            print(error_msg)
-            
-            # Requeue the task if there was an error
-            if task.data["problem_number"] not in self.results:  # Only retry if not already succeeded
-                self.add_task(task)
-            self.mark_server_available(server)
-    
-    def start_distribution(self):
-        """Start the task distribution process"""
-        def distributor():
-            while True:
-                task = self.task_queue.get()
-                assigned = False
-                
-                while not assigned:
-                    server = self.get_available_server()
-                    if server:
-                        self.assign_task_to_server(task, server)
-                        assigned = True
-                    else:
-                        # All servers busy, wait and try again
-                        time.sleep(busy_waiting_time)
-                
-                self.task_queue.task_done()
-        
-        # Start distributor thread
-        threading.Thread(target=distributor, daemon=True).start()
-    
-    def wait_completion(self):
-        """Wait for all tasks to be processed"""
-        self.task_queue.join()
-        # Wait for all servers to finish their current tasks
-        print("Waiting for all servers to finish processing...")
-        while any(s.current_task != None for s in self.servers):
-            time.sleep(busy_waiting_time)
-            print("Still waiting for servers to finish...")
-            # print out the current status of all servers
-            for server in self.servers:
-                if server.current_task:
-                    print(f"Server {server.endpoint} - Status: {server.status.name}, Current Problem: {server.current_task.data["problem_number"]}")
-
-        print("All servers finished processing.")
+from ollama_client import ollama_list, ollama_chat_endpoints, test_multimodal, LoadBalancer, Server, Task
 
 def read_template(template_path):
     with open(template_path, 'r', encoding='utf-8') as file:
@@ -259,7 +94,7 @@ def process_problem_files(problems_dir, template_content, endpoints, language, m
         )    
         while not lb.add_task(task):
             print(f"Waiting to add task {problem_number} - queue full")
-            time.sleep(busy_waiting_time)
+            time.sleep(1)
         print(f"Added problem {problem_number}, language {language}, model {model_name} to processing queue")
 
     # Wait for all tasks to complete
@@ -345,7 +180,7 @@ def main():
                                           think = args.think, no_think = args.no_think)
         else:
             # construct the endpoint object
-            endpoint = {}
+            endpoints = []
             if endpoint_name:
                 print(f"Inference: Using endpoint {endpoint_name} and language {language}")
                 endpoint_path = os.path.join('endpoints', f"{endpoint_name}.json")
@@ -353,7 +188,7 @@ def main():
                 if not os.path.exists(endpoint_path):
                     raise Exception(f"Endpoint file {endpoint_path} does not exist.")
                 with open(endpoint_path, 'r', encoding='utf-8') as file:
-                    endpoint = json.load(file)
+                    endpoints = [json.load(file)]
             else:
                 print(f"Inference: Using model {model_name} and language {language}")
                 # construct the endpoint object from command line arguments considering that ollama is the endpoint

@@ -2420,5 +2420,9 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
+    },
+    "hf.co/mradermacher/Seed-Coder-8B-Instruct-GGUF:Q4_K_M": {
+        "_parameter_size": "8.25",
+        "_quantization_level": "n"
     }
 }

@@ -100,10 +100,10 @@ def main():
                 entry = benchmark.get(model_benchmark_name, {})
                 
             # check if attributes parameter_size and quantization_level are present in benchmark.json
-            if not '_parameter_size' in entry and model_dict[model].get('parameter_size', None):
-                entry['_parameter_size'] = model_dict[model].get('parameter_size', None)
-            if not '_quantization_level' in entry and model_dict[model].get('quantization_level', None):
-                entry['_quantization_level'] = model_dict[model].get('quantization_level', None)
+            if not '_parameter_size' in entry and model_dict.get(model,{}).get('parameter_size', None):
+                entry['_parameter_size'] = model_dict.get(model,{}).get('parameter_size', None)
+            if not '_quantization_level' in entry and model_dict.get(model,{}).get('quantization_level', None):
+                entry['_quantization_level'] = model_dict.get(model,{}).get('quantization_level', None)
             entry = dict(sorted(entry.items(), key=lambda item: item[0]))
             benchmark[model_benchmark_name] = entry
 

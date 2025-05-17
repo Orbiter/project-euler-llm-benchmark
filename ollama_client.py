@@ -74,7 +74,7 @@ def hex2base64(hex_string) -> str:
     return base64.b64encode(bytes.fromhex(hex_string)).decode('utf-8')
 
 def ollama_chat(
-    endpoints,
+    endpoint,
     prompt: str = 'Hello World',
     base64_image: str = None,
     temperature: float = 0.0,
@@ -84,7 +84,7 @@ def ollama_chat(
     Function to interact with the Ollama API for chat completions.
     
     Args:
-        endpoints (dict): Dictionary containing endpoint information.
+        endpoint (dict): Dictionary containing endpoint information.
         prompt (str): The prompt to send to the model.
         base64_image (str): Base64 encoded image string (optional).
         temperature (float): Temperature for randomness in response.
@@ -105,10 +105,10 @@ def ollama_chat(
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
-    if endpoints.get("key", ""):
-        headers['Authorization'] = 'Bearer ' + endpoints["key"]
+    if endpoint.get("key", ""):
+        headers['Authorization'] = 'Bearer ' + endpoint["key"]
 
-    modelname = endpoints["model"]
+    modelname = endpoint["model"]
     messages = []
     messages.append({"role": "system", "content": "You are a helpful assistant"})
     
@@ -168,42 +168,53 @@ def ollama_chat(
     else:
         payload["max_tokens"] = max_tokens
 
-    try:
-        #print(payload)
-        t0 = time.time()
-        response = requests.post(endpoints["endpoints"][0], headers=headers, json=payload, verify=False)
-        t1 = time.time()
-        #print(response)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        # print(f"Failed to access api: {e}")
-        # Get the error message from the response
-        if response:
-            try:
-                #print(response.text)
-                data = response.json()
-                message = data.get('message', {})
-                content = message.get('content', '')
-                raise Exception(f"API request failed: {content}")
-            except json.JSONDecodeError:
-                raise Exception(f"API request failed: {e}")
+    # use the endpoints array as failover mechanism
+    endpoint_url_list = endpoint["endpoints"]
+    failure_exception = Exception("No endpoint available or failure without exception")
+    for failover_count in range(len(endpoint_url_list)):
+        try:
+            #print(payload)
+            t0 = time.time()
+            response = requests.post(endpoint["endpoints"][failover_count], headers=headers, json=payload, verify=False)
+            t1 = time.time()
+            #print(response)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            # print(f"Failed to access api: {e}")
+            # Get the error message from the response
+            if response:
+                try:
+                    #print(response.text)
+                    data = response.json()
+                    message = data.get('message', {})
+                    content = message.get('content', '')
+                    failure_exception = Exception(f"API request failed: {content}")
+                    continue
+                except json.JSONDecodeError:
+                    failure_exception = Exception(f"API request failed: {e}")
+                    continue
 
-    # Parse the response
-    try:
-        #print(response.text)
-        data = response.json()
-        usage = data.get('usage', {})
-        total_tokens = usage.get('total_tokens', 0)
-        token_per_second = total_tokens / (t1 - t0)
-        #print(f"Total tokens: {total_tokens}, tokens per second: {token_per_second:.2f}")
-        choices = data.get('choices', [])
-        if len(choices) == 0:
-            raise Exception("No response from the API: " + str(data))
-        message = choices[0].get('message', {})
-        answer = message.get('content', '')
-        return answer, total_tokens, token_per_second
-    except json.JSONDecodeError as e:
-        raise Exception(f"Failed to parse JSON response from the API: {e}")
+        # Parse the response
+        try:
+            #print(response.text)
+            data = response.json()
+            usage = data.get('usage', {})
+            total_tokens = usage.get('total_tokens', 0)
+            token_per_second = total_tokens / (t1 - t0)
+            #print(f"Total tokens: {total_tokens}, tokens per second: {token_per_second:.2f}")
+            choices = data.get('choices', [])
+            if len(choices) == 0:
+                failure_exception = Exception("No response from the API: " + str(data))
+                continue
+            message = choices[0].get('message', {})
+            answer = message.get('content', '')
+            return answer, total_tokens, token_per_second
+        except json.JSONDecodeError as e:
+            failure_exception = Exception(f"Failed to parse JSON response from the API: {e}")
+            continue
+
+    # If we reach here, all endpoints failed
+    raise failure_exception
 
 multimodal_cache = {}
 
@@ -253,8 +264,13 @@ class Task:
     This dataclass is used to represent a task that needs to be processed by a server.
     Each task has an ID and a dictionary of data that contains the actual task data.
     """
-    id: int
-    data: dict  # The actual task data to be processed
+    id: int               # Unique identifier for the task
+    description: str      # a short description of the task (for logging)
+    model_name: str       # the model storage name
+    model: str            # the actual model name
+    prompt: str           # the prompt to be sent to the model
+    base64_image: str     # the base64 encoded image to be sent to the model
+    result_file_path: str # the path to the file where the result will be saved
 
 @dataclass
 class Server:
@@ -270,6 +286,16 @@ class Server:
     current_task: Task = None  # Track the current task being processed
 
 class LoadBalancer:
+    """
+    LoadBalancer class for managing task distribution across multiple servers.
+    This class is responsible for distributing tasks to available servers and managing their status.
+    - It uses a queue to manage tasks and a list of servers to distribute the load.
+    - It will only assign tasks to servers that are AVAILABLE.
+    - It implements backpressure to prevent overloading the servers.
+    - It will wait for a server to become available before assigning a new task.
+    - It will also retry failed tasks after a short delay.
+    - The status of each server is updated as tasks are assigned and completed.
+    """
     def __init__(self, servers: List[Server], max_queue_size: int = 1000):
         self.servers = servers
         self.task_queue = queue.Queue(maxsize=max_queue_size)
@@ -320,39 +346,24 @@ class LoadBalancer:
         """Process task on remote server"""
         task = server.current_task
         try:
-            # Construct the prompt using the template
-            prompt = task.data["template_content"].replace('$$$PROBLEM$$$', task.data["problem_content"])
-
-            # attach soft thinking switches if asked
-            if task.data["think"]: 
-                prompt += " /think"
-            if task.data["no_think"]: 
-                prompt += " /no_think"
-            
-            # Create complete endpoint object that ollama_chat expects
-            endpoint = {
-                "name": task.data["model_name"],
-                "model": task.data["model"],
-                "key": "",
-                "endpoints": [server.endpoint]  # Note: This must be a list
-            }
+            print(f"Processing task ID {task.id} on server {server.endpoint} with model {task.model}")
             
             t0 = time.time()
             answer, total_tokens, token_per_second = ollama_chat(
-                endpoint, 
-                prompt, 
-                base64_image=task.data["base64_image"]
+                {"name": task.model_name, "model": task.model, "key": "", "endpoints": [server.endpoint]}, 
+                task.prompt, 
+                base64_image=task.base64_image
             )
             t1 = time.time()
-            print(f"Processed problem  {task.data["problem_number"]}, language {task.data["language"]} on {server.endpoint} with model {task.data['model']} in {t1 - t0:.2f} seconds with {total_tokens} tokens ({token_per_second:.2f} tokens/sec)")
+            print(f"Processed {task.description}, on {server.endpoint} with model {task.model} in {t1 - t0:.2f} seconds with {total_tokens} tokens ({token_per_second:.2f} tokens/sec)")
             
             # Save the response to a file
-            with open(task.data["result_file_path"], 'w', encoding='utf-8') as result_file:
+            with open(task.result_file_path, 'w', encoding='utf-8') as result_file:
                 result_file.write(answer)
             
             # Store result and mark server available
             with self.lock:
-                self.results[task.data["problem_number"]] = answer
+                self.results[task.id] = answer
             self.mark_server_available(server)
                 
         except Exception as e:
@@ -360,7 +371,7 @@ class LoadBalancer:
             import traceback
             traceback.print_exc()
             # Log the error and mark server available
-            error_msg = f"Failed to process problem {task.data["problem_number"]} on {server.endpoint}: {str(e)}"
+            error_msg = f"Failed to process task ID {task.id} on {server.endpoint}: {str(e)}"
             if hasattr(e, 'response'):
                 try:
                     error_details = e.response.json()
@@ -370,7 +381,7 @@ class LoadBalancer:
             print(error_msg)
             
             # Requeue the task if there was an error
-            if task.data["problem_number"] not in self.results:  # Only retry if not already succeeded
+            if task.id not in self.results:  # Only retry if not already succeeded
                 self.add_task(task)
             self.mark_server_available(server)
     
@@ -406,7 +417,7 @@ class LoadBalancer:
             # print out the current status of all servers
             for server in self.servers:
                 if server.current_task:
-                    print(f"Server {server.endpoint} - Status: {server.status.name}, Current Problem: {server.current_task.data["problem_number"]}")
+                    print(f"Server {server.endpoint} - Status: {server.status.name}, Current task ID: {server.current_task.id}")
 
         print("All servers finished processing.")
 

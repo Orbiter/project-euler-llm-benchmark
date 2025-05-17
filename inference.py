@@ -10,24 +10,24 @@ def read_template(template_path):
     with open(template_path, 'r', encoding='utf-8') as file:
         return file.read()
 
-def process_problem_files(problems_dir, template_content, endpoints, language, max_problem_number=9999,
+def process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number=9999,
                           overwrite_existing=False, overwrite_failed=False, expected_solutions={},
                           think=False, no_think=False):
-    model_name = endpoints["name"]
+    model_name = endpoint["name"]
     if think: model_name += "-think"
     if no_think: model_name += "-no_think"
-    results_dir = os.path.join('solutions', model_name, language)
-    os.makedirs(results_dir, exist_ok=True)
+    solutions_dir = os.path.join('solutions', model_name, language)
+    os.makedirs(solutions_dir, exist_ok=True)
 
-    # get the solutions as computed so far (may be none at first run)
-    solutions_json_path = os.path.join(results_dir, 'solutions.json') # may not exist yet
+    # get the results as computed so far (may be none at first run)
+    results_json_path = os.path.join(solutions_dir, 'results.json') # may not exist yet
     solutions = {}
-    if os.path.exists(solutions_json_path):
-        with open(solutions_json_path, 'r', encoding='utf-8') as json_file:
+    if os.path.exists(results_json_path):
+        with open(results_json_path, 'r', encoding='utf-8') as json_file:
             solutions = json.load(json_file)
 
     # Create load balancer with all available endpoints
-    server_urls = endpoints["endpoints"]
+    server_urls = endpoint["endpoints"]
     servers = [Server(id=i, endpoint=url) for i, url in enumerate(server_urls)]
     
     lb = LoadBalancer(servers)
@@ -39,7 +39,7 @@ def process_problem_files(problems_dir, template_content, endpoints, language, m
         problem_number = problem_file[:-4]  # Remove .txt extension
         if int(problem_number) > max_problem_number: break
         problem_path = os.path.join(problems_dir, problem_file)
-        result_file_path = os.path.join(results_dir, f"{problem_number}.md")
+        result_file_path = os.path.join(solutions_dir, f"{problem_number}.md")
         
         if not overwrite_existing and not overwrite_failed and os.path.exists(result_file_path):
             print(f"Skipping problem {problem_number} as it already has a solution.")
@@ -69,28 +69,29 @@ def process_problem_files(problems_dir, template_content, endpoints, language, m
         
         # check if the endpoint is multimodal if we have an image
         if base64_image:
-            is_multimodal = test_multimodal(endpoints) # this is cached
+            is_multimodal = test_multimodal(endpoint) # this is cached
             if is_multimodal:
                 print(f"Problem {problem_number} is handled with multimodal model.")
             else:
                 print(f"Problem {problem_number} requires a multimodal model for image processing but the model is not multimodal.")
                 base64_image = None
+
+        # Construct the prompt using the template
+        prompt = template_content.replace('$$$PROBLEM$$$', problem_content)
+
+        # attach soft thinking switches if asked to prompt
+        if think: prompt += " /think"
+        if no_think: prompt += " /no_think"
         
         # Create task and add to load balancer
         task = Task(
-            id=int(problem_number),
-            data={
-                "model_name": model_name, # the model storage name
-                "model": endpoints.get("name", model_name),  # the actual model name
-                "language": language,
-                "problem_number": problem_number,
-                "problem_content": problem_content,
-                "template_content": template_content,
-                "result_file_path": result_file_path,
-                "base64_image": base64_image,
-                "think": think,
-                "no_think": no_think
-            }
+            id = int(problem_number),
+            description = f"problem {problem_number}, language {language}, model {endpoint.get("name", model_name)}",
+            model_name = model_name, # the model storage name
+            model = endpoint.get("name", model_name),  # the actual model name
+            prompt = prompt,
+            base64_image = base64_image,
+            result_file_path = result_file_path
         )    
         while not lb.add_task(task):
             print(f"Waiting to add task {problem_number} - queue full")
@@ -103,7 +104,7 @@ def process_problem_files(problems_dir, template_content, endpoints, language, m
     print("All problems processed!")
 
     # Save solutions to JSON
-    with open(solutions_json_path, 'w', encoding='utf-8') as json_file:
+    with open(results_json_path, 'w', encoding='utf-8') as json_file:
         json.dump(lb.results, json_file, indent=2)
 
 def main():

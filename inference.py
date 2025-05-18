@@ -4,7 +4,7 @@ import time
 import base64
 from argparse import ArgumentParser
 from benchmark import read_benchmark
-from ollama_client import ollama_list, ollama_chat_endpoints, test_multimodal, LoadBalancer, Server, Task
+from ollama_client import ollama_list, ollama_chat_endpoints, test_multimodal, LoadBalancer, Server, Task, Response
 
 def read_template(template_path):
     with open(template_path, 'r', encoding='utf-8') as file:
@@ -28,12 +28,12 @@ def process_problem_files(problems_dir, template_content, endpoint, language, ma
 
     # Create load balancer with all available endpoints
     server_urls = endpoint["endpoints"]
-    servers = [Server(id=i, endpoint=url) for i, url in enumerate(server_urls)]
+    servers = [Server(endpoint=url) for i, url in enumerate(server_urls)]
     
     lb = LoadBalancer(servers)
     lb.start_distribution()
 
-    # iterate over all problem files
+    # iterate over all problem files and process them
     for problem_file in sorted(os.listdir(problems_dir)):
         if problem_file.startswith('.') or not problem_file.endswith('.txt'): continue
         problem_number = problem_file[:-4]  # Remove .txt extension
@@ -82,16 +82,22 @@ def process_problem_files(problems_dir, template_content, endpoint, language, ma
         # attach soft thinking switches if asked to prompt
         if think: prompt += " /think"
         if no_think: prompt += " /no_think"
-        
+
+        def save_solution(resonse: Response):
+            # Save the solution to a file
+            process_result_file_path = os.path.join(solutions_dir, f"{resonse.task.id}.md")
+            with open(process_result_file_path, 'w', encoding='utf-8') as file:
+                file.write(resonse.result)
+
         # Create task and add to load balancer
         task = Task(
-            id = int(problem_number),
+            id = problem_number,
             description = f"problem {problem_number}, language {language}, model {endpoint.get("name", model_name)}",
             model_name = model_name, # the model storage name
             model = endpoint.get("name", model_name),  # the actual model name
             prompt = prompt,
             base64_image = base64_image,
-            result_file_path = result_file_path
+            response_processing = save_solution
         )    
         while not lb.add_task(task):
             print(f"Waiting to add task {problem_number} - queue full")
@@ -107,6 +113,7 @@ def process_problem_files(problems_dir, template_content, endpoint, language, ma
     with open(results_json_path, 'w', encoding='utf-8') as json_file:
         json.dump(lb.results, json_file, indent=2)
 
+    
 def main():
     parser = ArgumentParser(description="Process Euler problems and send them to an LLM.")
     parser.add_argument('--api', action='append', help="Specify (multiple) backend OpenAI API endpoints (i.e. ollama); can be used multiple times")

@@ -11,7 +11,7 @@ from io import BytesIO
 from enum import Enum, auto
 from dataclasses import dataclass
 from argparse import ArgumentParser
-from typing import List, Dict, Optional
+from typing import Callable, List, Optional
 
 def ollama_pull(api_base='http://localhost:11434', model='llama3.2:latest') -> bool:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -241,22 +241,6 @@ def test_multimodal(endpoints) -> bool:
 busy_waiting_time = 1 # seconds
 
 
-class ServerStatus(Enum):
-    """
-    Enum for server status.
-    This enum is used to track the status of each server in the load balancer.
-    The status can be either AVAILABLE or BUSY.
-    This is used to manage the load balancing of tasks across multiple servers.
-    The load balancer will only assign tasks to servers that are AVAILABLE.
-    The status of each server is updated as tasks are assigned and completed.
-    The status is also used to track the current task being processed by each server.
-
-    Args:
-        Enum (_type_): _description_
-    """
-    AVAILABLE = auto()
-    BUSY = auto()
-
 @dataclass
 class Task:
     """
@@ -264,13 +248,25 @@ class Task:
     This dataclass is used to represent a task that needs to be processed by a server.
     Each task has an ID and a dictionary of data that contains the actual task data.
     """
-    id: int               # Unique identifier for the task
+    id: str               # Unique identifier for the task
     description: str      # a short description of the task (for logging)
     model_name: str       # the model storage name
     model: str            # the actual model name
     prompt: str           # the prompt to be sent to the model
     base64_image: str     # the base64 encoded image to be sent to the model
-    result_file_path: str # the path to the file where the result will be saved
+    response_processing: Callable[['Response'], None] # a function to process the result
+
+@dataclass
+class Response:
+    """
+    Dataclass for response.
+    This dataclass is used to represent a response from the server.
+    Each response has a task ID and the result of the task processing.
+    """
+    task: Task
+    result: str          # The result of the task processing
+    total_tokens: int    # Total tokens used in the response
+    token_per_second: float # Tokens per second used in the response
 
 @dataclass
 class Server:
@@ -280,9 +276,7 @@ class Server:
     Each server has an ID, an endpoint (URL), and a status that indicates whether the server is available or busy.
     The status is used to track the current task being processed by the server.
     """
-    id: int # Unique identifier for the server
     endpoint: str # The endpoint (URL) of the server
-    status: ServerStatus = ServerStatus.AVAILABLE # The status of the server (available or busy)
     current_task: Task = None  # Track the current task being processed
 
 class LoadBalancer:
@@ -298,10 +292,9 @@ class LoadBalancer:
     """
     def __init__(self, servers: List[Server], max_queue_size: int = 1000):
         self.servers = servers
-        self.task_queue = queue.Queue(maxsize=max_queue_size)
-        self.available_servers = queue.Queue(maxsize=len(servers))
+        self.task_queue = queue.Queue[Task](maxsize=max_queue_size)
+        self.available_servers = queue.Queue[Server](maxsize=len(servers))
         self.lock = threading.Lock()
-        self.results = {}
         
         # Initialize available servers queue
         for server in servers:
@@ -319,7 +312,6 @@ class LoadBalancer:
     def mark_server_available(self, server: Server):
         """Mark a server as available for new tasks"""
         with self.lock:
-            server.status = ServerStatus.AVAILABLE
             server.current_task = None
             self.available_servers.put(server)
     
@@ -333,7 +325,6 @@ class LoadBalancer:
     def assign_task_to_server(self, task: Task, server: Server):
         """Assign task to server and mark it as busy"""
         with self.lock:
-            server.status = ServerStatus.BUSY
             server.current_task = task
         
         threading.Thread(
@@ -346,8 +337,7 @@ class LoadBalancer:
         """Process task on remote server"""
         task = server.current_task
         try:
-            print(f"Processing task ID {task.id} on server {server.endpoint} with model {task.model}")
-            
+            #print(f"Processing task ID {task.id} on server {server.endpoint} with model {task.model}")
             t0 = time.time()
             answer, total_tokens, token_per_second = ollama_chat(
                 {"name": task.model_name, "model": task.model, "key": "", "endpoints": [server.endpoint]}, 
@@ -355,15 +345,12 @@ class LoadBalancer:
                 base64_image=task.base64_image
             )
             t1 = time.time()
+            # Call the response processing function
+            response = Response(task, answer, total_tokens, token_per_second)
+            task.response_processing(response)
             print(f"Processed {task.description}, on {server.endpoint} with model {task.model} in {t1 - t0:.2f} seconds with {total_tokens} tokens ({token_per_second:.2f} tokens/sec)")
             
-            # Save the response to a file
-            with open(task.result_file_path, 'w', encoding='utf-8') as result_file:
-                result_file.write(answer)
-            
-            # Store result and mark server available
-            with self.lock:
-                self.results[task.id] = answer
+            # mark server available
             self.mark_server_available(server)
                 
         except Exception as e:
@@ -379,10 +366,7 @@ class LoadBalancer:
                 except:
                     error_msg += f" | Raw Response: {e.response.text}"
             print(error_msg)
-            
-            # Requeue the task if there was an error
-            if task.id not in self.results:  # Only retry if not already succeeded
-                self.add_task(task)
+            # make server available again
             self.mark_server_available(server)
     
     def start_distribution(self):
@@ -417,7 +401,7 @@ class LoadBalancer:
             # print out the current status of all servers
             for server in self.servers:
                 if server.current_task:
-                    print(f"Server {server.endpoint} - Status: {server.status.name}, Current task ID: {server.current_task.id}")
+                    print(f"Server {server.endpoint} - Current task ID: {server.current_task.id}")
 
         print("All servers finished processing.")
 

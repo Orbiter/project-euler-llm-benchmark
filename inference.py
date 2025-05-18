@@ -160,7 +160,8 @@ def main():
                 raise Exception("The --allmodels option cannot be used in combination with --endpoint.")
             
             # loop over all models provided by ollama and run those which are missing in benchmark.json
-            models = ollama_list()
+            local_endpoint = Endpoint(store_name=model, api_name=model, key="", url=f"{api_base[0]}/v1/chat/completions")
+            models = ollama_list(local_endpoint)
             print(f"Found {len(models)} models in ollama.")
             for model in models:
                 # in every loop we load the benchmark.json again because it might have been updated

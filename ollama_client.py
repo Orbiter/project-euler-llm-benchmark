@@ -28,41 +28,27 @@ class Endpoint:
     def get_ollama_url_stub(self) -> str:
         """Get the base URL for the ollama API"""
         return urllib3.util.url.parse_url(self.url)._replace(path='').url
-    
-    def get_ollama_pull_url(self) -> str:
-        """Get the URL for the ollama pull command"""
-        return urllib3.util.url.parse_url(self.url)._replace(path='/api/pull').url
-    
-    def get_ollama_delete_url(self) -> str:
-        """Get the URL for the ollama delete command"""
-        return urllib3.util.url.parse_url(self.url)._replace(path='/api/delete').url
-    
-    def get_ollama_ls_url(self) -> str:
-        """Get the URL for the ollama list command"""
-        return urllib3.util.url.parse_url(self.url)._replace(path='/api/tags').url
-    
-    def get_ollama_ps_url(self) -> str:
-        """Get the URL for the ollama ps command"""
-        return urllib3.util.url.parse_url(self.url)._replace(path='/api/ps').url
 
-def ollama_pull(api_base='http://localhost:11434', model='llama3.2:latest') -> bool:
+def ollama_pull(endpoint: Endpoint) -> bool:
+    api_base = endpoint.get_ollama_url_stub()
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.request("POST", f"{api_base}/api/pull", verify=False,
                                 headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-                                json={"model": model, "stream": False})
+                                json={"model": endpoint.api_name, "stream": False})
     response.raise_for_status()
     data = response.json()
     return not data.get("error", False)
 
-def ollama_delete(api_base='http://localhost:11434', model='llama3.2:latest') -> bool:
+def ollama_delete(endpoint: Endpoint) -> bool:
+    api_base = endpoint.get_ollama_url_stub()
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
     response = requests.request("DELETE", f"{api_base}/api/delete", verify=False,
                                 headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-                                json={"model": model})
+                                json={"model": endpoint.api_name})
     return response.status_code == 200
 
-def ollama_list(api_base='http://localhost:11434') -> dict:
+def ollama_list(endpoint: Endpoint) -> dict:
+    api_base = endpoint.get_ollama_url_stub()
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.get(f"{api_base}/api/tags", verify=False)
     response.raise_for_status()
@@ -78,13 +64,13 @@ def ollama_list(api_base='http://localhost:11434') -> dict:
 def ollama_pull_endpoint(endpoint: Endpoint) -> Endpoint:
     # check if the endpoint servers are online and the model is available
     # we do not catch exceptions here, because that shall be done in calling code
-    api_base = endpoint.get_ollama_url_stub()
-    list = ollama_list(api_base)
+    list = ollama_list(endpoint)
     if endpoint.api_name in list: return endpoint
 
     # pull the model if it is not available
+    api_base = endpoint.get_ollama_url_stub()
     print(f"Model {endpoint.api_name} is not available on server {api_base}. Pulling the model...")
-    ollama_pull(api_base, endpoint.api_name)
+    ollama_pull(endpoint)
     print(f"Model {endpoint.api_name} is now available on server {api_base}.")
     return endpoint
 
@@ -468,7 +454,7 @@ def main():
             base64_image = base64.b64encode(image_file.read()).decode('utf-8')
 
     # access the ollama API
-    models_dict = ollama_list(api_base[0])
+    models_dict = ollama_list(endpoints[0])
     for (model, attr) in models_dict.items():
         print(f"Model: {model}: {attr}")
     try:

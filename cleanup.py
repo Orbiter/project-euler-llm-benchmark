@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from ollama_client import ollama_delete
+from ollama_client import ollama_delete, Endpoint
 
 def main():
     parser = ArgumentParser(description="Cleanup models: delete models from ollama endpoints")
@@ -14,7 +14,8 @@ def main():
 
     for api_stub in api_base:
         try:
-            ollama_delete(api_stub, model_name)
+            endpoint = Endpoint(store_name=model_name, api_name=model_name, key="", url=f"{api_stub}/v1/chat/completions")
+            ollama_delete(endpoint)
             print(f"Model {model_name} removed from {api_stub}.")
         except Exception as e:
             # the server is not available

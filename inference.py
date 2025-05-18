@@ -2,10 +2,13 @@ import os
 import json
 import time
 import base64
+import threading
 from typing import List
 from argparse import ArgumentParser
 from benchmark import read_benchmark
-from ollama_client import ollama_list, ollama_chat_endpoints, test_multimodal, Endpoint, LoadBalancer, Server, Task, Response
+from ollama_client import ollama_list, test_multimodal, ollama_pull_endpoint, Endpoint, LoadBalancer, Server, Task, Response
+
+
 
 def read_template(template_path):
     with open(template_path, 'r', encoding='utf-8') as file:
@@ -16,16 +19,21 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
                           think=False, no_think=False):
     model_store_name = endpoints[0].store_name
     model_api_name = endpoints[0].api_name
-    if think: model_name += "-think"
-    if no_think: model_name += "-no_think"
+    if think: model_store_name += "-think"
+    if no_think: model_store_name += "-no_think"
     solutions_dir = os.path.join('solutions', model_store_name, language)
     os.makedirs(solutions_dir, exist_ok=True)
 
     # Create load balancer with all available endpoints
-    servers = [Server(endpoint=endpoint) for endpoint in endpoints]
     lb = LoadBalancer()
-    for server in servers: lb.add_server(server)
     lb.start_distribution()
+    # ensure that the first endpoint is loaded:
+    ollama_pull_endpoint(endpoints[0])
+    # load server concurrently; they will download a model if that is not present so far.
+    loading_thread = threading.Thread(
+        target = lambda: [lb.add_server(Server(endpoint=ollama_pull_endpoint(endpoint))) for endpoint in endpoints]
+    )
+    loading_thread.start()
 
     # iterate over all problem files and process them
     for problem_file in sorted(os.listdir(problems_dir)):
@@ -162,7 +170,10 @@ def main():
                 # add metadata to benchmark.json
                 if not model in benchmark or not bench_name in benchmark[model]:
                     print(f"Inference: Using model {model} and language {language}")
-                    endpoints = ollama_chat_endpoints(api_base, model)
+                    endpoints = [
+                        Endpoint(store_name=model, api_name=model, key="",
+                                url=f"{api_stub}/v1/chat/completions") for api_stub in api_base
+                    ]
                     process_problem_files(problems_dir, template_content, endpoints, language, max_problem_number = max_problem_number,
                                           overwrite_existing = args.overwrite_existing, overwrite_failed = args.overwrite_failed, expected_solutions = expected_solutions,
                                           think = args.think, no_think = args.no_think)
@@ -180,7 +191,10 @@ def main():
             else:
                 print(f"Inference: Using model {model_name} and language {language}")
                 # construct the endpoint object from command line arguments considering that ollama is the endpoint
-                endpoints = ollama_chat_endpoints(api_base, model_name)
+                endpoints = [
+                    Endpoint(store_name=model_name, api_name=model_name, key="",
+                            url=f"{api_stub}/v1/chat/completions") for api_stub in api_base
+                ]
             
             # run the inference
             process_problem_files(problems_dir, template_content, endpoints, language, max_problem_number = max_problem_number,

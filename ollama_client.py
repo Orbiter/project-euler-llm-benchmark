@@ -25,9 +25,25 @@ class Endpoint:
     key: str           # API key (if required)
     url: str           # URL of the endpoint
 
+    def get_ollama_url_stub(self) -> str:
+        """Get the base URL for the ollama API"""
+        return urllib3.util.url.parse_url(self.url)._replace(path='').url
+    
+    def get_ollama_pull_url(self) -> str:
+        """Get the URL for the ollama pull command"""
+        return urllib3.util.url.parse_url(self.url)._replace(path='/api/pull').url
+    
+    def get_ollama_delete_url(self) -> str:
+        """Get the URL for the ollama delete command"""
+        return urllib3.util.url.parse_url(self.url)._replace(path='/api/delete').url
+    
     def get_ollama_ls_url(self) -> str:
-        """Get the URL for the ollama ls command"""
+        """Get the URL for the ollama list command"""
         return urllib3.util.url.parse_url(self.url)._replace(path='/api/tags').url
+    
+    def get_ollama_ps_url(self) -> str:
+        """Get the URL for the ollama ps command"""
+        return urllib3.util.url.parse_url(self.url)._replace(path='/api/ps').url
 
 def ollama_pull(api_base='http://localhost:11434', model='llama3.2:latest') -> bool:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -59,29 +75,18 @@ def ollama_list(api_base='http://localhost:11434') -> dict:
         for entry in data['models']
     }
 
-def ollama_chat_endpoints(api_base='http://localhost:11434', model_name='llama3.2:latest') -> List[Endpoint]:
-    if isinstance(api_base, str): api_base = [api_base]
-    
+def ollama_pull_endpoint(endpoint: Endpoint) -> Endpoint:
     # check if the endpoint servers are online and the model is available
-    for api_stub in api_base:
-        try:
-            print(f"Loading model list from server {api_stub} to check for model {model_name}...")
-            list = ollama_list(api_stub)
-            if model_name not in list:
-                # pull the model if it is not available
-                print(f"Model {model_name} is not available on server {api_stub}. Pulling the model...")
-                ollama_pull(api_stub, model_name)
-                print(f"Model {model_name} is now available on server {api_stub}.")
-        except Exception as e:
-            # the server is not available, remove the server from the list
-            print(f"Server {api_stub} is not available: {e}")
-            api_base.remove(api_stub)
+    # we do not catch exceptions here, because that shall be done in calling code
+    api_base = endpoint.get_ollama_url_stub()
+    list = ollama_list(api_base)
+    if endpoint.api_name in list: return endpoint
 
-    # create the endpoint list
-    return [
-        Endpoint(store_name=model_name, api_name=model_name, key="",
-                 url=f"{api_stub}/v1/chat/completions") for api_stub in api_base
-        ]    
+    # pull the model if it is not available
+    print(f"Model {endpoint.api_name} is not available on server {api_base}. Pulling the model...")
+    ollama_pull(api_base, endpoint.api_name)
+    print(f"Model {endpoint.api_name} is now available on server {api_base}.")
+    return endpoint
 
 def hex2base64(hex_string) -> str:
     return base64.b64encode(bytes.fromhex(hex_string)).decode('utf-8')
@@ -301,7 +306,7 @@ class LoadBalancer:
         """Add a server to the load balancer"""
         self.servers.append(server)
         self.available_servers.put(server)
-        print(f"Server {server.endpoint} added to load balancer.")
+        print(f"Server {server.endpoint.get_ollama_url_stub()} added to load balancer.")
 
     def add_task(self, task: Task):
         """Add a task to the processing queue with backpressure"""
@@ -408,7 +413,7 @@ class LoadBalancer:
             # print out the current status of all servers
             for server in self.servers:
                 if server.current_task:
-                    print(f"Server {server.endpoint} - Current task ID: {server.current_task.id}")
+                    print(f"Server {server.endpoint.url} - Current task ID: {server.current_task.id}")
 
         print("All servers finished processing.")
 
@@ -438,17 +443,20 @@ def main():
             endpoint_dict = json.load(file)
             endpoints = [
                 Endpoint(
-                    name=endpoint_dict["name"],
-                    model=endpoint_dict["model"],
+                    store_name=endpoint_dict["name"],
+                    api_name=endpoint_dict["model"],
                     key=endpoint_dict["key"],
                     url=endpoint_dict["endpoint"]
                 )
             ]
     else:
-        endpoints = ollama_chat_endpoints(api_base, model_name)
-    
+        endpoints = [
+            Endpoint(store_name=model_name, api_name=model_name, key="",
+                     url=f"{api_stub}/v1/chat/completions") for api_stub in api_base
+        ]
+
     # test if the endpoint is a multimodal model
-    if test_multimodal(endpoints):
+    if test_multimodal(endpoints[0]):
         print("Endpoint is a multimodal model.")
     else:
         print("Endpoint is not a multimodal model.")

@@ -2,35 +2,29 @@ import os
 import json
 import time
 import base64
+from typing import List
 from argparse import ArgumentParser
 from benchmark import read_benchmark
-from ollama_client import ollama_list, ollama_chat_endpoints, test_multimodal, LoadBalancer, Server, Task, Response
+from ollama_client import ollama_list, ollama_chat_endpoints, test_multimodal, Endpoint, LoadBalancer, Server, Task, Response
 
 def read_template(template_path):
     with open(template_path, 'r', encoding='utf-8') as file:
         return file.read()
 
-def process_problem_files(problems_dir, template_content, endpoint, language, max_problem_number=9999,
+def process_problem_files(problems_dir, template_content, endpoints: List[Endpoint], language, max_problem_number=9999,
                           overwrite_existing=False, overwrite_failed=False, expected_solutions={},
                           think=False, no_think=False):
-    model_name = endpoint["name"]
+    model_store_name = endpoints[0].store_name
+    model_api_name = endpoints[0].api_name
     if think: model_name += "-think"
     if no_think: model_name += "-no_think"
-    solutions_dir = os.path.join('solutions', model_name, language)
+    solutions_dir = os.path.join('solutions', model_store_name, language)
     os.makedirs(solutions_dir, exist_ok=True)
 
-    # get the results as computed so far (may be none at first run)
-    results_json_path = os.path.join(solutions_dir, 'results.json') # may not exist yet
-    solutions = {}
-    if os.path.exists(results_json_path):
-        with open(results_json_path, 'r', encoding='utf-8') as json_file:
-            solutions = json.load(json_file)
-
     # Create load balancer with all available endpoints
-    server_urls = endpoint["endpoints"]
-    servers = [Server(endpoint=url) for i, url in enumerate(server_urls)]
-    
-    lb = LoadBalancer(servers)
+    servers = [Server(endpoint=endpoint) for endpoint in endpoints]
+    lb = LoadBalancer()
+    for server in servers: lb.add_server(server)
     lb.start_distribution()
 
     # iterate over all problem files and process them
@@ -43,14 +37,6 @@ def process_problem_files(problems_dir, template_content, endpoint, language, ma
         
         if not overwrite_existing and not overwrite_failed and os.path.exists(result_file_path):
             print(f"Skipping problem {problem_number} as it already has a solution.")
-            continue
-
-        # check if the problem is already solved
-        actual_solution = expected_solutions.get(problem_number, {}).get('solution', None)
-        problem_is_solved = problem_number in solutions and solutions[problem_number] == actual_solution
-        
-        if overwrite_failed and problem_is_solved:
-            print(f"Skipping problem {problem_number} as it is already solved and overwrite_failed is set.")
             continue
         
         # read problem content
@@ -69,7 +55,7 @@ def process_problem_files(problems_dir, template_content, endpoint, language, ma
         
         # check if the endpoint is multimodal if we have an image
         if base64_image:
-            is_multimodal = test_multimodal(endpoint) # this is cached
+            is_multimodal = test_multimodal(endpoints[0]) # this is cached
             if is_multimodal:
                 print(f"Problem {problem_number} is handled with multimodal model.")
             else:
@@ -92,9 +78,7 @@ def process_problem_files(problems_dir, template_content, endpoint, language, ma
         # Create task and add to load balancer
         task = Task(
             id = problem_number,
-            description = f"problem {problem_number}, language {language}, model {endpoint.get("name", model_name)}",
-            model_name = model_name, # the model storage name
-            model = endpoint.get("name", model_name),  # the actual model name
+            description = f"problem {problem_number}, language {language}, model {model_api_name}",
             prompt = prompt,
             base64_image = base64_image,
             response_processing = save_solution
@@ -102,16 +86,12 @@ def process_problem_files(problems_dir, template_content, endpoint, language, ma
         while not lb.add_task(task):
             print(f"Waiting to add task {problem_number} - queue full")
             time.sleep(1)
-        print(f"Added problem {problem_number}, language {language}, model {model_name} to processing queue")
+        print(f"Added problem {problem_number}, language {language}, model {model_api_name} to processing queue")
 
     # Wait for all tasks to complete
     print("Waiting for all problems to be processed...")
     lb.wait_completion()
     print("All problems processed!")
-
-    # Save solutions to JSON
-    with open(results_json_path, 'w', encoding='utf-8') as json_file:
-        json.dump(lb.results, json_file, indent=2)
 
     
 def main():

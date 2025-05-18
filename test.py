@@ -100,10 +100,22 @@ def main():
                 entry = benchmark.get(model_benchmark_name, {})
                 
             # check if attributes parameter_size and quantization_level are present in benchmark.json
-            if not '_parameter_size' in entry and model_dict.get(model,{}).get('parameter_size', None):
-                entry['_parameter_size'] = model_dict.get(model,{}).get('parameter_size', None)
-            if not '_quantization_level' in entry and model_dict.get(model,{}).get('quantization_level', None):
-                entry['_quantization_level'] = model_dict.get(model,{}).get('quantization_level', None)
+            parameter_size = model_dict.get(model,{}).get('parameter_size', None)
+            if parameter_size:
+                try:
+                    parameter_size = float(parameter_size)
+                except ValueError:
+                    print(f"Warning: Could not convert parameter_size '{parameter_size}' to float for model {model}")
+                    parameter_size = None 
+            quantization_level = model_dict.get(model,{}).get('parameter_size', None)
+            if quantization_level:
+                try:
+                    quantization_level = int(quantization_level)
+                except ValueError:
+                    print(f"Warning: Could not convert quantization_level '{quantization_level}' to int for model {model}")
+                    quantization_level = None
+            if not '_parameter_size' in entry and parameter_size: entry['_parameter_size'] = parameter_size
+            if not '_quantization_level' in entry and quantization_level: entry['_quantization_level'] = quantization_level
             entry = dict(sorted(entry.items(), key=lambda item: item[0]))
             benchmark[model_benchmark_name] = entry
 

@@ -212,6 +212,15 @@
         "python-100": 12.34,
         "rust-100": 6.13
     },
+    "hf.co/bartowski/Qwen_Qwen3-30B-A3B-GGUF:Q4_K_M-no_think": {
+        "_context_size": 40,
+        "_parameter_size": 30.5,
+        "_quantization_level": 4,
+        "clojure-100": 1.72,
+        "java-100": 9.85,
+        "python-100": 12.08,
+        "rust-100": 5.26
+    },
     "hf.co/bartowski/Sky-T1-32B-Flash-GGUF:Q4_K_M": {
         "_context_size": 32,
         "_parameter_size": 32.8,
@@ -443,6 +452,15 @@
         "java-100": 4.14,
         "python-100": 8.59,
         "rust-100": 4.55
+    },
+    "hf.co/bartowski/Qwen_Qwen3-30B-A3B-GGUF:Q4_K_M-think": {
+        "_context_size": 40,
+        "_parameter_size": 30.5,
+        "_quantization_level": 4,
+        "clojure-100": 3.61,
+        "java-100": 8.09,
+        "python-100": 8.49,
+        "rust-100": 4.5
     },
     "qwen2.5:14b-instruct-q4_K_M": {
         "_context_size": 32,
@@ -1292,6 +1310,15 @@
         "python-100": 3.49,
         "rust-100": 0.34
     },
+    "qwen2.5vl:7b-q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 8.3,
+        "_quantization_level": 4,
+        "clojure-100": 0.13,
+        "java-100": 1.64,
+        "python-100": 3.48,
+        "rust-100": 0.97
+    },
     "hf.co/bartowski/all-hands_openhands-lm-32b-v0.1-GGUF:Q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 32.8,
@@ -1669,6 +1696,14 @@
         "python-100": 1.74,
         "rust-100": 0.03
     },
+    "hf.co/TheDrummer/Rivermind-12B-v1-GGUF:Q4_K_M": {
+        "_parameter_size": 12.2,
+        "_quantization_level": 4,
+        "clojure-100": 0.08,
+        "java-100": 1.08,
+        "python-100": 1.72,
+        "rust-100": 0.61
+    },
     "granite3.3:8b": {
         "_context_size": 128,
         "_parameter_size": 8.0,
@@ -1866,6 +1901,15 @@
         "java-100": 0.33,
         "python-100": 1.03,
         "rust-100": 0.28
+    },
+    "hf.co/openbmb/MiniCPM-o-2_6-gguf:Q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 7.61,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.19,
+        "python-100": 1.03,
+        "rust-100": 0.04
     },
     "llama3.2:latest": {
         "_context_size": 128,
@@ -2098,6 +2142,15 @@
         "clojure-100": 0.0,
         "java-100": 0.06,
         "python-100": 0.46,
+        "rust-100": 0.0
+    },
+    "hf.co/mradermacher/Qwen3-0.6B-Code-Expert-GGUF:Q4_K_M-no_think": {
+        "_context_size": 40,
+        "_parameter_size": 596.0,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.0,
+        "python-100": 0.44,
         "rust-100": 0.0
     },
     "llama3.2:1b": {
@@ -2455,9 +2508,5 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
-    },
-    "hf.co/mradermacher/Seed-Coder-8B-Instruct-GGUF:Q4_K_M": {
-        "_parameter_size": "8.25",
-        "_quantization_level": "n"
     }
 }

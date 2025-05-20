@@ -381,6 +381,14 @@
         "python-100": 9.26,
         "rust-100": 4.42
     },
+    "hf.co/mradermacher/Seed-Coder-8B-Instruct-GGUF:Q4_K_M": {
+        "_parameter_size": 8.25,
+        "_quantization_level": 4,
+        "clojure-100": 2.02,
+        "java-100": 6.07,
+        "python-100": 9.16,
+        "rust-100": 3.52
+    },
     "hf.co/mradermacher/Llama-3.1-SauerkrautLM-70b-Instruct-GGUF:Q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 70.6,
@@ -403,10 +411,10 @@
         "_context_size": 32,
         "_parameter_size": 8,
         "_quantization_level": 4,
-        "python-100": 9.0,
+        "clojure-100": 1.81,
         "java-100": 4.99,
-        "rust-100": 4.09,
-        "clojure-100": 1.81
+        "python-100": 9.0,
+        "rust-100": 4.09
     },
     "llama3.3:70b-instruct-q8_0": {
         "_context_size": 128,
@@ -702,6 +710,13 @@
         "java-100": 4.84,
         "python-100": 6.98,
         "rust-100": 1.92
+    },
+    "hf.co/bartowski/soob3123_GrayLine-Qwen3-14B-GGUF:Q4_K_M-no_think": {
+        "_quantization_level": 4,
+        "clojure-100": 1.01,
+        "java-100": 7.01,
+        "python-100": 6.86,
+        "rust-100": 3.65
     },
     "hf.co/bartowski/mistralai_Mistral-Small-3.1-24B-Instruct-2503-GGUF:Q4_K_M": {
         "_context_size": 128,
@@ -1168,6 +1183,12 @@
         "python-100": 4.21,
         "rust-100": 0.42
     },
+    "hf.co/lmstudio-community/INTELLECT-2-GGUF:Q4_K_M": {
+        "_parameter_size": 32.8,
+        "_quantization_level": 4,
+        "java-100": 5.02,
+        "python-100": 4.21
+    },
     "qwen2.5-coder:3b-instruct-q8_0": {
         "_context_size": 32,
         "_parameter_size": 3.1,
@@ -1230,6 +1251,14 @@
         "java-100": 1.06,
         "python-100": 3.91,
         "rust-100": 0.42
+    },
+    "hf.co/bartowski/soob3123_GrayLine-Qwen3-8B-GGUF:Q4_K_M-no_think": {
+        "_parameter_size": 8.19,
+        "_quantization_level": 4,
+        "clojure-100": 0.91,
+        "java-100": 2.19,
+        "python-100": 3.82,
+        "rust-100": 1.03
     },
     "exaone3.5:7.8b-instruct-q8_0": {
         "_context_size": 32,
@@ -1858,6 +1887,14 @@
         "python-100": 1.07,
         "rust-100": 0.2
     },
+    "hf.co/mradermacher/Seed-Coder-8B-Reasoning-GGUF:Q4_K_M": {
+        "_parameter_size": 8.25,
+        "_quantization_level": 4,
+        "clojure-100": 0.03,
+        "java-100": 0.38,
+        "python-100": 1.06,
+        "rust-100": 0.0
+    },
     "deepcoder:14b-preview-q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 14.8,
@@ -2456,8 +2493,7 @@
         "python-100": 0.0,
         "rust-100": 0.0
     },
-    "hf.co/mradermacher/Seed-Coder-8B-Instruct-GGUF:Q4_K_M": {
-        "_parameter_size": "8.25",
-        "_quantization_level": "n"
+    "hf.co/bartowski/soob3123_GrayLine-Qwen3-14B-GGUF:Q4_K_M": {
+        "_quantization_level": 4
     }
 }

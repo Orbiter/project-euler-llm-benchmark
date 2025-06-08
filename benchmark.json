@@ -398,6 +398,15 @@
         "python-100": 9.16,
         "rust-100": 3.52
     },
+    "llama4:16x17b": {
+        "_context_size": 10000,
+        "_parameter_size": 108.6,
+        "_quantization_level": 4,
+        "clojure-100": 0.93,
+        "java-100": 4.78,
+        "python-100": 9.13,
+        "rust-100": 2.89
+    },
     "hf.co/mradermacher/Llama-3.1-SauerkrautLM-70b-Instruct-GGUF:Q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 70.6,
@@ -1120,6 +1129,15 @@
         "python-100": 4.72,
         "rust-100": 2.26
     },
+    "hf.co/mradermacher/Fathom-R1-14B-GGUF:Q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 14.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.38,
+        "java-100": 3.32,
+        "python-100": 4.65,
+        "rust-100": 1.57
+    },
     "hf.co/bartowski/google_gemma-3-12b-it-qat-GGUF:Q4_0": {
         "_context_size": 128,
         "_parameter_size": 11.8,
@@ -1224,6 +1242,15 @@
         "java-100": 4.22,
         "python-100": 4.2,
         "rust-100": 3.28
+    },
+    "hf.co/mradermacher/MiniCPM4-8B-GGUF:Q4_K_M": {
+        "_context_size": 32,
+        "_parameter_size": 8.19,
+        "_quantization_level": 4,
+        "clojure-100": 0.05,
+        "java-100": 2.38,
+        "python-100": 4.14,
+        "rust-100": 1.36
     },
     "yi:9b-chat-v1.5-q4_K_M": {
         "_context_size": 4,
@@ -1868,6 +1895,15 @@
         "python-100": 1.33,
         "rust-100": 0.21
     },
+    "hf.co/allenai/OLMo-2-0325-32B-Instruct-GGUF:Q4_0": {
+        "_context_size": 4,
+        "_parameter_size": 32.2,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.77,
+        "python-100": 1.32,
+        "rust-100": 0.51
+    },
     "codellama:34b-instruct-q4_K_M": {
         "_context_size": 16,
         "_parameter_size": 34.0,
@@ -2341,6 +2377,14 @@
         "python-100": 0.23,
         "rust-100": 0.01
     },
+    "hf.co/mradermacher/MiniCPM4-0.5B-GGUF:Q4_K_M": {
+        "_parameter_size": 434.0,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.02,
+        "python-100": 0.23,
+        "rust-100": 0.0
+    },
     "qwen:14b-chat-v1.5-q4_K_M": {
         "_context_size": 32,
         "_parameter_size": 14.0,
@@ -2350,12 +2394,30 @@
         "python-100": 0.15,
         "rust-100": 0.08
     },
+    "hf.co/mradermacher/MiMo-VL-7B-RL-GGUF:Q4_K_M-no_think": {
+        "_context_size": 128,
+        "_parameter_size": 7.62,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.0,
+        "python-100": 0.14,
+        "rust-100": 0.0
+    },
     "gemma3:1b": {
         "_context_size": 32,
         "_parameter_size": 1.0,
         "_quantization_level": 4,
         "clojure-100": 0.0,
         "java-100": 0.33,
+        "python-100": 0.13,
+        "rust-100": 0.0
+    },
+    "hf.co/sizzlebop/Holo1-7B-Q4_K_M-GGUF": {
+        "_context_size": 128,
+        "_parameter_size": 7.0,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.0,
         "python-100": 0.13,
         "rust-100": 0.0
     },
@@ -2422,6 +2484,15 @@
         "python-100": 0.06,
         "rust-100": 0.0
     },
+    "hf.co/mradermacher/Holo1-3B-GGUF:Q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 3.09,
+        "_quantization_level": 4,
+        "clojure-100": 0.03,
+        "java-100": 0.0,
+        "python-100": 0.06,
+        "rust-100": 0.0
+    },
     "hf.co/bartowski/burtenshaw_GemmaCoder3-12B-GGUF:Q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 11.8,
@@ -2452,6 +2523,15 @@
     "llama2:7b-chat-q4_K_M": {
         "_context_size": 4,
         "_parameter_size": 7.0,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.0,
+        "python-100": 0.01,
+        "rust-100": 0.0
+    },
+    "hf.co/allenai/OLMo-2-0425-1B-Instruct-GGUF:Q4_K_M": {
+        "_context_size": 4,
+        "_parameter_size": 1.48,
         "_quantization_level": 4,
         "clojure-100": 0.0,
         "java-100": 0.0,
@@ -2545,5 +2625,8 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
+    },
+    "hf.co/mradermacher/MiniCPM4-1B-GGUF:Q4_K_M": {
+        "_quantization_level": 4
     }
 }

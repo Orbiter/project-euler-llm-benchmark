@@ -62,7 +62,7 @@ def main():
 
     # find models to test
     models = []
-    local_endpoint = Endpoint(store_name=model_name, api_name=model_name, key="", url=f"{api_base[0]}/v1/chat/completions")
+    local_endpoint = Endpoint(store_name=model_name, model_name=model_name, key="", url=f"{api_base[0]}/v1/chat/completions").get_dict()
     model_dict = ollama_list(local_endpoint)
     if args.allmodels:
         if endpoint_name:

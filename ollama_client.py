@@ -20,35 +20,49 @@ class Endpoint:
     This dataclass is used to represent an endpoint for the API.
     Each endpoint has a name, a model name, a key, and a list of URLs.
     """
-    store_name: str    # Name of the endpoint
-    api_name: str      # Model name that is used in the api request
+    store_name: str    # Name of the endpoint, used to store the model in the solutions
+    model_name: str    # Model name that is used in the api request
     key: str           # API key (if required)
     url: str           # URL of the endpoint
+    
+    def get_dict(self) -> dict:
+        """Get the endpoint as a dictionary"""
+        return {
+            "store_name": self.store_name,
+            "model_name": self.model_name,
+            "key": self.key,
+            "url": self.url
+        }
 
-    def get_ollama_url_stub(self) -> str:
-        """Get the base URL for the ollama API"""
-        return urllib3.util.url.parse_url(self.url)._replace(path='').url
+def get_ollama_url_stub(endpoint: dict) -> str:
+    """Get the base URL for the ollama API"""
+    return urllib3.util.url.parse_url(endpoint["url"])._replace(path='').url
 
-def ollama_pull(endpoint: Endpoint) -> bool:
-    api_base = endpoint.get_ollama_url_stub()
+def ollama_pull(endpoint: dict) -> bool:
+    api_base = get_ollama_url_stub(endpoint)
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.request("POST", f"{api_base}/api/pull", verify=False,
                                 headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-                                json={"model": endpoint.api_name, "stream": False})
+                                json={"model": endpoint.get("model_name", ""), "stream": False})
     response.raise_for_status()
     data = response.json()
     return not data.get("error", False)
 
-def ollama_delete(endpoint: Endpoint) -> bool:
-    api_base = endpoint.get_ollama_url_stub()
+def ollama_delete(endpoint: dict) -> bool:
+    api_base = get_ollama_url_stub(endpoint)
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.request("DELETE", f"{api_base}/api/delete", verify=False,
                                 headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-                                json={"model": endpoint.api_name})
+                                json={"model": endpoint.get("model_name", "")})
     return response.status_code == 200
 
-def ollama_list(endpoint: Endpoint) -> dict:
-    api_base = endpoint.get_ollama_url_stub()
+def ollama_list(endpoint: dict) -> dict:
+    if endpoint.get("key", ""):
+        # endpoints with a key are not an ollama server
+        return {endpoint["model_name"]: {"parameter_size": "unknown", "quantization_level": "unknown"}}
+    
+    # check if the endpoint servers are online    
+    api_base = get_ollama_url_stub(endpoint)
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.get(f"{api_base}/api/tags", verify=False)
     response.raise_for_status()
@@ -61,24 +75,26 @@ def ollama_list(endpoint: Endpoint) -> dict:
         for entry in data['models']
     }
 
-def ollama_pull_endpoint(endpoint: Endpoint) -> Endpoint:
+def ollama_pull_endpoint(endpoint: dict) -> dict:
     # check if the endpoint servers are online and the model is available
     # we do not catch exceptions here, because that shall be done in calling code
+    if endpoint.get("key", ""): return endpoint # endpoints with a key are not an ollama server
+    
     list = ollama_list(endpoint)
-    if endpoint.api_name in list: return endpoint
+    if endpoint["model_name"] in list: return endpoint
 
     # pull the model if it is not available
-    api_base = endpoint.get_ollama_url_stub()
-    print(f"Model {endpoint.api_name} is not available on server {api_base}. Pulling the model...")
+    api_base = get_ollama_url_stub(endpoint)
+    print(f"Model {endpoint.get("model_name", "")} is not available on server {api_base}. Pulling the model...")
     ollama_pull(endpoint)
-    print(f"Model {endpoint.api_name} is now available on server {api_base}.")
+    print(f"Model {endpoint.get("model_name", "")} is now available on server {api_base}.")
     return endpoint
 
 def hex2base64(hex_string) -> str:
     return base64.b64encode(bytes.fromhex(hex_string)).decode('utf-8')
 
 def ollama_chat(
-    endpoint: Endpoint,
+    endpoint: dict,
     prompt: str = 'Hello World',
     base64_image: str = None,
     temperature: float = 0.0,
@@ -109,10 +125,10 @@ def ollama_chat(
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
-    if endpoint.key:
-        headers['Authorization'] = 'Bearer ' + endpoint.key
+    if endpoint.get("key", ""):
+        headers['Authorization'] = 'Bearer ' + endpoint.get("key", "")
 
-    modelname = endpoint.api_name
+    modelname = endpoint["model_name"]
     messages = []
     messages.append({"role": "system", "content": "You are a helpful assistant"})
     
@@ -176,7 +192,7 @@ def ollama_chat(
     try:
         #print(payload)
         t0 = time.time()
-        response = requests.post(endpoint.url, headers=headers, json=payload, verify=False)
+        response = requests.post(endpoint["url"], headers=headers, json=payload, verify=False)
         t1 = time.time()
         #print(response)
         response.raise_for_status()
@@ -212,9 +228,9 @@ def ollama_chat(
 
 multimodal_cache = {}
 
-def test_multimodal(endpoint: Endpoint) -> bool:
+def test_multimodal(endpoint: dict) -> bool:
     
-    cached_result = multimodal_cache.get(endpoint.api_name, None)
+    cached_result = multimodal_cache.get(endpoint["model_name"], None)
     if cached_result is not None:
         return cached_result
 
@@ -292,7 +308,7 @@ class LoadBalancer:
         """Add a server to the load balancer"""
         self.servers.append(server)
         self.available_servers.put(server)
-        print(f"Server {server.endpoint.get_ollama_url_stub()} added to load balancer.")
+        print(f"Server {get_ollama_url_stub(server.endpoint)} added to load balancer.")
 
     def add_task(self, task: Task):
         """Add a task to the processing queue with backpressure"""
@@ -346,7 +362,7 @@ class LoadBalancer:
             # Call the response processing function
             response = Response(task, answer, total_tokens, token_per_second)
             task.response_processing(response)
-            print(f"Processed {task.description}, on {server.endpoint.url} with model {endpoint.api_name} in {t1 - t0:.2f} seconds with {total_tokens} tokens ({token_per_second:.2f} tokens/sec)")
+            print(f"Processed {task.description}, on {server.endpoint["url"]} with model {endpoint["model_name"]} in {t1 - t0:.2f} seconds with {total_tokens} tokens ({token_per_second:.2f} tokens/sec)")
             
             # mark server available
             self.mark_server_available(server)
@@ -399,7 +415,7 @@ class LoadBalancer:
             # print out the current status of all servers
             for server in self.servers:
                 if server.current_task:
-                    print(f"Server {server.endpoint.url} - Current task ID: {server.current_task.id}")
+                    print(f"Server {server.endpoint["url"]} - Current task ID: {server.current_task.id}")
 
         print("All servers finished processing.")
 

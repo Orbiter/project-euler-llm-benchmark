@@ -1,8 +1,8 @@
 {
-    "name": "GPT-4o-Mini",
-    "model": "gpt-4o-mini",
+    "store_name": "GPT-4o-Mini",
+    "model_name": "gpt-4o-mini",
     "key": "thekey",
-    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "url": "https://api.openai.com/v1/chat/completions",
     "_context_size": 128,
     "_publication_date": "2024-12-17",
     "_quantization_level": 16

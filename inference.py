@@ -17,11 +17,12 @@ def read_template(template_path):
 def process_problem_files(problems_dir, template_content, endpoints: List[Endpoint], language, max_problem_number=9999,
                           overwrite_existing=False, overwrite_failed=False, expected_solutions={},
                           think=False, no_think=False):
-    model_store_name = endpoints[0].store_name
-    model_api_name = endpoints[0].api_name
-    if think: model_store_name += "-think"
-    if no_think: model_store_name += "-no_think"
-    solutions_dir = os.path.join('solutions', model_store_name, language)
+    print(f"Processing problems in {problems_dir} with language {language} and endpoint: {endpoints[0]}")
+    store_name = endpoints[0]["store_name"]
+    model_name = endpoints[0]["model_name"]
+    if think: store_name += "-think"
+    if no_think: store_name += "-no_think"
+    solutions_dir = os.path.join('solutions', store_name, language)
     os.makedirs(solutions_dir, exist_ok=True)
 
     # Create load balancer with all available endpoints
@@ -86,7 +87,7 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
         # Create task and add to load balancer
         task = Task(
             id = problem_number,
-            description = f"problem {problem_number}, language {language}, model {model_api_name}",
+            description = f"problem {problem_number}, language {language}, model {model_name}",
             prompt = prompt,
             base64_image = base64_image,
             response_processing = save_solution
@@ -94,7 +95,7 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
         while not lb.add_task(task):
             print(f"Waiting to add task {problem_number} - queue full")
             time.sleep(1)
-        print(f"Added problem {problem_number}, language {language}, model {model_api_name} to processing queue")
+        print(f"Added problem {problem_number}, language {language}, model {model_name} to processing queue")
 
     # Wait for all tasks to complete
     print("Waiting for all problems to be processed...")
@@ -193,8 +194,8 @@ def main():
                 print(f"Inference: Using model {model_name} and language {language}")
                 # construct the endpoint object from command line arguments considering that ollama is the endpoint
                 endpoints = [
-                    Endpoint(store_name=model_name, api_name=model_name, key="",
-                            url=f"{api_stub}/v1/chat/completions") for api_stub in api_base
+                    Endpoint(store_name=model_name, model_name=model_name, key="",
+                            url=f"{api_stub}/v1/chat/completions").get_dict() for api_stub in api_base
                 ]
             
             # run the inference

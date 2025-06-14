@@ -1,8 +1,8 @@
 {
-    "name": "GPT-3.5-Turbo",
-    "model": "gpt-3.5-turbo-0125",
+    "namstore_namee": "GPT-3.5-Turbo",
+    "model_name": "gpt-3.5-turbo-0125",
     "key": "thekey",
-    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "url": "https://api.openai.com/v1/chat/completions",
     "_context_size": 16,
     "_parameter_size": 175.0,
     "_publication_date": "2023-01-25",

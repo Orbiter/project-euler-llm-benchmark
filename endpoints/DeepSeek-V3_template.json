@@ -1,8 +1,8 @@
 {
-    "name": "DeepSeek-V3",
-    "model": "deepseek-chat",
+    "store_name": "DeepSeek-V3",
+    "model_name": "deepseek-chat",
     "key": "thekey",
-    "endpoint": "https://api.deepseek.com/chat/completions",
+    "url": "https://api.deepseek.com/chat/completions",
     "_context_size": 64,
     "_parameter_size": 671.0,
     "_publication_date": "2024-12-26",

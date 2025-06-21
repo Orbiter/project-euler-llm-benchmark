@@ -762,6 +762,15 @@
         "python-100": 6.79,
         "rust-100": 3.38
     },
+    "hf.co/bartowski/mistralai_Mistral-Small-3.2-24B-Instruct-2506-GGUF:Q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 23.6,
+        "_quantization_level": 4,
+        "clojure-100": 0.79,
+        "java-100": 5.19,
+        "python-100": 6.79,
+        "rust-100": 3.05
+    },
     "aravhawk/llama4:scout-q4_K_M": {
         "_parameter_size": 107.8,
         "_quantization_level": 4,
@@ -989,6 +998,15 @@
         "java-100": 3.99,
         "python-100": 5.73,
         "rust-100": 3.99
+    },
+    "mistral-small3.2:24b-instruct-2506-q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 24.0,
+        "_quantization_level": 4,
+        "clojure-100": 1.02,
+        "java-100": 4.74,
+        "python-100": 5.73,
+        "rust-100": 3.38
     },
     "qwen3:8b-q4_K_M-think": {
         "_parameter_size": 8.2,

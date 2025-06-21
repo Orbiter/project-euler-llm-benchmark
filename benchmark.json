@@ -54,6 +54,14 @@
         "python-100": 17.05,
         "rust-100": 14.57
     },
+    "gpt-4-turbo-2024-04-09": {
+        "_context_size": 128,
+        "_quantization_level": 16,
+        "python-100": 16.87,
+        "java-100": 15.82,
+        "rust-100": 10.12,
+        "clojure-100": 3.45
+    },
     "athene-v2:72b-q8_0": {
         "_context_size": 128,
         "_parameter_size": 72.7,

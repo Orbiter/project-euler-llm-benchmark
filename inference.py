@@ -36,6 +36,9 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
     )
     loading_thread.start()
 
+    # test if the model is a multimodal model
+    is_multimodal = test_multimodal(endpoints[0]) # this is cached
+
     # iterate over all problem files and process them
     for problem_file in sorted(os.listdir(problems_dir)):
         if problem_file.startswith('.') or not problem_file.endswith('.txt'): continue
@@ -64,7 +67,6 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
         
         # check if the endpoint is multimodal if we have an image
         if base64_image:
-            is_multimodal = test_multimodal(endpoints[0]) # this is cached
             if is_multimodal:
                 print(f"Problem {problem_number} is handled with multimodal model.")
             else:

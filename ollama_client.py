@@ -226,27 +226,22 @@ def ollama_chat(
     except json.JSONDecodeError as e:
         raise Exception(f"Failed to parse JSON response from the API: {e}")
 
-multimodal_cache = {}
-
 def test_multimodal(endpoint: dict) -> bool:
-    
-    cached_result = multimodal_cache.get(endpoint["model_name"], None)
-    if cached_result is not None:
-        return cached_result
-
     image_path = "llmtest/testimage.png"
     with open(image_path, "rb") as image_file:
         base64_image = base64.b64encode(image_file.read()).decode('utf-8')
     try:
+        print(f"Testing multimodal capabilities of model {endpoint['model_name']}...")
         answer, total_tokens, token_per_second = ollama_chat(endpoint, prompt="what is in the image", base64_image=base64_image)
         result = "42" in answer
         if result:
-            print(f"Model {endpoint.api_name} is multimodal.")
-        multimodal_cache[endpoint.api_name] = result
+            print(f"Model {endpoint['model_name']} is multimodal.")
+        else:
+            print(f"Model {endpoint['model_name']} is not multimodal; it returned the following answer: {answer}")
         return result
     except Exception as e:
+        print(f"Model {endpoint['model_name']} is not multimodal; it created an error: {e}")
         return False
-
 
 busy_waiting_time = 1 # seconds
 

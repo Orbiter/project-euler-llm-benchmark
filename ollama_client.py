@@ -98,7 +98,8 @@ def ollama_chat(
     prompt: str = 'Hello World',
     base64_image: str = None,
     temperature: float = 0.0,
-    max_tokens: int = 8192
+    max_tokens: int = 8192,
+    stream: bool = True
 ) -> tuple[str, int, float]:
     """
     Function to interact with the Ollama API for chat completions.
@@ -176,7 +177,7 @@ def ollama_chat(
         "top_k": 20,    # reduces the probability of generating nonsense: high = more diverse, low = more focused; ollama default: 40
         "top_p": 0.95,  # works together with top_k: high = more diverse, low = more focused; ollama default: 0.9
         "min_p": 0,     # alternative to top_p: p is minimum probability for a token to be considered; ollama default: 0.0
-        "stream": False
+        "stream": stream
     }
     if len(stoptokens) > 0 and not modelname.startswith("o4"):
         payload["stop"] = stoptokens
@@ -187,18 +188,48 @@ def ollama_chat(
 
     # use the endpoints array as failover mechanism
     response = None
+    text_chunks = []
+    read_timeout = 600 # seconds
+    #print(f"Calling model in strem mode: {stream}, payload: {json.dumps(payload)}")
     try:
-        #print(payload)
         t0 = time.time()
         response = requests.post(
             endpoint.url,
             headers=headers,
             json=payload,
-            verify=False, timeout=(10, 600) # (connect_timeout, read_timeout))
+            verify=False,
+            stream=stream,
+            timeout=(10, read_timeout) # (connect_timeout, read_timeout))
         )
-        t1 = time.time()
-        #print(response)
+        #print(f"Response status: {response.status_code}")
         response.raise_for_status()
+        #print(f"Response headers: {response.headers}")
+        if stream:
+            print("Response (stream): ", end="", flush=True)
+            timeouttime = t0 + read_timeout
+            for line in response.iter_lines(decode_unicode=True):
+                if not line:
+                    continue
+                if line.startswith("data: "):
+                    payload_line = line[len("data: "):].strip()
+                    if payload_line == "[DONE]":
+                        print() # end progress line
+                        break
+                    try:
+                        evt = json.loads(payload_line)
+                        choices = evt.get("choices", [])
+                        if choices:
+                            delta = choices[0].get("delta", {})
+                            if "content" in delta:
+                                token = delta["content"]
+                                text_chunks.append(token)
+                                #print(token, end="", flush=True)
+                                print('.', end="", flush=True) # print a dot for each token to show progress
+                        if time.time() > timeouttime:
+                            break # we simply silently terminate the stream
+                    except Exception:
+                        pass # robust against json parse errors
+        t1 = time.time()
     except requests.exceptions.ReadTimeout as e:
         raise Exception(f"Read timeout while calling {endpoint.url} (timeout=600s). "
                         f"The model may be slow or the server overloaded.") from e
@@ -215,27 +246,33 @@ def ollama_chat(
 
     # Parse the response
     try:
-        #print(response.text)
-        ctype = response.headers.get('Content-Type', '')
-        text  = response.text or ''
-        if not text.strip():
-            raise Exception(f"Empty response body (status {response.status_code}) from {endpoint.url}")
+        if stream:
+            answer = "".join(text_chunks).strip()
+            total_tokens = len(text_chunks)
+            token_per_second = 0.0 if (t1 - t0) <= 0 else total_tokens / (t1 - t0)
+            if not answer:
+                raise Exception("Empty streamed response from the API")
+        else:
+            ctype = response.headers.get('Content-Type', '')
+            text  = response.text or ''
+            if not text.strip():
+                raise Exception(f"Empty response body (status {response.status_code}) from {endpoint.url}")
 
-        if 'json' not in ctype.lower():
-            # possibly a html error page
-            snippet = text[:800].replace('\n',' ')
-            raise Exception(f"Non-JSON response (status {response.status_code}, Content-Type {ctype}): {snippet}")
+            if 'json' not in ctype.lower():
+                # possibly a html error page
+                snippet = text[:800].replace('\n',' ')
+                raise Exception(f"Non-JSON response (status {response.status_code}, Content-Type {ctype}): {snippet}")
 
-        data = response.json()
-        usage = data.get('usage', {})
-        total_tokens = usage.get('total_tokens', 0)
-        token_per_second = total_tokens / (t1 - t0)
-        #print(f"Total tokens: {total_tokens}, tokens per second: {token_per_second:.2f}")
-        choices = data.get('choices', [])
-        if len(choices) == 0:
-            raise Exception("No response from the API: " + str(data))
-        message = choices[0].get('message', {})
-        answer = message.get('content', '')
+            data = response.json()
+            usage = data.get('usage', {})
+            total_tokens = usage.get('total_tokens', 0)
+            token_per_second = total_tokens / (t1 - t0)
+            #print(f"Total tokens: {total_tokens}, tokens per second: {token_per_second:.2f}")
+            choices = data.get('choices', [])
+            if len(choices) == 0:
+                raise Exception("No response from the API: " + str(data))
+            message = choices[0].get('message', {})
+            answer = message.get('content', '')
         return answer, total_tokens, token_per_second
     except json.JSONDecodeError as e:
         raise Exception(f"Failed to parse JSON response from the API: {e}")

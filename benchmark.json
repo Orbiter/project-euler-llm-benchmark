@@ -1808,6 +1808,14 @@
         "python-100": 2.21,
         "rust-100": 0.66
     },
+    "gemma3n:e2b": {
+        "_parameter_size": 4.5,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.23,
+        "python-100": 2.21,
+        "rust-100": 0.11
+    },
     "opencoder:1.5b-instruct-q8_0": {
         "_context_size": 4,
         "_parameter_size": 1.9,
@@ -1870,6 +1878,14 @@
         "java-100": 0.9,
         "python-100": 2.04,
         "rust-100": 0.66
+    },
+    "gemma3n:e4b": {
+        "_parameter_size": 6.9,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.0,
+        "python-100": 2.04,
+        "rust-100": 0.5
     },
     "mixtral:8x7b-instruct-v0.1-q4_K_M": {
         "_context_size": 32,

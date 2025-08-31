@@ -159,6 +159,7 @@
         "rust-100": 8.42
     },
     "qwen3-coder:30b-a3b-q8_0": {
+        "_context_size": 256,
         "_parameter_size": 30.5,
         "_quantization_level": 8,
         "clojure-100": 4.62,
@@ -310,6 +311,7 @@
         "rust-100": 5.19
     },
     "cogito:32b-v1-preview-qwen-q4_K_M": {
+        "_context_size": 128,
         "_parameter_size": 32.8,
         "_quantization_level": 4,
         "clojure-100": 1.19,
@@ -327,6 +329,7 @@
         "rust-100": 4.32
     },
     "qwen3:14b-q4_K_M-no_think": {
+        "_context_size": 40,
         "_parameter_size": 14.8,
         "_quantization_level": 4,
         "clojure-100": 0.86,
@@ -335,7 +338,7 @@
         "rust-100": 2.99
     },
     "qwen3:32b-q4_K_M-no_think": {
-        "_context_size": 128,
+        "_context_size": 40,
         "_parameter_size": 32.8,
         "_quantization_level": 4,
         "clojure-100": 1.07,
@@ -360,6 +363,14 @@
         "java-100": 3.11,
         "python-100": 10.15,
         "rust-100": 3.88
+    },
+    "hf.co/bartowski/OpenGVLab_InternVL3_5-30B-A3B-GGUF:Q4_K_M": {
+        "_parameter_size": 30.5,
+        "_quantization_level": 4,
+        "clojure-100": 0.33,
+        "java-100": 4.75,
+        "python-100": 10.14,
+        "rust-100": 3.54
     },
     "GPT-3.5-Turbo": {
         "_context_size": 16,
@@ -443,6 +454,7 @@
         "rust-100": 4.42
     },
     "hf.co/mradermacher/Seed-Coder-8B-Instruct-GGUF:Q4_K_M": {
+        "_context_size": 32,
         "_parameter_size": 8.25,
         "_quantization_level": 4,
         "clojure-100": 2.02,
@@ -550,6 +562,7 @@
         "rust-100": 0.0
     },
     "qwen3:30b-a3b-q4_K_M-think": {
+        "_context_size": 40,
         "_parameter_size": 30.5,
         "_quantization_level": 4,
         "clojure-100": 1.17,
@@ -567,7 +580,7 @@
         "rust-100": 4.44
     },
     "qwen3:30b-a3b-q4_K_M-no_think": {
-        "_context_size": 128,
+        "_context_size": 40,
         "_parameter_size": 30.5,
         "_quantization_level": 4,
         "clojure-100": 0.97,
@@ -737,6 +750,14 @@
         "rust-100": 2.05,
         "clojure-100": 0.44
     },
+    "hf.co/bartowski/OpenGVLab_InternVL3_5-14B-GGUF:Q4_K_M": {
+        "_parameter_size": 14.8,
+        "_quantization_level": 4,
+        "clojure-100": 1.08,
+        "java-100": 4.19,
+        "python-100": 7.22,
+        "rust-100": 1.59
+    },
     "qwen3:14b-q4_K_M-think": {
         "_parameter_size": 14.8,
         "_quantization_level": 4,
@@ -798,13 +819,6 @@
         "java-100": 4.84,
         "python-100": 6.98,
         "rust-100": 1.92
-    },
-    "hf.co/bartowski/soob3123_GrayLine-Qwen3-14B-GGUF:Q4_K_M-no_think": {
-        "_quantization_level": 4,
-        "clojure-100": 1.01,
-        "java-100": 7.01,
-        "python-100": 6.86,
-        "rust-100": 3.65
     },
     "hf.co/bartowski/mistralai_Mistral-Small-3.1-24B-Instruct-2503-GGUF:Q4_K_M": {
         "_context_size": 128,
@@ -1036,6 +1050,7 @@
         "rust-100": 4.22
     },
     "qwen3:32b-q4_K_M-think": {
+        "_context_size": 40,
         "_parameter_size": 32.8,
         "_quantization_level": 4,
         "clojure-100": 0.19,
@@ -2357,6 +2372,15 @@
         "python-100": 0.52,
         "rust-100": 0.05
     },
+    "openbmb/minicpm-v4:4b": {
+        "_context_size": 32,
+        "_parameter_size": 3.6,
+        "_quantization_level": 4,
+        "clojure-100": 0.0,
+        "java-100": 0.0,
+        "python-100": 0.52,
+        "rust-100": 0.01
+    },
     "hf.co/allenai/OLMoE-1B-7B-0125-Instruct-GGUF:Q4_K_M": {
         "_parameter_size": 6.92,
         "_quantization_level": 4,
@@ -2853,12 +2877,5 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
-    },
-    "hf.co/bartowski/ByteDance-Seed_Seed-OSS-36B-Instruct-GGUF:Q4_K_M": {
-        "_parameter_size": 4.06,
-        "_quantization_level": 4
-    },
-    "hf.co/bartowski/nvidia_NVIDIA-Nemotron-Nano-9B-v2-GGUF:Q4_K_M": {
-        "_quantization_level": 4
     }
 }

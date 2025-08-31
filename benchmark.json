@@ -33,6 +33,14 @@
         "python-100": 20.01,
         "rust-100": 12.16
     },
+    "deepseek-v3.1:671b": {
+        "_parameter_size": 671.0,
+        "_quantization_level": 4,
+        "clojure-100": 5.93,
+        "java-100": 14.73,
+        "python-100": 19.25,
+        "rust-100": 12.78
+    },
     "qwen3:235b-a22b-instruct-2507-q4_K_M": {
         "_context_size": 256,
         "_parameter_size": 235.1,

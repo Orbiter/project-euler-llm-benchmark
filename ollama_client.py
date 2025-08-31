@@ -34,16 +34,16 @@ class Endpoint:
             "url": self.url
         }
 
-def get_ollama_url_stub(endpoint: dict) -> str:
+def get_ollama_url_stub(endpoint: Endpoint) -> str:
     """Get the base URL for the ollama API"""
-    return urllib3.util.url.parse_url(endpoint["url"])._replace(path='').url
+    return urllib3.util.url.parse_url(endpoint.url)._replace(path='').url
 
-def ollama_pull(endpoint: dict) -> bool:
+def ollama_pull(endpoint: Endpoint) -> bool:
     api_base = get_ollama_url_stub(endpoint)
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.request("POST", f"{api_base}/api/pull", verify=False,
                                 headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-                                json={"model": endpoint.get("model_name", ""), "stream": False})
+                                json={"model": endpoint.model_name, "stream": False})
     response.raise_for_status()
     data = response.json()
     return not data.get("error", False)
@@ -53,13 +53,13 @@ def ollama_delete(endpoint: dict) -> bool:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     response = requests.request("DELETE", f"{api_base}/api/delete", verify=False,
                                 headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-                                json={"model": endpoint.get("model_name", "")})
+                                json={"model": endpoint.model_name})
     return response.status_code == 200
 
-def ollama_list(endpoint: dict) -> dict:
-    if endpoint.get("key", ""):
+def ollama_list(endpoint: Endpoint) -> dict:
+    if endpoint.key:
         # endpoints with a key are not an ollama server
-        return {endpoint["model_name"]: {"parameter_size": "unknown", "quantization_level": "unknown"}}
+        return {endpoint.model_name: {"parameter_size": "unknown", "quantization_level": "unknown"}}
     
     # check if the endpoint servers are online    
     api_base = get_ollama_url_stub(endpoint)
@@ -75,26 +75,26 @@ def ollama_list(endpoint: dict) -> dict:
         for entry in data['models']
     }
 
-def ollama_pull_endpoint(endpoint: dict) -> dict:
+def ollama_pull_endpoint(endpoint: Endpoint) -> dict:
     # check if the endpoint servers are online and the model is available
     # we do not catch exceptions here, because that shall be done in calling code
-    if endpoint.get("key", ""): return endpoint # endpoints with a key are not an ollama server
+    if endpoint.key: return endpoint # endpoints with a key are not an ollama server
     
     list = ollama_list(endpoint)
-    if endpoint["model_name"] in list: return endpoint
+    if endpoint.model_name in list: return endpoint
 
     # pull the model if it is not available
     api_base = get_ollama_url_stub(endpoint)
-    print(f"Model {endpoint.get("model_name", "")} is not available on server {api_base}. Pulling the model...")
+    print(f"Model {endpoint.model_name} is not available on server {api_base}. Pulling the model...")
     ollama_pull(endpoint)
-    print(f"Model {endpoint.get("model_name", "")} is now available on server {api_base}.")
+    print(f"Model {endpoint.model_name} is now available on server {api_base}.")
     return endpoint
 
 def hex2base64(hex_string) -> str:
     return base64.b64encode(bytes.fromhex(hex_string)).decode('utf-8')
 
 def ollama_chat(
-    endpoint: dict,
+    endpoint: Endpoint,
     prompt: str = 'Hello World',
     base64_image: str = None,
     temperature: float = 0.0,
@@ -121,14 +121,11 @@ def ollama_chat(
     stoptokens = ["[/INST]", "<|im_end|>", "<|end_of_turn|>", "<|eot_id|>", "<|end_header_id|>", "<EOS_TOKEN>", "</s>", "<|end|>"]
 
     # Set headers and payload
-    headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    }
-    if endpoint.get("key", ""):
-        headers['Authorization'] = 'Bearer ' + endpoint.get("key", "")
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+    if endpoint.key:
+        headers['Authorization'] = f'Bearer {endpoint.key}'
 
-    modelname = endpoint["model_name"]
+    modelname = endpoint.model_name
     messages = []
     messages.append({"role": "system", "content": "You are a helpful assistant"})
     
@@ -189,29 +186,46 @@ def ollama_chat(
         payload["max_tokens"] = max_tokens
 
     # use the endpoints array as failover mechanism
+    response = None
     try:
         #print(payload)
         t0 = time.time()
-        response = requests.post(endpoint["url"], headers=headers, json=payload, verify=False)
+        response = requests.post(
+            endpoint.url,
+            headers=headers,
+            json=payload,
+            verify=False, timeout=(10, 600) # (connect_timeout, read_timeout))
+        )
         t1 = time.time()
         #print(response)
         response.raise_for_status()
+    except requests.exceptions.ReadTimeout as e:
+        raise Exception(f"Read timeout while calling {endpoint.url} (timeout=600s). "
+                        f"The model may be slow or the server overloaded.") from e
     except requests.exceptions.RequestException as e:
         # print(f"Failed to access api: {e}")
         # Get the error message from the response
-        if response:
+        body = ""
+        if hasattr(e, "response") and e.response is not None:
             try:
-                #print(response.text)
-                data = response.json()
-                message = data.get('message', {})
-                content = message.get('content', '')
-                raise Exception(f"API request failed: {content}")
-            except json.JSONDecodeError:
-                raise Exception(f"API request failed: {e}")
+                body = (e.response.text or "")[:800].replace("\n", " ")
+            except Exception:
+                body = ""
+        raise Exception(f"API request failed to {endpoint.url}: {e} | Body: {body}") from e
 
     # Parse the response
     try:
         #print(response.text)
+        ctype = response.headers.get('Content-Type', '')
+        text  = response.text or ''
+        if not text.strip():
+            raise Exception(f"Empty response body (status {response.status_code}) from {endpoint.url}")
+
+        if 'json' not in ctype.lower():
+            # possibly a html error page
+            snippet = text[:800].replace('\n',' ')
+            raise Exception(f"Non-JSON response (status {response.status_code}, Content-Type {ctype}): {snippet}")
+
         data = response.json()
         usage = data.get('usage', {})
         total_tokens = usage.get('total_tokens', 0)
@@ -231,16 +245,16 @@ def test_multimodal(endpoint: dict) -> bool:
     with open(image_path, "rb") as image_file:
         base64_image = base64.b64encode(image_file.read()).decode('utf-8')
     try:
-        print(f"Testing multimodal capabilities of model {endpoint['model_name']}...")
+        print(f"Testing multimodal capabilities of model {endpoint.model_name}...")
         answer, total_tokens, token_per_second = ollama_chat(endpoint, prompt="what is in the image", base64_image=base64_image)
         result = "42" in answer
         if result:
-            print(f"Model {endpoint['model_name']} is multimodal.")
+            print(f"Model {endpoint.model_name} is multimodal.")
         else:
-            print(f"Model {endpoint['model_name']} is not multimodal; it returned the following answer: {answer}")
+            print(f"Model {endpoint.model_name} is not multimodal; it returned the following answer: {answer}")
         return result
     except Exception as e:
-        print(f"Model {endpoint['model_name']} is not multimodal; it created an error: {e}")
+        print(f"Model {endpoint.model_name} is not multimodal; it created an error: {e}")
         return False
 
 busy_waiting_time = 1 # seconds
@@ -357,7 +371,7 @@ class LoadBalancer:
             # Call the response processing function
             response = Response(task, answer, total_tokens, token_per_second)
             task.response_processing(response)
-            print(f"Processed {task.description}, on {server.endpoint["url"]} with model {endpoint["model_name"]} in {t1 - t0:.2f} seconds with {total_tokens} tokens ({token_per_second:.2f} tokens/sec)")
+            print(f"Processed {task.description}, on {server.endpoint.url} with model {endpoint.model_name} in {t1 - t0:.2f} seconds with {total_tokens} tokens ({token_per_second:.2f} tokens/sec)")
             
             # mark server available
             self.mark_server_available(server)
@@ -410,7 +424,7 @@ class LoadBalancer:
             # print out the current status of all servers
             for server in self.servers:
                 if server.current_task:
-                    print(f"Server {server.endpoint["url"]} - Current task ID: {server.current_task.id}")
+                    print(f"Server {server.endpoint.url} - Current task ID: {server.current_task.id}")
 
         print("All servers finished processing.")
 
@@ -441,14 +455,14 @@ def main():
             endpoints = [
                 Endpoint(
                     store_name=endpoint_dict["name"],
-                    api_name=endpoint_dict["model"],
+                    model_name=endpoint_dict["model"],
                     key=endpoint_dict["key"],
                     url=endpoint_dict["endpoint"]
                 )
             ]
     else:
         endpoints = [
-            Endpoint(store_name=model_name, api_name=model_name, key="",
+            Endpoint(store_name=model_name, model_name=model_name, key="",
                      url=f"{api_stub}/v1/chat/completions") for api_stub in api_base
         ]
 
@@ -470,9 +484,9 @@ def main():
         print(f"Model: {model}: {attr}")
     try:
         if base64_image:
-            answer, total_tokens, token_per_second = ollama_chat(endpoints, prompt="what is in the image", base64_image=base64_image)
+            answer, total_tokens, token_per_second = ollama_chat(endpoints[0], prompt="what is in the image", base64_image=base64_image)
         else:
-            answer, total_tokens, token_per_second = ollama_chat(endpoints)
+            answer, total_tokens, token_per_second = ollama_chat(endpoints[0])
     except Exception as e:
         answer = f"Error: {str(e)}"
     print(answer)

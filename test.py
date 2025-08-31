@@ -62,7 +62,7 @@ def main():
 
     # find models to test
     models = []
-    local_endpoint = Endpoint(store_name=model_name, model_name=model_name, key="", url=f"{api_base[0]}/v1/chat/completions").get_dict()
+    local_endpoint = Endpoint(store_name=model_name, model_name=model_name, key="", url=f"{api_base[0]}/v1/chat/completions")
     model_dict = ollama_list(local_endpoint)
     if args.allmodels:
         if endpoint_name:
@@ -118,7 +118,7 @@ def main():
                 except ValueError:
                     print(f"Warning: Could not convert quantization_level '{quantization_level}' to int for model {model}")
                     quantization_level = None
-            if not quantization_level and model.endswith("Q4_K_M"): quantization_level = 4
+            if not quantization_level and model.lower().endswith("q4_k_m"): quantization_level = 4
             if not '_parameter_size' in entry and parameter_size: entry['_parameter_size'] = parameter_size
             if not '_quantization_level' in entry and quantization_level: entry['_quantization_level'] = quantization_level
             entry = dict(sorted(entry.items(), key=lambda item: item[0]))

@@ -8,8 +8,6 @@ from argparse import ArgumentParser
 from benchmark import read_benchmark
 from ollama_client import ollama_list, test_multimodal, ollama_pull_endpoint, Endpoint, LoadBalancer, Server, Task, Response
 
-
-
 def read_template(template_path):
     with open(template_path, 'r', encoding='utf-8') as file:
         return file.read()
@@ -18,8 +16,8 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
                           overwrite_existing=False, overwrite_failed=False, expected_solutions={},
                           think=False, no_think=False):
     print(f"Processing problems in {problems_dir} with language {language} and endpoint: {endpoints[0]}")
-    store_name = endpoints[0]["store_name"]
-    model_name = endpoints[0]["model_name"]
+    store_name = endpoints[0].store_name
+    model_name = endpoints[0].model_name
     if think: store_name += "-think"
     if no_think: store_name += "-no_think"
     solutions_dir = os.path.join('solutions', store_name, language)
@@ -35,6 +33,9 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
         target = lambda: [lb.add_server(Server(endpoint=ollama_pull_endpoint(endpoint))) for endpoint in endpoints]
     )
     loading_thread.start()
+
+    # test if the model is a multimodal model
+    is_multimodal = test_multimodal(endpoints[0]) # this is cached
 
     # iterate over all problem files and process them
     for problem_file in sorted(os.listdir(problems_dir)):
@@ -64,7 +65,6 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
         
         # check if the endpoint is multimodal if we have an image
         if base64_image:
-            is_multimodal = test_multimodal(endpoints[0]) # this is cached
             if is_multimodal:
                 print(f"Problem {problem_number} is handled with multimodal model.")
             else:
@@ -195,7 +195,7 @@ def main():
                 # construct the endpoint object from command line arguments considering that ollama is the endpoint
                 endpoints = [
                     Endpoint(store_name=model_name, model_name=model_name, key="",
-                            url=f"{api_stub}/v1/chat/completions").get_dict() for api_stub in api_base
+                            url=f"{api_stub}/v1/chat/completions") for api_stub in api_base
                 ]
             
             # run the inference

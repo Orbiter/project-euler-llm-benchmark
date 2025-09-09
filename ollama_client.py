@@ -205,11 +205,11 @@ def ollama_chat(
         response.raise_for_status()
         #print(f"Response headers: {response.headers}")
         if stream:
-            print("Response (stream): ", end="", flush=True)
+            #print("Response (stream): ", end="", flush=True)
             timeouttime = t0 + read_timeout
             for line in response.iter_lines(decode_unicode=True):
-                if not line:
-                    continue
+                if time.time() > timeouttime: break # we simply silently terminate the stream after the timeout
+                if not line: continue
                 if line.startswith("data: "):
                     payload_line = line[len("data: "):].strip()
                     if payload_line == "[DONE]":
@@ -220,13 +220,14 @@ def ollama_chat(
                         choices = evt.get("choices", [])
                         if choices:
                             delta = choices[0].get("delta", {})
+                            #print(delta)
                             if "content" in delta:
-                                token = delta["content"]
-                                text_chunks.append(token)
-                                #print(token, end="", flush=True)
-                                print('.', end="", flush=True) # print a dot for each token to show progress
-                        if time.time() > timeouttime:
-                            break # we simply silently terminate the stream
+                                # delta may have attributes content or reasoning. Take whatever is non-empty
+                                token = delta.get("content") or delta.get("reasoning")
+                                if token:
+                                    text_chunks.append(token)
+                                    #print(token, end="", flush=True)
+                                    print('.', end="", flush=True) # print a dot for each token to show progress
                     except Exception:
                         pass # robust against json parse errors
         t1 = time.time()

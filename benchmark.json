@@ -481,6 +481,15 @@
         "python-100": 9.26,
         "rust-100": 4.42
     },
+    "hf.co/bartowski/AGI-0_Art-0-8B-GGUF:Q4_K_M": {
+        "_context_size": 40,
+        "_parameter_size": 8.19,
+        "_quantization_level": 4,
+        "clojure-100": 3.95,
+        "java-100": 6.61,
+        "python-100": 9.22,
+        "rust-100": 4.45
+    },
     "hf.co/mradermacher/Seed-Coder-8B-Instruct-GGUF:Q4_K_M": {
         "_context_size": 32,
         "_parameter_size": 8.25,
@@ -724,6 +733,15 @@
         "python-100": 7.5,
         "rust-100": 1.86
     },
+    "hf.co/bartowski/deepcogito_cogito-v2-preview-llama-70B-GGUF:Q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 70.6,
+        "_quantization_level": 4,
+        "clojure-100": 1.92,
+        "java-100": 5.65,
+        "python-100": 7.49,
+        "rust-100": 4.5
+    },
     "qwen2.5:7b-instruct-q8_0": {
         "_context_size": 128,
         "_parameter_size": 7.6,
@@ -849,6 +867,15 @@
         "java-100": 4.84,
         "python-100": 6.98,
         "rust-100": 1.92
+    },
+    "hf.co/bartowski/NousResearch_Hermes-4-14B-GGUF:Q4_K_M": {
+        "_context_size": 40,
+        "_parameter_size": 14.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.78,
+        "java-100": 4.01,
+        "python-100": 6.81,
+        "rust-100": 4.69
     },
     "hf.co/bartowski/mistralai_Mistral-Small-3.1-24B-Instruct-2503-GGUF:Q4_K_M": {
         "_context_size": 128,
@@ -1163,6 +1190,14 @@
         "java-100": 2.99,
         "rust-100": 2.08,
         "clojure-100": 0.52
+    },
+    "hf.co/bartowski/baidu_ERNIE-4.5-21B-A3B-PT-GGUF:Q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 21.8,
+        "_quantization_level": 4,
+        "clojure-100": 0.28,
+        "python-100": 5.51,
+        "rust-100": 2.08
     },
     "qwen3:4b-q4_K_M-no_think": {
         "_context_size": 32,
@@ -2041,6 +2076,15 @@
         "python-100": 1.59,
         "rust-100": 0.01
     },
+    "hf.co/mradermacher/MiniCPM4.1-8B-GGUF:Q4_K_M": {
+        "_context_size": 64,
+        "_parameter_size": 8.19,
+        "_quantization_level": 4,
+        "clojure-100": 0.33,
+        "java-100": 1.46,
+        "python-100": 1.56,
+        "rust-100": 0.79
+    },
     "command-r7b:7b-12-2024-q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 8.0,
@@ -2406,6 +2450,14 @@
         "java-100": 0.03,
         "python-100": 0.65,
         "rust-100": 0.0
+    },
+    "hf.co/mradermacher/GLM-4.5-Air-GGUF:Q2_K": {
+        "_context_size": 128,
+        "_parameter_size": 110.0,
+        "clojure-100": 0.42,
+        "java-100": 0.35,
+        "python-100": 0.64,
+        "rust-100": 0.93
     },
     "qwen3:0.6b-q4_K_M-think": {
         "_context_size": 32,

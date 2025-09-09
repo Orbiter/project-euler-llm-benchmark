@@ -14,7 +14,7 @@ def main():
 
     for api_stub in api_base:
         try:
-            endpoint = Endpoint(store_name=model_name, api_name=model_name, key="", url=f"{api_stub}/v1/chat/completions")
+            endpoint = Endpoint(store_name=model_name, model_name=model_name, key="", url=f"{api_stub}/v1/chat/completions")
             ollama_delete(endpoint)
             print(f"Model {model_name} removed from {api_stub}.")
         except Exception as e:

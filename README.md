@@ -27,9 +27,11 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | deepseek-v3.1:671b                                                                       |          |  15.27 |      5 |  671.0 |    4 |  160 | 19.25 | 14.73 | 12.78 | 5.93 |
 | qwen3:235b-a22b-instruct-2507-q4_K_M                                                     |      118 |  15.26 |     13 |  235.1 |    4 |  256 | 18.66 | 17.64 | 10.32 | 4.38 |
 | GPT-4o                                                                                   |          |  14.72 |        |        |   16 |  128 | 17.05 | 13.87 | 14.57 | 8.24 |
+| mlx-community/Qwen3-Next-80B-A3B-Instruct-8bit                                           |    80.00 |  14.46 |     18 |     80 |    8 |  256 | 18.85 | 15.27 | 9.92 | 3.51 |
 | gpt-4-turbo-2024-04-09                                                                   |          |  13.86 |        |        |   16 |  128 | 16.87 | 15.82 | 10.12 | 3.45 |
+| mlx-community/Qwen3-Next-80B-A3B-Instruct-4bit                                           |    40.00 |  13.13 |     33 |     80 |    4 |  256 | 16.04 | 14.51 | 9.55 | 4.47 |
 | qwen3-coder:30b-a3b-q4_K_M                                                               |    15.25 |  11.69 |     77 |   30.5 |    4 |  256 | 14.3 | 12.72 | 9.61 | 2.34 |
-| GPT-o1-Mini                                                                              |          |  11.28 |        |        |   16 |   32 | 17.44 |      |      |      |
+| GPT-o1-Mini                                                                              |          |  11.30 |        |        |   16 |   32 | 17.44 |      |      |      |
 | qwen3:30b-a3b-instruct-2507-q8_0                                                         |          |  11.19 |     37 |   30.5 |    8 |  256 | 14.29 | 11.13 | 9.15 | 3.04 |
 | athene-v2:72b-q8_0                                                                       |          |  10.97 |     15 |   72.7 |    8 |  128 | 16.22 | 10.15 | 5.55 | 3.32 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M                                                       |    15.25 |  10.78 |     71 |   30.5 |    4 |  256 | 13.95 | 10.58 | 8.42 | 3.39 |
@@ -37,12 +39,11 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | qwen3-coder:30b-a3b-q8_0                                                                 |          |  10.73 |     35 |   30.5 |    8 |  256 | 13.94 | 11.51 | 6.22 | 4.62 |
 | hf.co/bartowski/Athene-V2-Agent-GGUF:Q4_K_M                                              |          |  10.60 |     29 |   72.7 |    4 |  128 | 14.49 | 10.56 | 6.33 | 3.74 |
 | athene-v2:72b-q4_K_M                                                                     |          |  10.48 |     29 |   72.7 |    4 |  128 | 14.07 | 11.19 | 6.55 | 1.83 |
-| athene-v2:latest                                                                         |          |  10.44 |     29 |   72.7 |    4 |  128 | 14.07 | 11.14 | 6.55 | 1.62 |
 | llama4:17b-maverick-128e-instruct-q4_K_M                                                 |          |  10.38 |      5 |  401.6 |    4 | 1024 | 11.3 | 11.44 | 9.93 | 4.39 |
 | gpt-4.1-nano-2025-04-14                                                                  |          |  10.35 |        |        |   16 | 1024 | 13.79 | 10.36 | 7.83 |  1.6 |
 | hf.co/bartowski/Sky-T1-32B-Preview-GGUF:Q4_K_M                                           |          |  10.33 |     63 |   32.8 |    4 |   32 | 12.72 | 11.67 | 7.25 | 2.89 |
+| GPT-o1-Preview                                                                           |          |  10.28 |      2 |  300.0 |   16 |   32 | 15.86 |      |      |      |
 | hf.co/bartowski/Sky-T1-32B-Preview-GGUF:Q8_0                                             |          |  10.28 |     31 |   32.8 |    8 |   32 | 12.76 | 10.75 | 8.04 | 3.43 |
-| GPT-o1-Preview                                                                           |          |  10.26 |      2 |  300.0 |   16 |   32 | 15.86 |      |      |      |
 | qwen2.5:72b-instruct-q4_K_M                                                              |          |   9.78 |     27 |   72.7 |    4 |  128 | 14.02 |  9.1 | 5.97 | 2.46 |
 | qwen2.5:72b-instruct-q8_0                                                                |          |   9.77 |     13 |   72.7 |    8 |  128 | 12.98 | 10.5 | 5.41 | 3.49 |
 | qwen2.5-coder:32b-instruct-q4_K_M                                                        |          |   9.77 |     60 |   32.8 |    4 |   32 | 14.05 | 8.82 | 6.41 |  2.2 |
@@ -153,9 +154,9 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | qwen3:4b-q4_K_M-no_think                                                                 |     2.00 |   3.67 |    184 |    4.0 |    4 |   32 | 5.44 | 3.72 | 1.71 | 0.38 |
 | gemma2:27b-instruct-q8_0                                                                 |          |   3.65 |     13 |   27.2 |    8 |    8 | 5.18 |  3.3 | 2.47 | 0.98 |
 | hf.co/bartowski/microsoft_Phi-4-reasoning-plus-GGUF:Q4_K_M                               |          |   3.63 |     49 |   14.7 |    4 |      | 4.36 | 4.76 | 1.93 | 0.72 |
+| hf.co/bartowski/baidu_ERNIE-4.5-21B-A3B-PT-GGUF:Q4_K_M                                   |          |   3.58 |     33 |   21.8 |    4 |  128 | 5.51 |      | 2.08 | 0.28 |
 | hf.co/bartowski/Athene-70B-GGUF:Q4_K_M                                                   |          |   3.58 |     10 |   70.6 |    4 |    8 | 6.98 | 1.99 | 0.76 | 0.36 |
 | hf.co/bartowski/andrewzh_Absolute_Zero_Reasoner-Coder-7b-GGUF:Q4_K_M                     |          |   3.58 |     94 |   7.62 |    4 |   32 | 5.53 | 2.99 | 2.08 | 0.52 |
-| hf.co/bartowski/baidu_ERNIE-4.5-21B-A3B-PT-GGUF:Q4_K_M                                   |          |   3.57 |     33 |   21.8 |    4 |  128 | 5.51 |      | 2.08 | 0.28 |
 | hf.co/mradermacher/Viper-Coder-HybridMini-v1.3-GGUF:Q4_K_M                               |          |   3.55 |     93 |   7.62 |    4 |   32 | 5.18 | 3.51 | 1.99 | 0.24 |
 | hf.co/lmstudio-community/INTELLECT-2-GGUF:Q4_K_M                                         |          |   3.52 |     21 |   32.8 |    4 |      | 4.21 | 5.02 |      |      |
 | deepseek-coder:6.7b-instruct-q8_0                                                        |          |   3.52 |     50 |    7.0 |    8 |   16 | 5.37 | 3.68 | 0.94 | 0.79 |
@@ -202,6 +203,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | qwen3:1.7b-q4_K_M-think                                                                  |     1.00 |   1.97 |    197 |    2.0 |    4 |   32 | 3.97 | 0.94 | 0.48 | 0.04 |
 | hf.co/bartowski/andrewzh_Absolute_Zero_Reasoner-Coder-3b-GGUF:Q4_K_M                     |          |   1.97 |    127 |   3.09 |    4 |   32 | 3.75 | 0.86 | 0.86 | 0.36 |
 | hf.co/bartowski/open-r1_OlympicCoder-7B-GGUF:Q4_K_M                                      |          |   1.93 |     55 |    7.0 |    4 |   32 | 2.43 | 2.86 | 0.31 | 0.33 |
+| hf.co/bartowski/Alibaba-NLP_Tongyi-DeepResearch-30B-A3B-GGUF:Q4_K_M                      |          |   1.91 |     12 |   30.5 |    4 |  128 | 2.47 | 2.55 | 0.74 | 0.04 |
 | hf.co/bartowski/Yi-1.5-6B-Chat-GGUF:Q8_0                                                 |          |   1.87 |     31 |   6.06 |    8 |    4 | 3.92 | 0.92 | 0.13 |  0.0 |
 | hf.co/mradermacher/olmOCR-7B-0725-GGUF:Q4_K_M                                            |          |   1.81 |     48 |   7.62 |    4 |  128 | 3.66 | 0.65 | 0.74 | 0.03 |
 | hf.co/bartowski/Yi-1.5-6B-Chat-GGUF:Q4_K_M                                               |          |   1.81 |     60 |   6.06 |    4 |    4 | 3.71 | 0.87 | 0.32 |  0.0 |
@@ -212,6 +214,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | deepseek-r1:14b-qwen-distill-q4_K_M                                                      |          |   1.69 |     23 |   14.8 |    4 |  128 |  2.6 | 1.02 | 1.19 | 1.04 |
 | qwen2.5:3b                                                                               |          |   1.67 |    108 |    3.1 |    4 |  128 | 2.95 | 1.35 | 0.42 | 0.05 |
 | llama3.2-vision:11b-instruct-q4_K_M                                                      |          |   1.67 |     34 |    9.8 |    4 |      | 3.13 | 1.21 | 0.21 | 0.11 |
+| hf.co/mradermacher/Kimi-VL-A3B-Thinking-2506-GGUF:Q4_K_M                                 |          |   1.66 |     21 |   16.0 |    4 |  128 | 2.35 | 1.27 | 1.43 | 0.53 |
 | yi-coder:1.5b-chat-q4_K_M                                                                |     0.75 |   1.65 |    220 |    1.5 |    4 |  128 | 3.49 | 0.61 | 0.34 |  0.0 |
 | gemma2:9b-instruct-q8_0                                                                  |          |   1.63 |     18 |    9.2 |    8 |    8 | 2.46 | 1.55 | 0.86 | 0.12 |
 | granite3.1-dense:8b-instruct-q8_0                                                        |          |   1.59 |     19 |    8.2 |    8 |  128 | 2.73 | 1.55 | 0.16 | 0.03 |

@@ -51,6 +51,15 @@
         "python-100": 19.25,
         "rust-100": 12.78
     },
+    "mlx-community/Qwen3-Next-80B-A3B-Instruct-8bit": {
+        "_context_size": 256,
+        "_parameter_size": 80,
+        "_quantization_level": 8,
+        "clojure-100": 3.51,
+        "java-100": 15.27,
+        "python-100": 18.85,
+        "rust-100": 9.92
+    },
     "qwen3:235b-a22b-instruct-2507-q4_K_M": {
         "_context_size": 256,
         "_parameter_size": 235.1,
@@ -98,6 +107,15 @@
         "python-100": 16.22,
         "rust-100": 5.55
     },
+    "mlx-community/Qwen3-Next-80B-A3B-Instruct-4bit": {
+        "_context_size": 256,
+        "_parameter_size": 80,
+        "_quantization_level": 4,
+        "clojure-100": 4.47,
+        "java-100": 14.51,
+        "python-100": 16.04,
+        "rust-100": 9.55
+    },
     "GPT-o1-Preview": {
         "_context_size": 32,
         "_parameter_size": 300.0,
@@ -130,15 +148,6 @@
         "java-100": 11.13,
         "python-100": 14.29,
         "rust-100": 9.15
-    },
-    "athene-v2:latest": {
-        "_context_size": 128,
-        "_parameter_size": 72.7,
-        "_quantization_level": 4,
-        "clojure-100": 1.62,
-        "java-100": 11.14,
-        "python-100": 14.07,
-        "rust-100": 6.55
     },
     "athene-v2:72b-q4_K_M": {
         "_context_size": 128,
@@ -1800,6 +1809,15 @@
         "python-100": 2.49,
         "rust-100": 0.02
     },
+    "hf.co/bartowski/Alibaba-NLP_Tongyi-DeepResearch-30B-A3B-GGUF:Q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 30.5,
+        "_quantization_level": 4,
+        "clojure-100": 0.04,
+        "java-100": 2.55,
+        "python-100": 2.47,
+        "rust-100": 0.74
+    },
     "gemma2:9b-instruct-q8_0": {
         "_context_size": 8,
         "_parameter_size": 9.2,
@@ -1835,6 +1853,15 @@
         "java-100": 0.64,
         "python-100": 2.42,
         "rust-100": 0.0
+    },
+    "hf.co/mradermacher/Kimi-VL-A3B-Thinking-2506-GGUF:Q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 16.0,
+        "_quantization_level": 4,
+        "clojure-100": 0.53,
+        "java-100": 1.27,
+        "python-100": 2.35,
+        "rust-100": 1.43
     },
     "yi-coder:1.5b-chat-q8_0": {
         "_context_size": 128,

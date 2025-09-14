@@ -56,24 +56,57 @@ def ollama_delete(endpoint: dict) -> bool:
                                 json={"model": endpoint.model_name})
     return response.status_code == 200
 
-def ollama_list(endpoint: Endpoint) -> dict:
-    if endpoint.key:
-        # endpoints with a key are not an ollama server
-        return {endpoint.model_name: {"parameter_size": "unknown", "quantization_level": "unknown"}}
-    
-    # check if the endpoint servers are online    
+def ollama_list(endpoint) -> dict:
+    """
+    Try to read models from an Ollama-compatible endpoint (/api/tags).
+    If that fails (e.g., it's actually an OpenAI-compatible server),
+    fall back to /v1/models and map IDs to 'unknown' details.
+    """
+    # Build base URL (e.g. http://host:port)
     api_base = get_ollama_url_stub(endpoint)
+
+    # We intentionally allow self-signed dev servers
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    response = requests.get(f"{api_base}/api/tags", verify=False)
-    response.raise_for_status()
-    data = response.json()
-    return {
-        entry['model']: {
-            'parameter_size': entry['details']['parameter_size'][:-1],
-            'quantization_level': entry['details']['quantization_level'][1:2]
+
+    # ---- Attempt 1: Ollama /api/tags ----
+    try:
+        resp = requests.get(f"{api_base}/api/tags", verify=False, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+        return {
+            entry["model"]: {
+                "parameter_size": entry["details"]["parameter_size"][:-1],
+                "quantization_level": entry["details"]["quantization_level"][1:2],
+            }
+            for entry in data.get("models", [])
         }
-        for entry in data['models']
-    }
+    except (requests.RequestException, ValueError, KeyError, TypeError):
+        # Any HTTP/JSON/schema issue -> try OpenAI-compatible fallback
+        pass
+
+    # ---- Attempt 2: OpenAI-compatible /v1/models ----
+    try:
+        headers = {}
+        if getattr(endpoint, "key", None):
+            headers["Authorization"] = f"Bearer {endpoint.key}"
+
+        resp = requests.get(
+            f"{api_base}/v1/models", headers=headers, verify=False, timeout=5
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        # Map to the same return shape; details are unknown here
+        return {
+            m["id"]: {
+                "parameter_size": "unknown",
+                "quantization_level": "unknown",
+            }
+            for m in data.get("data", [])
+        }
+    except (requests.RequestException, ValueError, KeyError, TypeError):
+        # Both strategies failed; return empty so caller can handle it
+        return {}
 
 def ollama_pull_endpoint(endpoint: Endpoint) -> dict:
     # check if the endpoint servers are online and the model is available

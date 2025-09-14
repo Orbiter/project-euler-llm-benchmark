@@ -823,6 +823,14 @@
         "python-100": 7.15,
         "rust-100": 3.8
     },
+    "hf.co/unsloth/Magistral-Small-2509-GGUF:Q4_K_M": {
+        "_parameter_size": 23.6,
+        "_quantization_level": 4,
+        "clojure-100": 1.32,
+        "java-100": 5.08,
+        "python-100": 7.14,
+        "rust-100": 3.36
+    },
     "hf.co/mradermacher/Sky-T1-mini-GGUF:Q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 7.62,
@@ -1196,6 +1204,7 @@
         "_parameter_size": 21.8,
         "_quantization_level": 4,
         "clojure-100": 0.28,
+        "java-100": 3.42,
         "python-100": 5.51,
         "rust-100": 2.08
     },
@@ -1314,6 +1323,15 @@
         "java-100": 3.0,
         "python-100": 4.87,
         "rust-100": 1.18
+    },
+    "hf.co/mradermacher/K2-Think-GGUF:Q4_K_M": {
+        "_context_size": 128,
+        "_parameter_size": 32.8,
+        "_quantization_level": 4,
+        "clojure-100": 1.36,
+        "java-100": 4.98,
+        "python-100": 4.83,
+        "rust-100": 6.42
     },
     "hf.co/bartowski/cognitivecomputations_Dolphin-Mistral-24B-Venice-Edition-GGUF:Q4_K_M": {
         "_context_size": 32,
@@ -2432,6 +2450,11 @@
         "java-100": 1.48,
         "python-100": 0.79,
         "rust-100": 0.62
+    },
+    "hf.co/bartowski/nvidia_Llama-3_3-Nemotron-Super-49B-v1_5-GGUF:Q4_K_M": {
+        "_parameter_size": 49.9,
+        "_quantization_level": 4,
+        "python-100": 0.79
     },
     "hf.co/TheBloke/Yi-34B-Chat-GGUF:Q4_K_M": {
         "_context_size": 4,

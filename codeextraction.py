@@ -2,6 +2,7 @@ import os
 import re
 import json
 from argparse import ArgumentParser
+from ollama_client import Endpoint
 
 # make a function which returns the extension of the language files for each language
 def get_extension(language):
@@ -83,8 +84,8 @@ def extract_code_block(markdown_content, language, extension):
 
     return code_block
 
-def process_markdown_files(model_name, language):
-    language_dir = os.path.join('solutions', model_name, language)
+def process_markdown_files(store_name, language):
+    language_dir = os.path.join('solutions', store_name, language)
 
     if not os.path.exists(language_dir):
         os.makedirs(language_dir)
@@ -119,7 +120,7 @@ def main():
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     
     args = parser.parse_args()
-    model_name = args.model
+    store_name = args.model
     language = args.language
     endpoint_name = args.endpoint
 
@@ -130,17 +131,17 @@ def main():
         if not os.path.exists(endpoint_path):
             raise Exception(f"Endpoint file {endpoint_path} does not exist.")
         with open(endpoint_path, 'r', encoding='utf-8') as file:
-            endpoint = json.load(file)
-            model_name = endpoint.get('name', model_name)
+            endpoint = Endpoint(**json.load(file))
+            store_name = endpoint.store_name
 
     # modify the model name in case soft thinking switches are given
-    if args.think: model_name += "-think"
-    if args.no_think: model_name += "-no_think"
+    if args.think: store_name += "-think"
+    if args.no_think: store_name += "-no_think"
 
     languages = args.language.split(',')
     for language in languages:
-        print(f"Processing language: {language}")
-        process_markdown_files(model_name, language)
+        print(f"Processing language: {language} for model {store_name}")
+        process_markdown_files(store_name, language)
 
 if __name__ == "__main__":
     main()

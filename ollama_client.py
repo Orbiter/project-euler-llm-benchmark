@@ -9,29 +9,30 @@ import threading
 from PIL import Image
 from io import BytesIO
 from enum import Enum, auto
+from urllib.parse import urlparse
 from dataclasses import dataclass
 from argparse import ArgumentParser
 from typing import Callable, List, Optional
 
 @dataclass
 class Endpoint:
-    """
-    Dataclass for endpoint.
-    This dataclass is used to represent an endpoint for the API.
-    Each endpoint has a name, a model name, a key, and a list of URLs.
-    """
-    store_name: str    # Name of the endpoint, used to store the model in the solutions
-    model_name: str    # Model name that is used in the api request
-    key: str           # API key (if required)
-    url: str           # URL of the endpoint
+    store_name: str                             # Name of the endpoint, used to store the model in the solutions
+    model_name: str                             # Model name that is used in the api request
+    key: str                                    # API key (if required)
+    url: str                                    # URL of the endpoint
+    _context_size: Optional[float] = None       # kilo-number of tokens
+    _publication_date: Optional[str] = None     # ISO-short date, like 2025-09-19
+    _quantization_level: Optional[int] = None   # number of bits per weight
     
     def get_dict(self) -> dict:
-        """Get the endpoint as a dictionary"""
         return {
             "store_name": self.store_name,
             "model_name": self.model_name,
             "key": self.key,
-            "url": self.url
+            "url": self.url,
+            "_context_size": self._context_size,
+            "_publication_date": self._publication_date,
+            "_quantization_level": self._quantization_level
         }
 
 def get_ollama_url_stub(endpoint: Endpoint) -> str:
@@ -223,6 +224,10 @@ def ollama_chat(
     response = None
     text_chunks = []
     read_timeout = 600 # seconds
+    token_count = 0
+    parsed_url = urlparse(endpoint.url)
+    host = parsed_url.hostname or ""
+    c0 = host[0] if host else "."
     #print(f"Calling model in strem mode: {stream}, payload: {json.dumps(payload)}")
     try:
         t0 = time.time()
@@ -232,7 +237,7 @@ def ollama_chat(
             json=payload,
             verify=False,
             stream=stream,
-            timeout=(10, read_timeout) # (connect_timeout, read_timeout))
+            timeout=(60, read_timeout) # (connect_timeout, read_timeout))
         )
         #print(f"Response status: {response.status_code}")
         response.raise_for_status()
@@ -243,6 +248,7 @@ def ollama_chat(
             for line in response.iter_lines(decode_unicode=True):
                 if time.time() > timeouttime: break # we simply silently terminate the stream after the timeout
                 if not line: continue
+                #print(line)
                 if line.startswith("data: "):
                     payload_line = line[len("data: "):].strip()
                     if payload_line == "[DONE]":
@@ -259,8 +265,10 @@ def ollama_chat(
                                 token = delta.get("content") or delta.get("reasoning")
                                 if token:
                                     text_chunks.append(token)
+                                    token_count += 1
                                     #print(token, end="", flush=True)
-                                    print('.', end="", flush=True) # print a dot for each token to show progress
+                                    if token_count % 100 == 0:
+                                        print(c0, end="", flush=True) # print a dot for each 10 tokens to show progress
                     except Exception:
                         pass # robust against json parse errors
         t1 = time.time()
@@ -284,8 +292,7 @@ def ollama_chat(
             answer = "".join(text_chunks).strip()
             total_tokens = len(text_chunks)
             token_per_second = 0.0 if (t1 - t0) <= 0 else total_tokens / (t1 - t0)
-            if not answer:
-                raise Exception("Empty streamed response from the API")
+            if not answer: raise Exception("Empty streamed response from the API")
         else:
             ctype = response.headers.get('Content-Type', '')
             text  = response.text or ''
@@ -316,16 +323,16 @@ def test_multimodal(endpoint: dict) -> bool:
     with open(image_path, "rb") as image_file:
         base64_image = base64.b64encode(image_file.read()).decode('utf-8')
     try:
-        print(f"Testing multimodal capabilities of model {endpoint.model_name}...")
+        print(f"Testing multimodal capabilities of model {endpoint.store_name}...")
         answer, total_tokens, token_per_second = ollama_chat(endpoint, prompt="what is in the image", base64_image=base64_image)
         result = "42" in answer
         if result:
-            print(f"Model {endpoint.model_name} is multimodal.")
+            print(f"Model {endpoint.store_name} is multimodal.")
         else:
-            print(f"Model {endpoint.model_name} is not multimodal; it returned the following answer: {answer}")
+            print(f"Model {endpoint.store_name} is not multimodal; it returned the following answer: {answer}")
         return result
     except Exception as e:
-        print(f"Model {endpoint.model_name} is not multimodal; it created an error: {e}")
+        print(f"Model {endpoint.store_name} is not multimodal; it created an error: {e}")
         return False
 
 busy_waiting_time = 1 # seconds

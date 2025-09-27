@@ -7,6 +7,7 @@ import traceback
 import subprocess
 import multiprocessing
 from io import StringIO
+from ollama_client import Endpoint
 from argparse import ArgumentParser
 from contextlib import redirect_stdout
 from benchmark import read_benchmark, write_benchmark
@@ -417,7 +418,7 @@ def main():
     parser.add_argument('--nall', action='store_true', help='all problems')
 
     args = parser.parse_args()
-    model_name = args.model
+    store_name = args.model
     languages = args.language.split(',')
     max_problem_number = 100
     if args.n100: max_problem_number = 100
@@ -431,12 +432,12 @@ def main():
         if not os.path.exists(endpoint_path):
             raise Exception(f"Endpoint file {endpoint_path} does not exist.")
         with open(endpoint_path, 'r', encoding='utf-8') as file:
-            endpoint = json.load(file)
-            model_name = endpoint.get('name', model_name)
+            endpoint = Endpoint(**json.load(file))
+            store_name = endpoint.store_name
 
     # modify the model name in case soft thinking switches are given
-    if args.think: model_name += "-think"
-    if args.no_think: model_name += "-no_think"
+    if args.think: store_name += "-think"
+    if args.no_think: store_name += "-no_think"
     
     with open('solutions.json', 'r', encoding='utf-8') as json_file:
         expected_solutions = json.load(json_file)
@@ -446,12 +447,12 @@ def main():
             # iterate over all models provided by benchmark.json and run all of them
             benchmark = read_benchmark()
             # the keys are the model names
-            for model_name in benchmark:
-                solutions = process_solutions(model_name, language, max_problem_number, expected_solutions)
-                evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions)
+            for store_name in benchmark:
+                solutions = process_solutions(store_name, language, max_problem_number, expected_solutions)
+                evaluate_solutions(solutions, store_name, language, max_problem_number, expected_solutions)
         else:
-            solutions = process_solutions(model_name, language, max_problem_number, expected_solutions)
-            evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions)
+            solutions = process_solutions(store_name, language, max_problem_number, expected_solutions)
+            evaluate_solutions(solutions, store_name, language, max_problem_number, expected_solutions)
 
 if __name__ == "__main__":
     main()

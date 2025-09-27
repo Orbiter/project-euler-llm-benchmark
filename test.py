@@ -1,4 +1,5 @@
 import os
+import json
 from argparse import ArgumentParser
 from benchmark import read_benchmark, write_benchmark
 from ollama_client import ollama_list, Endpoint
@@ -50,7 +51,7 @@ def main():
 
     args = parser.parse_args()
     api_base = args.api if args.api else args.api_base.split(",") if "," in args.api_base else [args.api_base]
-    model_name = args.model
+    store_name = args.model
     max_problem_number = 100
     if args.n100: max_problem_number = 100
     if args.n200: max_problem_number = 200
@@ -62,7 +63,7 @@ def main():
 
     # find models to test
     models = []
-    local_endpoint = Endpoint(store_name=model_name, model_name=model_name, key="", url=f"{api_base[0]}/v1/chat/completions")
+    local_endpoint = Endpoint(store_name=store_name, model_name=store_name, key="", url=f"{api_base[0]}/v1/chat/completions")
     model_dict = ollama_list(local_endpoint)
     if args.allmodels:
         if endpoint_name:
@@ -71,7 +72,16 @@ def main():
         models = list(model_dict.keys())
         print(f"Found {len(models)} models in ollama.")
     else:
-        models = [model_name]
+        if endpoint_name:
+            print(f"Using endpoint {endpoint_name}")
+            endpoint_path = os.path.join('endpoints', f"{endpoint_name}.json")
+            print(f"Using endpoint file {endpoint_path}")
+            if not os.path.exists(endpoint_path):
+                raise Exception(f"Endpoint file {endpoint_path} does not exist.")
+            with open(endpoint_path, 'r', encoding='utf-8') as file:
+                endpoint = Endpoint(**json.load(file))
+                store_name = endpoint.store_name
+        models = [store_name]
 
     # get languages
     languages = args.language.split(',')

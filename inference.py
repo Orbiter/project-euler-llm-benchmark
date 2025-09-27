@@ -17,7 +17,6 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
                           think=False, no_think=False):
     print(f"Processing problems in {problems_dir} with language {language} and endpoint: {endpoints[0]}")
     store_name = endpoints[0].store_name
-    model_name = endpoints[0].model_name
     if think: store_name += "-think"
     if no_think: store_name += "-no_think"
     solutions_dir = os.path.join('solutions', store_name, language)
@@ -87,7 +86,7 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
         # Create task and add to load balancer
         task = Task(
             id = problem_number,
-            description = f"problem {problem_number}, language {language}, model {model_name}",
+            description = f"problem {problem_number}, language {language}, model {store_name}",
             prompt = prompt,
             base64_image = base64_image,
             response_processing = save_solution
@@ -95,7 +94,7 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
         while not lb.add_task(task):
             print(f"Waiting to add task {problem_number} - queue full")
             time.sleep(1)
-        print(f"Added problem {problem_number}, language {language}, model {model_name} to processing queue")
+        print(f"Added problem {problem_number}, language {language}, model {store_name} to processing queue")
 
     # Wait for all tasks to complete
     print("Waiting for all problems to be processed...")
@@ -123,7 +122,7 @@ def main():
     args = parser.parse_args()
     
     api_base = args.api if args.api else args.api_base.split(",") if "," in args.api_base else [args.api_base]
-    model_name = args.model
+    store_name = args.model
     language = args.language
     max_problem_number = 100
     if args.n100: max_problem_number = 100
@@ -189,12 +188,12 @@ def main():
                 if not os.path.exists(endpoint_path):
                     raise Exception(f"Endpoint file {endpoint_path} does not exist.")
                 with open(endpoint_path, 'r', encoding='utf-8') as file:
-                    endpoints = [json.load(file)]
+                    endpoints = [Endpoint(**json.load(file))]
             else:
-                print(f"Inference: Using model {model_name} and language {language}")
+                print(f"Inference: Using model {store_name} and language {language}")
                 # construct the endpoint object from command line arguments considering that ollama is the endpoint
                 endpoints = [
-                    Endpoint(store_name=model_name, model_name=model_name, key="",
+                    Endpoint(store_name=store_name, model_name=store_name, key="",
                             url=f"{api_stub}/v1/chat/completions") for api_stub in api_base
                 ]
             

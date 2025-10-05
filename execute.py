@@ -6,6 +6,8 @@ import builtins
 import traceback
 import subprocess
 import multiprocessing
+import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from io import StringIO
 from ollama_client import Endpoint
 from argparse import ArgumentParser
@@ -156,13 +158,10 @@ def extract_class_name(java_code):
     raise ValueError("No public class found in the Java code")
 
 def execute_java_code(code, timeout=10):
+    temp_dir = tempfile.mkdtemp(prefix="temp_java_")
     try:
         # Extract the class name from the Java code
         class_name = extract_class_name(code)
-
-        # Create a temporary directory to store the Java file
-        temp_dir = "temp_java"
-        os.makedirs(temp_dir, exist_ok=True)
 
         # Write the Java code to a file with the correct name
         java_file_path = os.path.join(temp_dir, f"{class_name}.java")
@@ -190,26 +189,8 @@ def execute_java_code(code, timeout=10):
             timeout=timeout                         # Set a timeout
         )
 
-        # Print the full stdout and stderr for debugging
-        #print("Full stdout:", execute_result.stdout)
-        #print("Full stderr:", execute_result.stderr)
-
         # Capture the output
         output = execute_result.stdout.strip()  # Remove any extra whitespace
-
-        # Clean up the temporary directory
-        for file_name in os.listdir(temp_dir):
-            file_path = os.path.join(temp_dir, file_name)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)  # Delete the file
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)  # Delete the directory
-            except Exception as e:
-                print(f"Failed to delete {file_path}. Reason: {e}")
-
-        os.rmdir(temp_dir)  # Remove the now-empty directory
-
         return output
 
     except subprocess.TimeoutExpired:
@@ -218,16 +199,12 @@ def execute_java_code(code, timeout=10):
     except ValueError as e:
         # Handle the case where no public class is found
         return f"Error: {str(e)}"
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 def execute_rust_code(code, timeout=10):
-    #print(f"Executing Rust code: {code}")
+    temp_dir = tempfile.mkdtemp(prefix="temp_rust_")
     try:
-
-        # Create a temporary directory to store the Rust file
-        temp_dir = "temp_rust"
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir, exist_ok=True)
-
         # Write the Rust code to a file
         rust_file_path = os.path.join(temp_dir, "rust.rs")
         with open(rust_file_path, "w", encoding="utf-8") as file:
@@ -243,15 +220,6 @@ def execute_rust_code(code, timeout=10):
 
         # Check if the compilation was successful
         if compile_result.returncode != 0:
-            # Clean up temporary files
-            if os.path.exists(rust_file_path):
-                os.remove(rust_file_path)
-            if os.path.exists(temp_dir):
-                # in case that the directory is not empty ignore the error
-                try:
-                    os.rmdir(temp_dir)
-                except OSError:
-                    pass
             return f"Error: Rust compilation failed: {compile_result.stderr}"
         
         # Execute the Rust program
@@ -267,23 +235,16 @@ def execute_rust_code(code, timeout=10):
             # Handle the timeout
             output = "Error: Rust program execution timed out"
         finally:
-            # Clean up temporary files
             if os.path.exists(binary_path):
                 os.remove(binary_path)
-            if os.path.exists(rust_file_path):
-                os.remove(rust_file_path)
-            if os.path.exists(temp_dir):
-                # in case that the directory is not empty ignore the error
-                try:
-                    os.rmdir(temp_dir)
-                except OSError:
-                    pass
-            
+        
         return output
 
     except subprocess.TimeoutExpired:
         # Handle the timeout
         return "Error: Rust program execution timed"
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 def process_solutions(model_name, language, max_problem_number, expected_solutions):
     results_dir = os.path.join('solutions', model_name, language)
@@ -294,6 +255,7 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
         raise Exception(f"Directory '{results_dir}' does not exist.")
 
     solutions = {}
+    tasks = []
     program_files = sorted(os.listdir(results_dir))
     for program_file in program_files:
         if program_file.startswith('.')  or not program_file.endswith('.' + extension): continue
@@ -303,12 +265,19 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
         if int(problem_number) > max_problem_number: break
 
         expected = expected_solutions.get(problem_number, None)
-        output = execute_solution(program_file_path, expected)
-        solutions[problem_number] = output
+        tasks.append((program_file_path, expected))
 
-        # Write the solutions to a JSON file. We write this after each solution to avoid losing progress.
-        with open(solutions_json_path, 'w', encoding='utf-8') as json_file:
-            json.dump(solutions, json_file, indent=4)
+    if tasks:
+        max_workers = min(len(tasks), multiprocessing.cpu_count() or 1)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            results = list(executor.map(_execute_solution_task, tasks))
+
+        for problem_number, output in results:
+            solutions[problem_number] = output
+
+            # Write the solutions to a JSON file. We write this after each solution to avoid losing progress.
+            with open(solutions_json_path, 'w', encoding='utf-8') as json_file:
+                json.dump(solutions, json_file, indent=4)
 
     print(f"Executed all {language} files and saved results to {solutions_json_path}")
     return solutions
@@ -360,6 +329,12 @@ def execute_solution(program_file_path, expected):
         result = "** CORRECT **" if output == expected_solution else ".. incorrect .."
         print(f"Executed {program_file_path}: {output} - {result}")
         return output
+
+def _execute_solution_task(args):
+    program_file_path, expected = args
+    problem_number = os.path.splitext(os.path.basename(program_file_path))[0]
+    output = execute_solution(program_file_path, expected)
+    return problem_number, output
 
 def evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions):
 

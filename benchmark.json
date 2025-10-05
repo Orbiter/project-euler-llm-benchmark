@@ -738,6 +738,14 @@
         "python-100": 7.7,
         "rust-100": 3.54
     },
+    "granite4:small-h": {
+        "_parameter_size": 32.2,
+        "_quantization_level": 4,
+        "clojure-100": 1.13,
+        "java-100": 4.59,
+        "python-100": 7.67,
+        "rust-100": 2.97
+    },
     "hf.co/ozone-ai/0x-lite-Q4_K_M-GGUF:latest": {
         "_context_size": 32,
         "_parameter_size": 14.8,
@@ -1266,6 +1274,15 @@
         "python-100": 5.37,
         "rust-100": 0.94
     },
+    "granite4:tiny-h": {
+        "_context_size": 1024,
+        "_parameter_size": 6.9,
+        "_quantization_level": 4,
+        "clojure-100": 0.2,
+        "java-100": 3.74,
+        "python-100": 5.33,
+        "rust-100": 1.03
+    },
     "mistral-small3.1:24b-instruct-2503-q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 24.0,
@@ -1637,6 +1654,15 @@
         "python-100": 3.63,
         "rust-100": 0.76
     },
+    "granite4:micro": {
+        "_context_size": 128,
+        "_parameter_size": 3.4,
+        "_quantization_level": 4,
+        "clojure-100": 0.04,
+        "java-100": 1.77,
+        "python-100": 3.53,
+        "rust-100": 1.09
+    },
     "yi-coder:1.5b-chat-q4_K_M": {
         "_context_size": 128,
         "_parameter_size": 1.5,
@@ -1663,6 +1689,15 @@
         "java-100": 4.55,
         "python-100": 3.28,
         "rust-100": 0.14
+    },
+    "granite4:micro-h": {
+        "_context_size": 1024,
+        "_parameter_size": 3.2,
+        "_quantization_level": 4,
+        "clojure-100": 0.14,
+        "java-100": 1.79,
+        "python-100": 3.27,
+        "rust-100": 0.77
     },
     "llama3.1:8b-instruct-q8_0": {
         "_context_size": 128,
@@ -2428,6 +2463,13 @@
         "python-100": 0.94,
         "rust-100": 0.04
     },
+    "hf.co/LiquidAI/LFM2-2.6B-GGUF:Q8_0": {
+        "_parameter_size": 2.57,
+        "clojure-100": 0.0,
+        "java-100": 0.24,
+        "python-100": 0.94,
+        "rust-100": 0.04
+    },
     "exaone-deep:32b-q4_K_M": {
         "_context_size": 32,
         "_parameter_size": 32.0,
@@ -3088,5 +3130,10 @@
         "java-100": 0.0,
         "python-100": 0.0,
         "rust-100": 0.0
+    },
+    "hf.co/ibm-granite/granite-4.0-tiny-preview-GGUF:Q4_K_M": {
+        "_parameter_size": 6.67,
+        "_quantization_level": 4,
+        "java-100": 0.47
     }
 }

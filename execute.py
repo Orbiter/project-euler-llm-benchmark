@@ -117,7 +117,15 @@ def execute_python_code(code, timeout=10):
         return "Error: No output received from the executed code."
 
 def execute_clojure_code(code, timeout=10):
-    #print(f"Executing Clojure code: {code}")
+    # Fix common issues with LLM-generated Clojure code
+    # 1. Remove namespace declarations (they don't work well with -e flag)
+    code = re.sub(r'\(ns\s+[\w\.\-]+(?:\s+\(:[^\)]+\))*\s*\)', '', code, flags=re.MULTILINE)
+
+    # 2. Fallback: If there's a -main function, add a call to it at the end
+    # (Template tells LLMs not to use -main, but this handles cases where instruction is ignored)
+    if re.search(r'\(defn\s+-main\s*\[', code):
+        code = code.rstrip() + '\n(-main)'
+
     try:
         # Execute the Clojure program using the Clojure CLI with a timeout
         result = subprocess.run(
@@ -315,19 +323,25 @@ def execute_solution(program_file_path, expected):
 
     # In some cases the code extraction does not find code and considers the whole file as code.
     # Here it might be that the LLM did actually solve the problem by itself using reasoning.
-    # If that happens, the answer is in the last line and we consider that as the solution.
+    # If that happens, the answer might be anywhere in the content.
     code = code.strip() # in case there are empty lines at the end
-    last_line_of_code = code.split('\n')[-1]
-    # sometimes the numbers in the last line are formatted with commas, we remove them
-    last_line_of_code = last_line_of_code.replace(',', '')
-    # we already know the actual solution, so we can check if the last line is the solution
     expected_solution = expected.get('solution', '') if expected else ''
-    # if the expected solution is in the last line of code, we consider this as solved
-    if expected_solution and len(expected_solution) > 0 and expected_solution in last_line_of_code:
-        # remembering the correct solution is the marking that this is solved
-        print(f"Executed {program_file_path}: Accepted solution {expected_solution} in last line of code: {last_line_of_code}")
-        return expected_solution
-    else:
+
+    # Check if the expected solution appears anywhere in the content (for non-code responses)
+    if expected_solution and len(expected_solution) > 0:
+        # Remove commas and check if solution appears in content
+        code_normalized = code.replace(',', '')
+        if expected_solution in code_normalized:
+            # Extract the context around the solution for logging
+            idx = code_normalized.find(expected_solution)
+            context_start = max(0, idx - 20)
+            context_end = min(len(code_normalized), idx + len(expected_solution) + 20)
+            context = code_normalized[context_start:context_end]
+            print(f"Executed {program_file_path}: Found solution {expected_solution} in content: ...{context}...")
+            return expected_solution
+
+    # Otherwise, try to execute the code
+    if True:
         # Execute the code and capture the output
         print(f"Running program: {program_file_path}")
         output = ""

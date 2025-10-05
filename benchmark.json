@@ -3128,5 +3128,11 @@
         "_parameter_size": 6.67,
         "_quantization_level": 4,
         "java-100": 0.47
+    },
+    "hf.co/mradermacher/Apriel-1.5-15b-Thinker-GGUF:Q4_K_M": {
+        "_parameter_size": 14.4,
+        "_quantization_level": 4,
+        "clojure-100": 0.78,
+        "java-100": 4.61
     }
 }

@@ -6,11 +6,11 @@ Because we want to apply LLMs for coding with specific programming languages, we
 a LLM is at coding with that given programming language.
 
 ## Super-Human Performance
-AI systems have domain-specific super-human perforances: chess-AI can compete against the best humans since 1997 where
-a chess system "Deep Blue" defeated the world champion Garry Kasparov. Since then the best chess programs are super-human
-and the same holds for most other games including Go, defeated by AlphaGo in 2016. So in domain-specific fields, AI programs
-have super-human performance and with the "Project Euler LLM Benchmark" we want to measure how strongly LLM models have
-super-human performances in the domain of coding or "being a programmer". See "Motivation" chapter below how we measure this.
+AI systems have achieved domain-specific super-human performance. In 1997, IBM’s “Deep Blue” defeated world chess champion Garry Kasparov, marking the first time a machine outperformed the best human player. Since then, AI has surpassed human ability in many games, including Go, where AlphaGo triumphed in 2016.
+
+While Deep Blue was “super-human” because it exceeded the best human, our goal is to define super-human performance relative to the average human score in the Project Euler test. This allows us to express an AI’s performance as a multiplier of human ability.
+
+With the Project Euler LLM Benchmark, we aim to quantify how strongly LLMs demonstrate super-human capabilities in the domain of programming. See the Motivation chapter below for details on our measurement approach.
 
 ## Results
 The computed Benchmark ("PE-Bench-Python-100", "PE-Bench-Java-100", "PE-Bench-Rust-100", "PE-Bench-Clojure-100")  is the super-human performance factor to code in Python/Java/Rust/Clojure.

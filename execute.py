@@ -371,6 +371,7 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
         total_count = 0
         human_count = 0 # for comparison: using the likelihood of the human solution to virtually count the number of human solutions
         candidate_count = 0
+        test_results = ['0'] * max_problem_number
         for problem_number in solutions:
             if problem_number not in expected_solutions:
                 print(f"Problem {problem_number} not found in expected solutions.")
@@ -383,9 +384,14 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
             human_count += solution_likelihood
             human_points += challenge_points * solution_likelihood
             maxmimum_points += challenge_points
+            index = int(problem_number) - 1
             if solution == expected_solution:
                 candidate_points += challenge_points
                 candidate_count += 1
+                if 0 <= index < max_problem_number:
+                    test_results[index] = '1'
+            elif 0 <= index < max_problem_number:
+                test_results[index] = '0'
             total_count += 1
 
         human_point_average = round(human_points / total_count, 2)
@@ -407,7 +413,9 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
         # update the benchmark entry
         entry = benchmark.get(model_name, {})
         series_name = f"{language}-{max_problem_number}"
+        series_name_test = f"{series_name}-test"
         entry[series_name] = candidate_point_average
+        entry[series_name_test] = ''.join(test_results)
         benchmark[model_name] = entry
 
         # sort the benchmark with the highest points first, use the series name "python-100" as the key

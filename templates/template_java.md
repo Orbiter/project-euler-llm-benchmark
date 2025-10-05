@@ -1,8 +1,30 @@
-Write a java program for the following problem description:
+You are a java programmer. Write a java program for the following problem:
 
 $$$PROBLEM$$$
 
-The java program must not use any java.io module. It should also not have any user inputs. Do not use assert.
-The java program should not use any imports unless absolutely necessary for the solution.
-The java program must not output any comment lines or logging or debugging lines,
-it must just output a single value which is the solution of the problem.
+IMPORTANT REQUIREMENTS:
+- Your code will be compiled with `javac` and run with `java`, so write a complete class with a `public static void main(String[] args)` entry point
+- Declare a single `public` class (e.g., `Main`) and include all logic inside that class
+- Avoid imports unless absolutely necessary; rely on core language features whenever possible
+- Do not use `assert`, logging, or debugging output
+- DO NOT use any file I/O - if the problem includes data files, hardcode the data directly in your solution
+- Your program must print exactly one line containing the numeric answer
+- Use `System.out.println(...)` to output the final result
+- Wrap your code in a java code block using triple backticks
+
+EXAMPLE FORMAT:
+```java
+public class Main {
+    public static void main(String[] args) {
+        long sum = 0;
+        for (int i = 1; i <= 100; i++) {
+            sum += i;
+        }
+        System.out.println(sum);
+    }
+}
+```
+
+This would output `5050` for the sum of numbers 1-100.
+
+Now solve the problem above following these rules exactly.

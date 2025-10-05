@@ -6,6 +6,8 @@ import builtins
 import traceback
 import subprocess
 import multiprocessing
+import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from io import StringIO
 from ollama_client import Endpoint
 from argparse import ArgumentParser
@@ -117,7 +119,15 @@ def execute_python_code(code, timeout=10):
         return "Error: No output received from the executed code."
 
 def execute_clojure_code(code, timeout=10):
-    #print(f"Executing Clojure code: {code}")
+    # Fix common issues with LLM-generated Clojure code
+    # 1. Remove namespace declarations (they don't work well with -e flag)
+    code = re.sub(r'\(ns\s+[\w\.\-]+(?:\s+\(:[^\)]+\))*\s*\)', '', code, flags=re.MULTILINE)
+
+    # 2. Fallback: If there's a -main function, add a call to it at the end
+    # (Template tells LLMs not to use -main, but this handles cases where instruction is ignored)
+    if re.search(r'\(defn\s+-main\s*\[', code):
+        code = code.rstrip() + '\n(-main)'
+
     try:
         # Execute the Clojure program using the Clojure CLI with a timeout
         result = subprocess.run(
@@ -148,13 +158,10 @@ def extract_class_name(java_code):
     raise ValueError("No public class found in the Java code")
 
 def execute_java_code(code, timeout=10):
+    temp_dir = tempfile.mkdtemp(prefix="temp_java_")
     try:
         # Extract the class name from the Java code
         class_name = extract_class_name(code)
-
-        # Create a temporary directory to store the Java file
-        temp_dir = "temp_java"
-        os.makedirs(temp_dir, exist_ok=True)
 
         # Write the Java code to a file with the correct name
         java_file_path = os.path.join(temp_dir, f"{class_name}.java")
@@ -182,26 +189,8 @@ def execute_java_code(code, timeout=10):
             timeout=timeout                         # Set a timeout
         )
 
-        # Print the full stdout and stderr for debugging
-        #print("Full stdout:", execute_result.stdout)
-        #print("Full stderr:", execute_result.stderr)
-
         # Capture the output
         output = execute_result.stdout.strip()  # Remove any extra whitespace
-
-        # Clean up the temporary directory
-        for file_name in os.listdir(temp_dir):
-            file_path = os.path.join(temp_dir, file_name)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)  # Delete the file
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)  # Delete the directory
-            except Exception as e:
-                print(f"Failed to delete {file_path}. Reason: {e}")
-
-        os.rmdir(temp_dir)  # Remove the now-empty directory
-
         return output
 
     except subprocess.TimeoutExpired:
@@ -210,16 +199,12 @@ def execute_java_code(code, timeout=10):
     except ValueError as e:
         # Handle the case where no public class is found
         return f"Error: {str(e)}"
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 def execute_rust_code(code, timeout=10):
-    #print(f"Executing Rust code: {code}")
+    temp_dir = tempfile.mkdtemp(prefix="temp_rust_")
     try:
-
-        # Create a temporary directory to store the Rust file
-        temp_dir = "temp_rust"
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir, exist_ok=True)
-
         # Write the Rust code to a file
         rust_file_path = os.path.join(temp_dir, "rust.rs")
         with open(rust_file_path, "w", encoding="utf-8") as file:
@@ -235,15 +220,6 @@ def execute_rust_code(code, timeout=10):
 
         # Check if the compilation was successful
         if compile_result.returncode != 0:
-            # Clean up temporary files
-            if os.path.exists(rust_file_path):
-                os.remove(rust_file_path)
-            if os.path.exists(temp_dir):
-                # in case that the directory is not empty ignore the error
-                try:
-                    os.rmdir(temp_dir)
-                except OSError:
-                    pass
             return f"Error: Rust compilation failed: {compile_result.stderr}"
         
         # Execute the Rust program
@@ -259,23 +235,16 @@ def execute_rust_code(code, timeout=10):
             # Handle the timeout
             output = "Error: Rust program execution timed out"
         finally:
-            # Clean up temporary files
             if os.path.exists(binary_path):
                 os.remove(binary_path)
-            if os.path.exists(rust_file_path):
-                os.remove(rust_file_path)
-            if os.path.exists(temp_dir):
-                # in case that the directory is not empty ignore the error
-                try:
-                    os.rmdir(temp_dir)
-                except OSError:
-                    pass
-            
+        
         return output
 
     except subprocess.TimeoutExpired:
         # Handle the timeout
         return "Error: Rust program execution timed"
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 def process_solutions(model_name, language, max_problem_number, expected_solutions):
     results_dir = os.path.join('solutions', model_name, language)
@@ -286,6 +255,7 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
         raise Exception(f"Directory '{results_dir}' does not exist.")
 
     solutions = {}
+    tasks = []
     program_files = sorted(os.listdir(results_dir))
     for program_file in program_files:
         if program_file.startswith('.')  or not program_file.endswith('.' + extension): continue
@@ -295,12 +265,19 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
         if int(problem_number) > max_problem_number: break
 
         expected = expected_solutions.get(problem_number, None)
-        output = execute_solution(program_file_path, expected)
-        solutions[problem_number] = output
+        tasks.append((program_file_path, expected))
 
-        # Write the solutions to a JSON file. We write this after each solution to avoid losing progress.
-        with open(solutions_json_path, 'w', encoding='utf-8') as json_file:
-            json.dump(solutions, json_file, indent=4)
+    if tasks:
+        max_workers = min(len(tasks), multiprocessing.cpu_count() or 1)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            results = list(executor.map(_execute_solution_task, tasks))
+
+        for problem_number, output in results:
+            solutions[problem_number] = output
+
+            # Write the solutions to a JSON file. We write this after each solution to avoid losing progress.
+            with open(solutions_json_path, 'w', encoding='utf-8') as json_file:
+                json.dump(solutions, json_file, indent=4)
 
     print(f"Executed all {language} files and saved results to {solutions_json_path}")
     return solutions
@@ -315,19 +292,25 @@ def execute_solution(program_file_path, expected):
 
     # In some cases the code extraction does not find code and considers the whole file as code.
     # Here it might be that the LLM did actually solve the problem by itself using reasoning.
-    # If that happens, the answer is in the last line and we consider that as the solution.
+    # If that happens, the answer might be anywhere in the content.
     code = code.strip() # in case there are empty lines at the end
-    last_line_of_code = code.split('\n')[-1]
-    # sometimes the numbers in the last line are formatted with commas, we remove them
-    last_line_of_code = last_line_of_code.replace(',', '')
-    # we already know the actual solution, so we can check if the last line is the solution
     expected_solution = expected.get('solution', '') if expected else ''
-    # if the expected solution is in the last line of code, we consider this as solved
-    if expected_solution and len(expected_solution) > 0 and expected_solution in last_line_of_code:
-        # remembering the correct solution is the marking that this is solved
-        print(f"Executed {program_file_path}: Accepted solution {expected_solution} in last line of code: {last_line_of_code}")
-        return expected_solution
-    else:
+
+    # Check if the expected solution appears anywhere in the content (for non-code responses)
+    if expected_solution and len(expected_solution) > 0:
+        # Remove commas and check if solution appears in content
+        code_normalized = code.replace(',', '')
+        if expected_solution in code_normalized:
+            # Extract the context around the solution for logging
+            idx = code_normalized.find(expected_solution)
+            context_start = max(0, idx - 20)
+            context_end = min(len(code_normalized), idx + len(expected_solution) + 20)
+            context = code_normalized[context_start:context_end]
+            print(f"Executed {program_file_path}: Found solution {expected_solution} in content: ...{context}...")
+            return expected_solution
+
+    # Otherwise, try to execute the code
+    if True:
         # Execute the code and capture the output
         print(f"Running program: {program_file_path}")
         output = ""
@@ -347,6 +330,12 @@ def execute_solution(program_file_path, expected):
         print(f"Executed {program_file_path}: {output} - {result}")
         return output
 
+def _execute_solution_task(args):
+    program_file_path, expected = args
+    problem_number = os.path.splitext(os.path.basename(program_file_path))[0]
+    output = execute_solution(program_file_path, expected)
+    return problem_number, output
+
 def evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions):
 
     if len(solutions) == max_problem_number:
@@ -357,6 +346,7 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
         total_count = 0
         human_count = 0 # for comparison: using the likelihood of the human solution to virtually count the number of human solutions
         candidate_count = 0
+        test_results = ['0'] * max_problem_number
         for problem_number in solutions:
             if problem_number not in expected_solutions:
                 print(f"Problem {problem_number} not found in expected solutions.")
@@ -369,9 +359,14 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
             human_count += solution_likelihood
             human_points += challenge_points * solution_likelihood
             maxmimum_points += challenge_points
+            index = int(problem_number) - 1
             if solution == expected_solution:
                 candidate_points += challenge_points
                 candidate_count += 1
+                if 0 <= index < max_problem_number:
+                    test_results[index] = '1'
+            elif 0 <= index < max_problem_number:
+                test_results[index] = '0'
             total_count += 1
 
         human_point_average = round(human_points / total_count, 2)
@@ -393,7 +388,9 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
         # update the benchmark entry
         entry = benchmark.get(model_name, {})
         series_name = f"{language}-{max_problem_number}"
+        series_name_test = f"{series_name}-test"
         entry[series_name] = candidate_point_average
+        entry[series_name_test] = ''.join(test_results)
         benchmark[model_name] = entry
 
         # sort the benchmark with the highest points first, use the series name "python-100" as the key
@@ -420,7 +417,7 @@ def main():
     args = parser.parse_args()
     store_name = args.model
     languages = args.language.split(',')
-    max_problem_number = 100
+    max_problem_number = 200
     if args.n100: max_problem_number = 100
     if args.n200: max_problem_number = 200
     if args.n400: max_problem_number = 400

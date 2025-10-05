@@ -5,7 +5,7 @@ import base64
 import threading
 from typing import List
 from argparse import ArgumentParser
-from benchmark import read_benchmark
+from benchmark import read_benchmark, write_benchmark
 from ollama_client import ollama_list, test_multimodal, ollama_pull_endpoint, Endpoint, LoadBalancer, Server, Task, Response
 
 def read_template(template_path):
@@ -33,8 +33,19 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
     )
     loading_thread.start()
 
-    # test if the model is a multimodal model
-    is_multimodal = test_multimodal(endpoints[0]) # this is cached
+    # determine if the model supports vision; cache result in benchmark.json
+    benchmark = read_benchmark()
+    entry = benchmark.get(store_name, {})
+    if 'vision' in entry:
+        is_vision = entry['vision']
+        print(f"Vision capability cached for {store_name}: {is_vision}")
+    else:
+        print(f"Testing vision capability for {store_name}...")
+        is_vision = bool(test_multimodal(endpoints[0]))  # cached by test helper
+        entry['vision'] = is_vision
+        benchmark[store_name] = entry
+        write_benchmark(benchmark)
+        print(f"Vision capability for {store_name}: {is_vision}")
 
     # iterate over all problem files and process them
     for problem_file in sorted(os.listdir(problems_dir)):
@@ -62,12 +73,12 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
                     base64_image = base64.b64encode(image_file.read()).decode('utf-8')
                 break
         
-        # check if the endpoint is multimodal if we have an image
+        # check if the endpoint is vision-capable if we have an image
         if base64_image:
-            if is_multimodal:
-                print(f"Problem {problem_number} is handled with multimodal model.")
+            if is_vision:
+                print(f"Problem {problem_number} is handled with a vision-capable model.")
             else:
-                print(f"Problem {problem_number} requires a multimodal model for image processing but the model is not multimodal.")
+                print(f"Problem {problem_number} requires a vision-capable model for image processing but the model lacks vision support.")
                 base64_image = None
 
         # Construct the prompt using the template
@@ -124,7 +135,7 @@ def main():
     api_base = args.api if args.api else args.api_base.split(",") if "," in args.api_base else [args.api_base]
     store_name = args.model
     language = args.language
-    max_problem_number = 100
+    max_problem_number = 200
     if args.n100: max_problem_number = 100
     if args.n200: max_problem_number = 200
     if args.n400: max_problem_number = 400

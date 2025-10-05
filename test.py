@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 from argparse import ArgumentParser
 from benchmark import read_benchmark, write_benchmark
 from ollama_client import ollama_list, Endpoint
@@ -52,7 +53,7 @@ def main():
     args = parser.parse_args()
     api_base = args.api if args.api else args.api_base.split(",") if "," in args.api_base else [args.api_base]
     store_name = args.model
-    max_problem_number = 100
+    max_problem_number = 200
     if args.n100: max_problem_number = 100
     if args.n200: max_problem_number = 200
     if args.n400: max_problem_number = 400
@@ -88,6 +89,19 @@ def main():
     
     # loop over all models
     for model in models:
+        model_solution_name = model
+        if args.think:
+            model_solution_name += "-think"
+        if args.no_think:
+            model_solution_name += "-no_think"
+
+        if overwrite_existing:
+            solutions_model_dir = os.path.join('solutions', model_solution_name)
+            if os.path.isdir(solutions_model_dir):
+                print(f"Removing solutions in {solutions_model_dir} due to --rerun")
+                shutil.rmtree(solutions_model_dir)
+            else:
+                print(f"No existing solutions in {solutions_model_dir} to remove")
 
         # loop over all languages
         for language in languages:

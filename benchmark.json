@@ -461,6 +461,13 @@
         "python-100": 9.7,
         "rust-100": 4.55
     },
+    "hf.co/mradermacher/KAT-Dev-GGUF:Q4_K_M": {
+        "_parameter_size": 32.8,
+        "_quantization_level": 4,
+        "java-100": 6.7,
+        "python-100": 9.67,
+        "rust-100": 1.1
+    },
     "phi4:14b": {
         "_context_size": 16,
         "_parameter_size": 14.7,

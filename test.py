@@ -53,7 +53,7 @@ def main():
     args = parser.parse_args()
     api_base = args.api if args.api else args.api_base.split(",") if "," in args.api_base else [args.api_base]
     store_name = args.model
-    max_problem_number = 100
+    max_problem_number = 200
     if args.n100: max_problem_number = 100
     if args.n200: max_problem_number = 200
     if args.n400: max_problem_number = 400

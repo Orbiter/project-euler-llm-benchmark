@@ -320,6 +320,9 @@ def ollama_chat(
 
 def test_multimodal(endpoint: dict) -> bool:
     image_path = "llmtest/testimage.png"
+    # test if the image exists in that path
+    if not os.path.exists(image_path):
+        raise Exception(f"Test image not found: {image_path}")
     with open(image_path, "rb") as image_file:
         base64_image = base64.b64encode(image_file.read()).decode('utf-8')
     try:

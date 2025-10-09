@@ -17,9 +17,7 @@ The computed Benchmark ("PE-Bench-Python-200", "PE-Bench-Java-200", "PE-Bench-Ru
 The "Economic Score" is the average performance per bytes of model size (times 100). Results are:
 
 | Model                                                                                    | Best<br/>Model<br/>for<br/>Size (GB) | PE-200-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | Java | Rust | Clojure |
-
 | :--------------------------------------------------------------------------------------- | -----------------------------------: | ----------------: | -------------: | --------------------: | ---: | ---------------------: | -----: | ---: | ---: | ------: |
-
 | qwen3:30b-a3b-instruct-2507-q4_K_M                                                       |    15.25 |  17.31 |    114 |   30.5 |    4 |  256 | 16.93 | 23.76 | 16.1 | 1.89 |
 | qwen3-coder:30b-a3b-q4_K_M                                                               |    15.25 |  15.18 |    100 |   30.5 |    4 |  256 | 19.51 | 13.41 | 14.03 | 5.46 |
 | qwen2.5vl:32b-q4_K_M                                                                     |          |  12.60 |     75 |   33.5 |    4 |  128 | 15.56 | 11.71 | 13.44 |      |
@@ -61,9 +59,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 The following Benchmark result ("PE-Bench-Python-100", "PE-Bench-Java-100", "PE-Bench-Rust-100", "PE-Bench-Clojure-100") is an archive of a retired computation process that does not only compute only 100 problems for each language (the best models saturated those already) but also it used different prompt templates, so the benchmark values cannot be compared with the PE-Bench-200:
 
 | Model                                                                                    | Best<br/>Model<br/>for<br/>Size (GB) | PE-100-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | Java | Rust | Clojure |
-
 | :--------------------------------------------------------------------------------------- | -----------------------------------: | ----------------: | -------------: | --------------------: | ---: | ---------------------: | -----: | ---: | ---: | ------: |
-
 | Grok-4-Fast                                                                              |          |  22.54 |        |        |   16 |      | 22.44 | 25.47 | 21.44 | 16.38 |
 | o4-mini-2025-04-16                                                                       |          |  21.34 |        |        |   16 |  200 | 22.71 | 21.88 | 21.59 | 13.71 |
 | gpt-4.1-2025-04-14                                                                       |          |  19.84 |        |        |   16 | 1024 | 22.41 | 20.88 | 17.0 | 12.08 |

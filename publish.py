@@ -211,13 +211,13 @@ class BenchmarkPublisher:
 
         header = (
             f"| {'Model'.ljust(max_model_name)} | {col_best} | {col_bench_score} | {col_memory_score} | "
-            f"{col_size} | {col_quant} | {col_context} | {col_python} | {col_java} | {col_rust} | {col_clojure} |\n"
+            f"{col_size} | {col_quant} | {col_context} | {col_python} | {col_java} | {col_rust} | {col_clojure} |"
         )
         alignment = (
             f"| :{'-' * (max_model_name - 1)} | {'-' * (len(col_best) - 1)}: | {'-' * (len(col_bench_score) - 1)}: | "
             f"{'-' * (len(col_memory_score) - 1)}: | {'-' * (len(col_size) - 1)}: | {'-' * (len(col_quant) - 1)}: | "
             f"{'-' * (len(col_context) - 1)}: | {'-' * (len(col_python) - 1)}: | {'-' * (len(col_java) - 1)}: | "
-            f"{'-' * (len(col_rust) - 1)}: | {'-' * (len(col_clojure) - 1)}: |\n"
+            f"{'-' * (len(col_rust) - 1)}: | {'-' * (len(col_clojure) - 1)}: |"
         )
 
         lines = [header, alignment]
@@ -283,8 +283,7 @@ class BenchmarkPublisher:
 
             lines.append(line)
 
-        lines.append("")
-        return "\n".join(lines) + "\n"
+        return "\n".join(lines) + "\n\n"
 
     @staticmethod
     def _stringify(value: object) -> str:

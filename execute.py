@@ -12,7 +12,7 @@ from io import StringIO
 from ollama_client import Endpoint
 from argparse import ArgumentParser
 from contextlib import redirect_stdout
-from benchmark import read_benchmark, write_benchmark
+from benchmark import read_benchmark, write_benchmark, sort_benchmark
 
 def get_extension(language):
     if language == 'c': return 'c'
@@ -394,7 +394,7 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
         benchmark[model_name] = entry
 
         # sort the benchmark with the highest points first, use the series name "python-100" as the key
-        sorted_benchmark = dict(sorted(benchmark.items(), key=lambda item: -item[1].get("python-100", 0)))
+        sorted_benchmark = sort_benchmark(benchmark.items())
 
         # write the updated benchmark file
         write_benchmark(sorted_benchmark)

@@ -5,6 +5,8 @@ we created a benchmark using the Project Euler series of challenging mathematica
 Because we want to apply LLMs for coding with specific programming languages, we also want to measure how good
 a LLM is at coding with that given programming language.
 
+![Benchmark Results](benchmark.png)
+
 ## Super-Human Performance
 AI systems have achieved domain-specific super-human performance. In 1997, IBM’s “Deep Blue” defeated world chess champion Garry Kasparov, marking the first time a machine outperformed the best human player. Since then, AI has surpassed human ability in many games, including Go, where AlphaGo triumphed in 2016.
 

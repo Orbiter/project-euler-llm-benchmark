@@ -26,6 +26,7 @@ COLORS = {
     1: (255, 255, 0),  # yellow
     2: (0, 128, 0),  # green
     3: (65, 105, 225),  # blue
+    4: (160, 32, 240),  # purple
 }
 BORDER_COLOR = (180, 180, 180)
 TEXT_COLOR = (0, 0, 0)
@@ -69,8 +70,7 @@ def count_solutions(values: List[str]) -> List[int]:
 
 
 def color_for_count(count: int) -> Tuple[int, int, int]:
-    if count >= 3:
-        return COLORS[3]
+    if count >= 4: return COLORS[4]
     return COLORS[count]
 
 

@@ -393,8 +393,8 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
         entry[series_name_test] = ''.join(test_results)
         benchmark[model_name] = entry
 
-        # sort the benchmark with the highest points first, use the series name "python-100" as the key
-        sorted_benchmark = sort_benchmark(benchmark.items())
+        # sort the benchmark with the highest points first, average over all batch sizes
+        sorted_benchmark = sort_benchmark(benchmark)
 
         # write the updated benchmark file
         write_benchmark(sorted_benchmark)

@@ -135,11 +135,15 @@ def bench_score_average(benchmark: dict, model_test: dict) -> int:
     """
     score = 0.0
     for batch_size in _BATCH_SIZES:
-        coefficients = _language_coefficients(benchmark, batch_size=batch_size)
-        score += _bench_score(model_test, batch_size, coefficients=coefficients)
+        score += bench_score(benchmark, model_test, batch_size)
     return score / len(_BATCH_SIZES)
 
-def sort_benchmark(benchmark: dict) -> dict:
-    """ sort the benchmark with the highest points first, use the series name 'python-100' as the key"""
-    sorted_benchmark = dict(sorted(benchmark.items(), key=lambda item: -bench_score_average(benchmark, item[1])))
+def sort_benchmark(benchmark: dict, batch_size:int = None) -> dict:
+    """ sort the benchmark with the highest points first, we can either select a specific batch size
+        or without a given batch size we average over all batch sizes.
+    """
+    if batch_size is None or batch_size not in _BATCH_SIZES:
+        sorted_benchmark = dict(sorted(benchmark.items(), key=lambda item: bench_score_average(benchmark, item[1]), reverse=True))
+    else:
+        sorted_benchmark = dict(sorted(benchmark.items(), key=lambda item: bench_score(benchmark, item[1], batch_size), reverse=True))
     return sorted_benchmark

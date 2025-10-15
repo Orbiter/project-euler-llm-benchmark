@@ -15,15 +15,16 @@ class BenchmarkPublisher:
         self.batch_size = batch_size
         self.readme_path = Path(readme_path)
         self.benchmark = read_benchmark()
-        self.sorted_benchmark: Dict[str, Dict[str, object]] = {}
+        self.sorted_benchmark: dict = {}
 
     def publish(self) -> None:
-        self.sorted_benchmark = self.benchmark # we do not sort here becuase the generating code sorts already with a combined score
-        #self.sorted_benchmark = sort_benchmark(self.benchmark) # we sort here with a combined score while we publish the score for a specific batch size
+        #self.sorted_benchmark = self.benchmark # we do not sort here becuase the generating code sorts already with a combined score
+        self.sorted_benchmark = sort_benchmark(self.benchmark, self.batch_size)
+        #print(self.sorted_benchmark)
         readme_text = self.readme_path.read_text(encoding="utf-8")
         new_table = self._build_table()
         updated_readme, existing_table = self._replace_table(readme_text, new_table)
-        if existing_table: print(existing_table)
+        #if existing_table: print(existing_table)
         print(new_table)
         self.readme_path.write_text(updated_readme, encoding="utf-8")
 

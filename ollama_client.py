@@ -132,7 +132,7 @@ def ollama_chat(
     prompt: str = 'Hello World',
     base64_image: str = None,
     temperature: float = 0.0,
-    max_tokens: int = 8192,
+    max_tokens: int = 32768,
     stream: bool = True
 ) -> tuple[str, int, float]:
     """
@@ -292,7 +292,7 @@ def ollama_chat(
             answer = "".join(text_chunks).strip()
             total_tokens = len(text_chunks)
             token_per_second = 0.0 if (t1 - t0) <= 0 else total_tokens / (t1 - t0)
-            if not answer: raise Exception("Empty streamed response from the API")
+            if not answer: print(f"Empty streamed response from the API at {endpoint.url}")
         else:
             ctype = response.headers.get('Content-Type', '')
             text  = response.text or ''

@@ -13,3 +13,4 @@ endpoints/OpenAI_GPT-o1-Preview.json
 temp_java
 temp_rust
 __pycache__
+openrouter_models.json

@@ -6,7 +6,7 @@ import threading
 from typing import List
 from argparse import ArgumentParser
 from benchmark import read_benchmark, write_benchmark
-from ollama_client import ollama_list, test_multimodal, ollama_pull_endpoint, Endpoint, LoadBalancer, Server, Task, Response
+from ollama_client import ollama_list, test_multimodal, ollama_pull, Endpoint, LoadBalancer, Server, Task, Response
 
 def read_template(template_path):
     with open(template_path, 'r', encoding='utf-8') as file:
@@ -26,10 +26,10 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
     lb = LoadBalancer()
     lb.start_distribution()
     # ensure that the first endpoint is loaded:
-    ollama_pull_endpoint(endpoints[0])
+    ollama_pull(endpoints[0])
     # load server concurrently; they will download a model if that is not present so far.
     loading_thread = threading.Thread(
-        target = lambda: [lb.add_server(Server(endpoint=ollama_pull_endpoint(endpoint))) for endpoint in endpoints]
+        target = lambda: [lb.add_server(Server(endpoint=ollama_pull(endpoint))) for endpoint in endpoints]
     )
     loading_thread.start()
 

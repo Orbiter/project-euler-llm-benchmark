@@ -39,16 +39,6 @@ def get_ollama_url_stub(endpoint: Endpoint) -> str:
     """Get the base URL for the ollama API"""
     return urllib3.util.url.parse_url(endpoint.url)._replace(path='').url
 
-def ollama_pull(endpoint: Endpoint) -> bool:
-    api_base = get_ollama_url_stub(endpoint)
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    response = requests.request("POST", f"{api_base}/api/pull", verify=False,
-                                headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-                                json={"model": endpoint.model_name, "stream": False})
-    response.raise_for_status()
-    data = response.json()
-    return not data.get("error", False)
-
 def ollama_delete(endpoint: dict) -> bool:
     api_base = get_ollama_url_stub(endpoint)
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -109,9 +99,10 @@ def ollama_list(endpoint) -> dict:
         # Both strategies failed; return empty so caller can handle it
         return {}
 
-def ollama_pull_endpoint(endpoint: Endpoint) -> dict:
-    # check if the endpoint servers are online and the model is available
-    # we do not catch exceptions here, because that shall be done in calling code
+def ollama_pull(endpoint: Endpoint) -> dict:
+    # Try to pull the model from the endpoint. If that does not work, we simply return.
+    # Failure can be due to the model already being present, network issues, etc.,
+    # we try to move on anyway.
     if endpoint.key: return endpoint # endpoints with a key are not an ollama server
     
     list = ollama_list(endpoint)
@@ -120,8 +111,21 @@ def ollama_pull_endpoint(endpoint: Endpoint) -> dict:
     # pull the model if it is not available
     api_base = get_ollama_url_stub(endpoint)
     print(f"Model {endpoint.model_name} is not available on server {api_base}. Pulling the model...")
-    ollama_pull(endpoint)
-    print(f"Model {endpoint.model_name} is now available on server {api_base}.")
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    try:
+        response = requests.request("POST", f"{api_base}/api/pull", verify=False,
+                                    headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
+                                    json={"model": endpoint.model_name, "stream": False})
+        if response.status_code != 200:
+            print(f"Failed to pull model {endpoint.model_name} from server {api_base}. Status code: {response.status_code}, Response: {response.text}")
+            return endpoint
+        data = response.json()
+        if data.get("error", False):
+            print(f"Error pulling Model {endpoint.model_name} from server {api_base}.")
+        else:
+            print(f"Model {endpoint.model_name} is now available on server {api_base}.")
+    except requests.RequestException as e:
+        print(f"Error during model pull request: {e}")
     return endpoint
 
 def hex2base64(hex_string) -> str:
@@ -132,7 +136,7 @@ def ollama_chat(
     prompt: str = 'Hello World',
     base64_image: str = None,
     temperature: float = 0.0,
-    max_tokens: int = 32768,
+    max_tokens: int = 32768, # thats large and it requires that you set the context length in ollama to 65536
     stream: bool = True
 ) -> tuple[str, int, float]:
     """
@@ -206,7 +210,7 @@ def ollama_chat(
     payload = {
         "model": modelname,
         "messages": messages,
-        "response_format": { "type": "text" },
+        # "response_format": { "type": "text" }, # do NOT set this, some engines do not accept "text" as response format because it is not valid
         "temperature": temperature, # ollama default: 0.8
         "top_k": 20,    # reduces the probability of generating nonsense: high = more diverse, low = more focused; ollama default: 40
         "top_p": 0.95,  # works together with top_k: high = more diverse, low = more focused; ollama default: 0.9

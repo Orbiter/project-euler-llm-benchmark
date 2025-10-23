@@ -134,9 +134,13 @@ def bench_score_average(benchmark: dict, model_test: dict) -> int:
         a combined score.
     """
     score = 0.0
+    d = 0.0
     for batch_size in _BATCH_SIZES:
-        score += bench_score(benchmark, model_test, batch_size)
-    return score / len(_BATCH_SIZES)
+        s = bench_score(benchmark, model_test, batch_size)
+        if (s > 0.0):
+            score += s
+            d += 1.0
+    return score / d if d > 0.0 else 0.0
 
 def sort_benchmark(benchmark: dict, batch_size:int = None) -> dict:
     """ sort the benchmark with the highest points first, we can either select a specific batch size

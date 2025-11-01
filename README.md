@@ -59,13 +59,16 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | qwen2.5-coder:3b-instruct-q4_K_M                                                         |          |   2.09 |    135 |    3.1 |    4 |   32 | 3.32 | 2.04 | 0.63 | 0.29 |
 | granite4:tiny-h                                                                          |          |   2.08 |     60 |    6.9 |    4 | 1024 | 2.63 | 2.69 | 1.03 | 0.19 |
 | hf.co/internlm/internlm3-8b-instruct-gguf:Q4_K_M                                         |          |   2.02 |     46 |    8.8 |    4 |   32 | 3.07 | 1.96 |  1.0 | 0.01 |
+| granite4:3b                                                                              |          |   1.69 |     99 |    3.4 |    4 |      | 3.06 | 1.09 | 0.57 |  0.2 |
 | hf.co/mradermacher/Ling-Coder-lite-GGUF:Q4_K_M                                           |          |   1.62 |     19 |   16.8 |    4 |      | 2.59 | 1.32 | 0.68 | 0.51 |
 | granite4:micro                                                                           |          |   1.61 |     95 |    3.4 |    4 |  128 | 2.78 | 1.21 | 0.57 |  0.2 |
 | llama3.2-vision:11b-instruct-q4_K_M                                                      |          |   1.60 |     33 |    9.8 |    4 |  128 |  1.9 | 2.14 | 0.68 | 0.62 |
 | qwen3-vl-2b-instruct-mlx                                                                 |          |   1.40 |     70 |      2 |    8 |      | 2.25 | 1.22 |  0.6 | 0.09 |
 | qwen2.5vl:7b-q4_K_M                                                                      |          |   1.34 |     32 |    8.3 |    4 |  128 |  1.7 | 0.69 |  2.2 | 0.15 |
+| granite4:3b-h                                                                            |          |   1.33 |     83 |    3.2 |    4 |      | 1.79 |  1.7 | 0.45 | 0.17 |
 | hf.co/bartowski/internlm_JanusCoderV-7B-GGUF:Q4_K_M                                      |          |   1.31 |     34 |   7.62 |    4 |      | 1.93 | 1.62 | 0.16 | 0.17 |
 | granite4:micro-h                                                                         |          |   1.30 |     81 |    3.2 |    4 | 1024 | 1.82 | 1.55 | 0.45 | 0.15 |
+| granite4:1b-bf16                                                                         |          |   1.17 |        |        |      |      | 1.81 |      | 0.28 | 0.08 |
 | hf.co/bartowski/HuggingFaceTB_SmolLM3-3B-GGUF:Q4_K_M                                     |          |   1.06 |     69 |   3.08 |    4 |      | 1.47 | 1.41 | 0.18 | 0.09 |
 | gemma3n:e4b                                                                              |          |   0.99 |     29 |    6.9 |    4 |   32 | 1.32 | 0.92 | 0.92 |  0.0 |
 | granite3.3:8b                                                                            |          |   0.97 |     24 |    8.0 |    4 |  128 | 1.88 | 0.63 | 0.09 |  0.1 |
@@ -77,7 +80,8 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | qwen3:0.6b-q4_K_M-no_think                                                               |     0.38 |   0.87 |    232 | 0.75163 |    4 |   32 |  1.3 | 0.73 | 0.36 |  0.6 |
 | gemma3n:e2b                                                                              |          |   0.85 |     38 |    4.5 |    4 |    8 |  1.4 | 0.95 | 0.01 | 0.05 |
 | yi-coder:1.5b-chat-q4_K_M                                                                |          |   0.84 |    112 |    1.5 |    4 |  128 | 1.53 | 0.66 | 0.08 | 0.13 |
-| qwen3-vl:2b-instruct-q4_K_M                                                              |          |   0.72 |     69 |    2.1 |    4 |      | 1.07 | 0.59 |      | 0.09 |
+| granite4:1b-h-q8_0                                                                       |          |   0.80 |     53 |    1.5 |    8 |      | 1.53 | 0.35 | 0.38 | 0.06 |
+| qwen3-vl:2b-instruct-q4_K_M                                                              |          |   0.72 |     68 |    2.1 |    4 |      | 1.07 | 0.59 |      | 0.09 |
 | llama3.2:3b                                                                              |          |   0.61 |     38 |    3.2 |    4 |  128 |  1.3 | 0.27 | 0.05 |  0.0 |
 | gemma3:4b                                                                                |          |   0.55 |     25 |    4.3 |    4 |  128 | 1.03 | 0.35 | 0.15 |  0.0 |
 | qwen2.5vl:3b-q4_K_M                                                                      |          |   0.55 |     29 |    3.8 |    4 |  128 | 0.82 | 0.71 | 0.03 |  0.0 |
@@ -94,10 +98,12 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | llama3.2:1b                                                                              |          |   0.10 |      8 |    1.2 |    8 |  128 | 0.22 | 0.03 |  0.0 |  0.0 |
 | qwen2.5-coder:0.5b-instruct-q4_K_M                                                       |     0.25 |   0.09 |     37 |    0.5 |    4 |   32 | 0.11 |  0.1 | 0.09 |  0.0 |
 | hf.co/mradermacher/EuroLLM-1.7B-Instruct-GGUF:Q4_K_M                                     |          |   0.09 |     11 |   1.66 |    4 |      | 0.09 | 0.09 | 0.09 | 0.09 |
-| gemma3:270m                                                                              |          |   0.08 |      0 |  268.1 |    8 |   32 |  0.0 | 0.09 | 0.28 |  0.0 |
+| gemma3:270m                                                                              |          |   0.08 |     31 |   0.27 |    8 |   32 |  0.0 | 0.09 | 0.28 |  0.0 |
 | phi3:3.8b                                                                                |          |   0.08 |      4 |    3.8 |    4 |  128 |  0.1 | 0.09 | 0.07 |  0.0 |
-| hf.co/LiquidAI/LFM2-350M-GGUF:Q4_K_M                                                     |          |   0.07 |      0 |  354.0 |    4 |      | 0.12 |  0.0 | 0.09 | 0.09 |
-| qwen2.5:0.5b-instruct-q4_K_M                                                             |     0.25 |   0.06 |     25 |    0.5 |    4 |  128 | 0.06 |  0.1 |  0.0 | 0.09 |
+| granite4:350m-bf16                                                                       |          |   0.07 |     11 |   0.35 |   16 |      | 0.12 | 0.03 | 0.09 |  0.0 |
+| hf.co/LiquidAI/LFM2-350M-GGUF:Q4_K_M                                                     |     0.18 |   0.07 |     42 |  0.354 |    4 |      | 0.12 |  0.0 | 0.09 | 0.09 |
+| qwen2.5:0.5b-instruct-q4_K_M                                                             |          |   0.06 |     25 |    0.5 |    4 |  128 | 0.06 |  0.1 |  0.0 | 0.09 |
+| granite4:350m-h-q8_0                                                                     |          |   0.05 |     14 |   0.35 |    8 |      |  0.1 |  0.0 |  0.0 | 0.09 |
 | gemma3:1b                                                                                |          |   0.04 |      8 |    1.0 |    4 |   32 | 0.08 | 0.03 |  0.0 |  0.0 |
 | hf.co/LiquidAI/LFM2-700M-GGUF:Q4_K_M                                                     |          |   0.04 |        |        |    4 |      | 0.03 |  0.0 | 0.09 | 0.09 |
 | smollm:135m-instruct-v0.2-q8_0                                                           |     0.14 |   0.03 |     25 |  0.135 |    8 |    2 |  0.0 |  0.0 | 0.17 |  0.0 |
@@ -436,7 +442,7 @@ The following Benchmark result ("PE-Bench-Python-100", "PE-Bench-Java-100", "PE-
 | qwen:14b-chat-v1.5-q4_K_M                                                                |          |   0.08 |      1 |   14.0 |    4 |   32 | 0.15 |  0.0 | 0.08 |  0.0 |
 | hf.co/bartowski/burtenshaw_GemmaCoder3-12B-GGUF:Q4_K_M                                   |          |   0.06 |      1 |   11.8 |    4 |  128 | 0.04 | 0.14 | 0.03 |  0.0 |
 | qwen:1.8b-chat-v1.5-q4_K_M                                                               |          |   0.06 |      6 |    2.0 |    4 |   32 |  0.0 |  0.0 |  0.0 | 0.62 |
-| hf.co/LiquidAI/LFM2-350M-GGUF:Q4_K_M                                                     |          |   0.06 |      0 |  354.0 |    4 |      | 0.14 |  0.0 |  0.0 |  0.0 |
+| hf.co/LiquidAI/LFM2-350M-GGUF:Q4_K_M                                                     |     0.18 |   0.06 |     32 |  0.354 |    4 |      | 0.14 |  0.0 |  0.0 |  0.0 |
 | hf.co/mradermacher/MiMo-VL-7B-RL-GGUF:Q4_K_M-no_think                                    |          |   0.06 |      1 |   7.62 |    4 |  128 | 0.14 |  0.0 |  0.0 |  0.0 |
 | hf.co/sizzlebop/Holo1-7B-Q4_K_M-GGUF                                                     |          |   0.05 |      1 |    7.0 |    4 |  128 | 0.13 |  0.0 |  0.0 |  0.0 |
 | vicuna:13b-q4_K_M                                                                        |          |   0.04 |      1 |   13.0 |    4 |    2 | 0.09 | 0.01 |  0.0 |  0.0 |
@@ -449,7 +455,7 @@ The following Benchmark result ("PE-Bench-Python-100", "PE-Bench-Java-100", "PE-
 | vicuna:7b-v1.5-16k-q4_K_M                                                                |          |   0.01 |      0 |    7.0 |    4 |    4 | 0.03 |  0.0 |  0.0 |  0.0 |
 | qwen:7b-chat-v1.5-q4_K_M                                                                 |          |   0.01 |      0 |    8.0 |    4 |   32 | 0.02 |  0.0 |  0.0 | 0.03 |
 | deepseek-coder:1.3b-instruct-q8_0                                                        |          |   0.01 |      1 |    1.0 |    8 |   16 |  0.0 | 0.02 |  0.0 |  0.0 |
-| gemma3:270m                                                                              |          |   0.00 |      0 |  268.1 |    8 |   32 | 0.01 |  0.0 |  0.0 |  0.0 |
+| gemma3:270m                                                                              |          |   0.00 |      1 |   0.27 |    8 |   32 | 0.01 |  0.0 |  0.0 |  0.0 |
 | llama2:7b-chat-q4_K_M                                                                    |          |   0.00 |      0 |    7.0 |    4 |    4 | 0.01 |  0.0 |  0.0 |  0.0 |
 | hf.co/allenai/OLMo-2-0425-1B-Instruct-GGUF:Q4_K_M                                        |          |   0.00 |      1 |   1.48 |    4 |    4 | 0.01 |  0.0 |  0.0 |  0.0 |
 | deepseek-r1:8b-0528-qwen3-q4_K_M                                                         |          |   0.00 |      0 |    8.2 |    4 |  160 | 0.01 |  0.0 |  0.0 |  0.0 |

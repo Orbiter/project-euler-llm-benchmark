@@ -20,9 +20,11 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 
 | Model                                                                                    | Best<br/>Model<br/>for<br/>Size (GB) | PE-200-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | Java | Rust | Clojure |
 | :--------------------------------------------------------------------------------------- | -----------------------------------: | ----------------: | -------------: | --------------------: | ---: | ---------------------: | -----: | ---: | ---: | ------: |
-| mlx-community/Qwen3-Next-80B-A3B-Instruct-4bit                                           |    39.85 |  37.68 |     95 |   79.7 |    4 |  256 | 42.28 | 42.04 | 32.92 | 15.71 |
+| mlx-community/Qwen3-Next-80B-A3B-Instruct-4bit                                           |    39.85 |  37.92 |     95 |   79.7 |    4 |  256 | 42.87 | 42.04 | 32.92 | 15.71 |
+| qwen3-vl:235b-a22b-instruct-q4_K_M                                                       |          |  37.08 |     31 |  235.7 |    4 |      | 36.44 | 47.94 | 34.77 | 11.66 |
 | qwen3:235b-a22b-instruct-2507-q4_K_M                                                     |          |  36.33 |     31 |  235.1 |    4 |  256 | 43.09 | 41.18 | 28.46 | 10.53 |
 | qwen3-vl:32b-instruct-q4_K_M                                                             |    16.70 |  20.56 |    123 |   33.4 |    4 |      | 27.78 | 21.15 | 13.91 | 3.19 |
+| hf.co/bartowski/cerebras_GLM-4.5-Air-REAP-82B-A12B-GGUF:Q4_0                             |          |  19.39 |        |   85.0 |      |      | 23.88 | 19.77 | 15.73 | 7.57 |
 | qwen3-vl:30b-a3b-instruct-q4_K_M                                                         |    15.55 |  17.33 |    111 |   31.1 |    4 |  128 | 18.95 | 21.38 | 16.01 | 1.38 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M                                                       |    15.25 |  17.31 |    114 |   30.5 |    4 |  256 | 16.93 | 23.76 | 16.1 | 1.89 |
 | qwen/qwen3-vl-30b                                                                        |          |  15.45 |     99 |   31.1 |    4 |  128 | 18.98 | 19.02 | 9.83 | 1.88 |
@@ -69,7 +71,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | granite4:3b-h                                                                            |          |   1.33 |     83 |    3.2 |    4 |      | 1.79 |  1.7 | 0.45 | 0.17 |
 | hf.co/bartowski/internlm_JanusCoderV-7B-GGUF:Q4_K_M                                      |          |   1.31 |     34 |   7.62 |    4 |      | 1.93 | 1.62 | 0.16 | 0.17 |
 | granite4:micro-h                                                                         |          |   1.30 |     81 |    3.2 |    4 | 1024 | 1.82 | 1.55 | 0.45 | 0.15 |
-| granite4:1b-bf16                                                                         |          |   1.17 |        |        |      |      | 1.81 |      | 0.28 | 0.08 |
+| granite4:1b-bf16                                                                         |          |   1.18 |        |        |      |      | 1.81 |      | 0.28 | 0.08 |
 | hf.co/bartowski/HuggingFaceTB_SmolLM3-3B-GGUF:Q4_K_M                                     |          |   1.06 |     69 |   3.08 |    4 |      | 1.47 | 1.41 | 0.18 | 0.09 |
 | gemma3n:e4b                                                                              |          |   0.99 |     29 |    6.9 |    4 |   32 | 1.32 | 0.92 | 0.92 |  0.0 |
 | granite3.3:8b                                                                            |          |   0.97 |     24 |    8.0 |    4 |  128 | 1.88 | 0.63 | 0.09 |  0.1 |

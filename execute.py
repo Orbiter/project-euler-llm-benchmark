@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import json
 import shutil
 import builtins
@@ -46,22 +47,53 @@ def get_language_from_extension(extension):
 def execute_python_code_worker(code, output_queue):
     # Define allowed built-ins
     safe_builtins = [
-        'abs', 'all', 'any', 'ascii', 'bin', 'bin', 'bool', 'bytearray',
-        'bytes', 'callable', 'chr', 'chr', 'complex', 'delattr', 'dict', 'dict',
-        'dir', 'divmod', 'enumerate', 'eval', 'exit', 'filter', 'float',
-        'frozenset', 'getattr', 'globals', 'hasattr', 'hash', 'hex', 'id',
-        'int', 'isinstance', 'issubclass', 'iter', 'len', 'list', 'locals',
-        'map', 'max', 'min', 'next', 'oct', 'ord', 'pow', 'print', 'property',
-        'range', 'repr', 'reversed', 'round', 'set', 'setattr', 'slice',
-        'sorted', 'str', 'sum', 'tuple', 'type', 'vars', 'zip',
-        'ZeroDivisionError', 'ValueError'
+        # numbers and types
+        'abs', 'bool', 'chr', 'complex', 'divmod', 'float', 'hex', 'int',
+        'len', 'oct', 'ord', 'pow', 'round', 'str', 'sum', 'max', 'min',
+        'ascii', 'callable', 'chr', 'id',
+
+        # iteration & sequences
+        'all', 'any', 'enumerate', 'filter', 'iter', 'map', 'next', 'range',
+        'reversed', 'slice', 'sorted', 'zip',
+
+        # container
+        'dict', 'frozenset', 'list', 'set', 'tuple',
+
+        # type-check
+        'isinstance', 'issubclass', 'type',
+
+        # math & logic
+        'bin', 'bytearray', 'bytes', 'hash',
+
+        # output
+        'print', 'repr', 
+
+        # exception
+        'Exception', 'StopIteration', 'ValueError', 'ZeroDivisionError',
+        'OverflowError', 'TypeError', 'IndexError', 'KeyError'
     ]
     allowed_builtins = {name: getattr(builtins, name) for name in safe_builtins}
+    allowed_builtins['setrecursionlimit'] = sys.setrecursionlimit
 
     # Define allowed modules
     allowed_module_names = [
-        'math', 'itertools', 'random', 'collections', 'datetime', 'string',
-        'sympy', 'heapq', 'decimal', 'numpy', 'fractions']
+        'heapq',       # priority queues
+        'string',      # digits, ascii_uppercase
+        'datetime',    # calendar
+        're',          # patterns
+        'math',        # floor, ceil, sqrt, log, gcd (ab 3.5), isqrt (ab 3.8)
+        'itertools',   # permutations, combinations, product, cycle
+        'functools',   # reduce, lru_cache
+        'operator',    # add, mul, mod
+        'collections', # namedtuple, deque, Counter
+        'bisect',      # binary search
+        'array',       # better than list
+        'decimal',     # for exact computation
+        'fractions',   # fractions
+        'statistics',  # mean, median
+        'random',      # i.e. monte-carlo
+        'sys'          # only 'setrecursionlimit'
+    ]
     allowed_modules = {name: __import__(name) for name in allowed_module_names}
 
     # Custom __import__ function to restrict imports

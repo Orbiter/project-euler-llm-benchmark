@@ -99,14 +99,19 @@ def ollama_list(endpoint) -> dict:
         # Both strategies failed; return empty so caller can handle it
         return {}
 
+def ollama_check_exist(endpoint: Endpoint) -> bool:
+    list = ollama_list(endpoint)
+    return endpoint.model_name in list
+
 def ollama_pull(endpoint: Endpoint) -> dict:
     # Try to pull the model from the endpoint. If that does not work, we simply return.
     # Failure can be due to the model already being present, network issues, etc.,
     # we try to move on anyway.
     if endpoint.key: return endpoint # endpoints with a key are not an ollama server
     
-    list = ollama_list(endpoint)
-    if endpoint.model_name in list: return endpoint
+    # don't load the model if it is already present
+    if ollama_check_exist(endpoint):
+        return endpoint
 
     # pull the model if it is not available
     api_base = get_ollama_url_stub(endpoint)

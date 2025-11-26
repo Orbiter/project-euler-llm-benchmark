@@ -36,6 +36,13 @@ class BenchmarkPublisher:
         except (TypeError, ValueError):
             return None
 
+    @staticmethod
+    def _is_thinking(entry: dict) -> bool:
+        value = entry.get("thinking", False)
+        if isinstance(value, str):
+            return value.strip().lower() == "true"
+        return bool(value)
+
     def _section_header(self) -> str | None:
         return SECTION_HEADERS.get(self.batch_size)
 
@@ -76,12 +83,14 @@ class BenchmarkPublisher:
             if not in_section:
                 continue
 
-            if start_idx is None and line.lstrip().startswith("| Model"):
+            if start_idx is None and (
+                line.lstrip().startswith("### ") or line.lstrip().startswith("| Model")
+            ):
                 capture = True
                 start_idx = idx
 
             if capture:
-                if stripped == "" or line.lstrip().startswith("|"):
+                if stripped == "" or line.lstrip().startswith("|") or line.lstrip().startswith("### "):
                     end_idx = idx + 1
                 else:
                     capture = False
@@ -113,9 +122,33 @@ class BenchmarkPublisher:
         updated_readme = prefix + new_table + suffix
         return updated_readme, ""
 
+    def _partition_by_thinking(self) -> tuple[dict, dict]:
+        non_thinking: dict = {}
+        thinking: dict = {}
+        for model_name, entry in self.sorted_benchmark.items():
+            (thinking if self._is_thinking(entry) else non_thinking)[model_name] = entry
+        return non_thinking, thinking
+
     def _build_table(self) -> str:
         max_model_name = max((len(name) for name in self.sorted_benchmark), default=len("Model"))
 
+        if self.batch_size == 200:
+            non_thinking, thinking = self._partition_by_thinking()
+            groups = [("### Non-Thinking", non_thinking), ("### Thinking", thinking)]
+        else:
+            groups = [(None, self.sorted_benchmark)]
+
+        tables: list[str] = []
+        for heading, entries in groups:
+            table_text = self._build_table_for_entries(entries, max_model_name)
+            if heading:
+                tables.append(f"{heading}\n{table_text}")
+            else:
+                tables.append(table_text)
+
+        return "\n\n".join(tables).rstrip() + "\n\n"
+
+    def _build_table_for_entries(self, entries: dict, max_model_name: int) -> str:
         col_best = "Best<br/>Model<br/>for<br/>Size (GB)"
         col_bench_score = f"PE-{self.batch_size}-<br/>Score"
         col_memory_score = "Mem-<br/>Score"
@@ -142,7 +175,7 @@ class BenchmarkPublisher:
         lowest_memory_amount = float("inf")
 
         python_key = score_key("python", self.batch_size)
-        for model_name, entry in self.sorted_benchmark.items():
+        for model_name, entry in entries.items():
             python_value = entry.get(python_key, "")
             if python_value in (None, ""): continue
 
@@ -157,7 +190,7 @@ class BenchmarkPublisher:
                 if size_value is not None and size_value > 0 and quant_value is not None and quant_value > 0
                 else float("inf")
             )
-            bench_score_value = bench_score(self.benchmark, entry, self.batch_size) 
+            bench_score_value = bench_score(self.benchmark, entry, self.batch_size)
             memory_score = (
                 (100.0 * bench_score_value / memory_amount) if memory_amount not in (0.0, float("inf")) else None
             )
@@ -166,7 +199,6 @@ class BenchmarkPublisher:
             if memory_amount <= lowest_memory_amount:
                 lowest_memory_amount = memory_amount
                 best_model = True
-
 
             bench_python = self._stringify(python_value)
             bench_java = self._stringify(entry.get(score_key("java", self.batch_size), ""))
@@ -201,7 +233,7 @@ class BenchmarkPublisher:
 
             lines.append(line)
 
-        return "\n".join(lines) + "\n\n"
+        return "\n".join(lines)
 
     @staticmethod
     def _stringify(value: object) -> str:

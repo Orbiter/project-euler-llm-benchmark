@@ -18,39 +18,31 @@ With the Project Euler LLM Benchmark, we aim to quantify how strongly LLMs demon
 The computed Benchmark ("PE-Bench-Python-200", "PE-Bench-Java-200", "PE-Bench-Rust-200", "PE-Bench-Clojure-200")  is the super-human performance factor to code in Python/Java/Rust/Clojure.
 The "Economic Score" is the average performance per bytes of model size (times 100). Results are:
 
+### Non-Thinking
 | Model                                                                                    | Best<br/>Model<br/>for<br/>Size (GB) | PE-200-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | Java | Rust | Clojure |
 | :--------------------------------------------------------------------------------------- | -----------------------------------: | ----------------: | -------------: | --------------------: | ---: | ---------------------: | -----: | ---: | ---: | ------: |
-| qwen3:30b-a3b-thinking-2507-q4_K_M                                                       |    15.25 |  44.59 |    292 |   30.5 |    4 |      | 47.67 | 56.83 | 31.3 | 22.16 |
-| mlx-community/Qwen3-Next-80B-A3B-Instruct-4bit                                           |          |  37.92 |     95 |   79.7 |    4 |  256 | 42.87 | 42.04 | 32.92 | 15.71 |
+| mlx-community/Qwen3-Next-80B-A3B-Instruct-4bit                                           |    39.85 |  37.92 |     95 |   79.7 |    4 |  256 | 42.87 | 42.04 | 32.92 | 15.71 |
 | qwen3-vl:235b-a22b-instruct-q4_K_M                                                       |          |  37.08 |     31 |  235.7 |    4 |  256 | 36.44 | 47.94 | 34.77 | 11.66 |
 | qwen3:235b-a22b-instruct-2507-q4_K_M                                                     |          |  36.33 |     31 |  235.1 |    4 |  256 | 43.09 | 41.18 | 28.46 | 10.53 |
-| hf.co/janhq/Jan-v1-4B-GGUF:Q4_K_M                                                        |     2.01 |  21.01 |   1045 |   4.02 |    4 |      | 31.03 | 21.99 | 8.96 |  2.1 |
-| qwen3-vl:32b-instruct-q4_K_M                                                             |          |  20.56 |    123 |   33.4 |    4 |      | 27.78 | 21.15 | 13.91 | 3.19 |
-| hf.co/janhq/Jan-v1-2509-gguf:Q4_K_M                                                      |     2.01 |  20.02 |    996 |   4.02 |    4 |      | 29.27 | 23.63 | 5.84 |  0.6 |
-| hf.co/bartowski/cerebras_GLM-4.5-Air-REAP-82B-A12B-GGUF:Q4_0                             |          |  19.39 |     46 |   85.0 |    4 |      | 23.88 | 19.77 | 15.73 | 7.57 |
-| qwen3-vl:30b-a3b-instruct-q8_0                                                           |          |  17.61 |     57 |   31.1 |    8 |      | 18.64 | 20.51 | 18.53 | 2.98 |
-| qwen3-vl:30b-a3b-instruct-q4_K_M                                                         |          |  17.33 |    111 |   31.1 |    4 |  128 | 18.95 | 21.38 | 16.01 | 1.38 |
-| qwen3:30b-a3b-instruct-2507-q4_K_M                                                       |          |  17.31 |    114 |   30.5 |    4 |  256 | 16.93 | 23.76 | 16.1 | 1.89 |
-| hf.co/mradermacher/apollo-astralis-4b-GGUF:Q4_K_M                                        |     2.01 |  17.16 |    854 |   4.02 |    4 |      | 24.22 | 19.35 | 6.47 | 3.75 |
-| qwen3-vl:8b-thinking-q4_K_M                                                              |          |  15.69 |    357 |    8.8 |    4 |      | 17.68 | 17.45 | 14.18 | 5.49 |
+| qwen3-vl:32b-instruct-q4_K_M                                                             |    16.70 |  20.56 |    123 |   33.4 |    4 |  256 | 27.78 | 21.15 | 13.91 | 3.19 |
+| qwen3-vl:30b-a3b-instruct-q8_0                                                           |          |  17.61 |     57 |   31.1 |    8 |  256 | 18.64 | 20.51 | 18.53 | 2.98 |
+| qwen3-vl:30b-a3b-instruct-q4_K_M                                                         |    15.55 |  17.33 |    111 |   31.1 |    4 |  128 | 18.95 | 21.38 | 16.01 | 1.38 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M                                                       |    15.25 |  17.31 |    114 |   30.5 |    4 |  256 | 16.93 | 23.76 | 16.1 | 1.89 |
 | qwen/qwen3-vl-30b                                                                        |          |  15.45 |     99 |   31.1 |    4 |  128 | 18.98 | 19.02 | 9.83 | 1.88 |
-| qwen3:4b-thinking-2507-q4_K_M                                                            |     2.00 |  15.30 |    765 |    4.0 |    4 |      | 20.88 | 16.63 | 7.49 | 4.63 |
-| qwen3-coder:30b-a3b-q4_K_M                                                               |          |  15.18 |    100 |   30.5 |    4 |  256 | 19.51 | 13.41 | 14.03 | 5.46 |
-| hf.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF:Q4_K_M                                   |          |  14.72 |     97 |   30.5 |    4 |      | 20.06 | 11.05 | 14.18 | 5.42 |
-| qwen3-vl:4b-thinking-q4_K_M                                                              |          |  13.59 |    618 |    4.4 |    4 |      | 17.87 | 13.81 | 8.84 | 5.31 |
-| qwen3:30b-a3b-q4_K_M-no_think                                                            |          |  13.00 |     85 |   30.5 |    4 |   40 | 14.5 | 15.85 | 10.06 | 4.36 |
+| qwen3-coder:30b-a3b-q4_K_M                                                               |    15.25 |  15.18 |    100 |   30.5 |    4 |  256 | 19.51 | 13.41 | 14.03 | 5.46 |
+| hf.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF:Q4_K_M                                   |    15.25 |  14.72 |     97 |   30.5 |    4 |  256 | 20.06 | 11.05 | 14.18 | 5.42 |
+| qwen3:30b-a3b-q4_K_M-no_think                                                            |    15.25 |  13.00 |     85 |   30.5 |    4 |   40 | 14.5 | 15.85 | 10.06 | 4.36 |
 | qwen2.5vl:32b-q4_K_M                                                                     |          |  12.51 |     75 |   33.5 |    4 |  128 | 15.56 | 11.71 | 13.44 | 0.82 |
-| hf.co/bartowski/AGI-0_Art-0-8B-GGUF:Q4_K_M                                               |          |  11.90 |    291 |   8.19 |    4 |   40 | 13.08 | 15.02 | 9.78 | 2.08 |
-| hf.co/bartowski/Sky-T1-32B-Preview-GGUF:Q4_K_M                                           |          |  10.10 |     62 |   32.8 |    4 |   32 | 10.02 | 15.13 | 6.72 | 2.06 |
 | qwen2.5-coder:32b-instruct-q4_K_M                                                        |          |   9.28 |     57 |   32.8 |    4 |   32 | 11.6 | 11.5 | 4.69 | 2.53 |
 | qwen2.5vl:72b-q4_K_M                                                                     |          |   9.03 |     25 |   73.4 |    4 |  128 | 10.11 | 10.98 | 7.64 | 1.67 |
 | hf.co/bartowski/Athene-V2-Agent-GGUF:Q4_K_M                                              |          |   8.72 |     24 |   72.7 |    4 |  128 | 11.13 | 10.62 | 5.03 | 0.77 |
-| hf.co/bartowski/internlm_JanusCoder-14B-GGUF:Q4_K_M                                      |          |   8.64 |    117 |   14.8 |    4 |      | 11.89 | 6.45 | 9.47 | 0.58 |
+| hf.co/bartowski/internlm_JanusCoder-14B-GGUF:Q4_K_M                                      |     7.40 |   8.64 |    117 |   14.8 |    4 |      | 11.89 | 6.45 | 9.47 | 0.58 |
 | qwen2.5:72b-instruct-q4_K_M                                                              |          |   8.47 |     23 |   72.7 |    4 |  128 | 11.5 | 8.83 | 5.27 | 1.69 |
+| hf.co/vanta-research/apollo-astralis-8b:Q4_K_M                                           |     4.09 |   8.00 |    195 |   8.19 |    4 |      | 8.36 | 12.08 | 4.45 | 1.38 |
 | qwen3:4b-instruct-2507-q4_K_M                                                            |     2.00 |   7.70 |    385 |    4.0 |    4 |  256 | 10.14 | 6.54 | 7.88 |  1.1 |
-| qwen3-vl:8b-instruct-q4_K_M                                                              |          |   7.38 |    168 |    8.8 |    4 |      | 8.39 | 7.02 | 9.34 | 0.46 |
+| qwen3-vl:8b-instruct-q4_K_M                                                              |          |   7.38 |    168 |    8.8 |    4 |  256 | 8.39 | 7.02 | 9.34 | 0.46 |
 | qwen3:14b-q4_K_M-no_think                                                                |          |   7.31 |     99 |   14.8 |    4 |   40 | 8.19 | 10.15 | 4.16 |  1.6 |
-| qwen3-vl:4b-instruct-q4_K_M                                                              |          |   7.04 |    320 |    4.4 |    4 |      | 10.08 |  6.6 | 4.88 | 0.52 |
+| qwen3-vl:4b-instruct-q4_K_M                                                              |          |   7.04 |    320 |    4.4 |    4 |  256 | 10.08 |  6.6 | 4.88 | 0.52 |
 | qwen3-vl-8b-instruct-mlx                                                                 |          |   7.00 |    159 |    8.8 |    4 |  256 | 8.23 | 9.48 | 4.07 | 0.54 |
 | phi4:14b-q4_K_M                                                                          |          |   6.89 |     94 |   14.7 |    4 |   16 | 8.92 | 8.42 | 3.49 | 0.98 |
 | qwen2.5:32b-instruct-q4_K_M                                                              |          |   6.88 |     42 |   32.8 |    4 |   32 | 9.74 | 6.08 |  5.6 | 0.35 |
@@ -59,7 +51,6 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | qwen3:8b-q4_K_M-no_think                                                                 |          |   5.70 |    139 |    8.2 |    4 |  128 | 5.34 | 8.65 |  4.2 | 1.26 |
 | hf.co/LGAI-EXAONE/EXAONE-4.0-32B-GGUF:Q4_K_M                                             |          |   5.10 |     32 |   32.0 |    4 |      | 8.54 | 4.39 | 1.57 |  0.5 |
 | llama3.2-vision:90b-instruct-q4_K_M                                                      |          |   5.03 |     11 |   87.7 |    4 |  128 | 6.71 | 4.34 | 4.43 | 1.61 |
-| hf.co/mradermacher/VibeThinker-1.5B-GGUF:Q4_K_M                                          |     0.89 |   4.93 |    554 |   1.78 |    4 |      | 9.38 | 1.51 | 1.97 |  3.3 |
 | llama3.3:70b-instruct-q4_K_M                                                             |          |   4.83 |     14 |   70.6 |    4 |  128 | 5.26 | 5.04 | 5.19 |  1.8 |
 | yi-coder:9b-chat-q4_K_M                                                                  |          |   4.82 |    110 |    8.8 |    4 |  128 |  7.2 | 5.39 | 1.51 | 0.22 |
 | gemma3:27b                                                                               |          |   4.81 |     35 |   27.4 |    4 |  128 | 6.11 | 4.74 | 4.54 | 0.36 |
@@ -68,18 +59,19 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/mradermacher/Josiefied-Qwen3-4B-Instruct-2507-abliterated-v1-GGUF:Q4_K_M           |          |   4.41 |    219 |   4.02 |    4 |      | 5.97 | 4.24 | 3.42 | 0.66 |
 | hf.co/mradermacher/Ling-lite-1.5-GGUF:Q4_K_M                                             |          |   4.32 |     51 |   16.8 |    4 |      | 4.99 | 5.13 | 3.71 | 0.44 |
 | qwen3-vl-4b-instruct-mlx                                                                 |          |   4.19 |    105 |    8.0 |    4 |  256 | 7.64 | 1.83 | 2.71 | 0.39 |
-| hf.co/bartowski/google_medgemma-27b-it-GGUF:Q4_K_M                                       |          |   4.14 |     31 |   27.0 |    4 |      | 6.03 | 4.08 | 2.46 | 0.11 |
-| hf.co/mradermacher/MiroThinker-v1.0-72B-GGUF:Q4_K_M                                      |          |   4.10 |     11 |   72.7 |    4 |      |  5.1 | 3.57 | 4.42 | 1.04 |
+| hf.co/bartowski/google_medgemma-27b-it-GGUF:Q4_K_M                                       |          |   4.14 |     31 |   27.0 |    4 |    8 | 6.03 | 4.08 | 2.46 | 0.11 |
 | hf.co/mradermacher/medgemma-27b-text-it-GGUF:Q4_K_M                                      |          |   4.00 |     30 |   27.0 |    4 |      | 4.96 | 4.12 | 3.67 | 0.47 |
 | hf.co/bartowski/mistralai_Mistral-Small-3.2-24B-Instruct-2506-GGUF:Q4_K_M                |          |   3.98 |     34 |   23.6 |    4 |  128 | 4.39 | 4.76 | 3.46 | 1.08 |
-| hf.co/mradermacher/Qwen3-4b-tcomanr-merge-v2.5-GGUF:Q4_K_M                               |          |   3.92 |    195 |   4.02 |    4 |      | 4.27 | 3.91 | 3.84 | 2.72 |
+| hf.co/mradermacher/Olmo-3-32B-Think-GGUF:Q4_K_M                                          |          |   3.96 |     25 |   32.0 |    4 |  128 | 3.99 | 4.84 | 3.78 | 1.56 |
+| hf.co/mradermacher/Qwen3-4b-tcomanr-merge-v2.5-GGUF:Q4_K_M                               |          |   3.92 |    195 |   4.02 |    4 |   32 | 4.27 | 3.91 | 3.84 | 2.72 |
 | hf.co/mistralai/Devstral-Small-2507_gguf:Q4_K_M                                          |          |   3.68 |     31 |   23.6 |    4 |  128 | 5.32 | 3.03 | 2.99 | 0.46 |
 | hf.co/LGAI-EXAONE/EXAONE-4.0-1.2B-GGUF:Q4_K_M                                            |     0.64 |   3.50 |    547 |   1.28 |    4 |      | 5.49 | 4.35 | 0.01 |  0.0 |
 | gemma3:12b                                                                               |          |   2.97 |     49 |   12.2 |    4 |  128 | 3.21 | 2.79 | 3.92 | 0.69 |
-| hf.co/LGAI-EXAONE/EXAONE-3.5-32B-Instruct-GGUF:Q4_K_M                                    |          |   2.86 |     18 |   32.0 |    4 |      | 3.08 |  4.3 | 1.46 | 0.42 |
+| hf.co/LGAI-EXAONE/EXAONE-3.5-32B-Instruct-GGUF:Q4_K_M                                    |          |   2.86 |     18 |   32.0 |    4 |  256 | 3.08 |  4.3 | 1.46 | 0.42 |
 | hf.co/bartowski/THUDM_GLM-4-9B-0414-GGUF:Q4_K_M                                          |          |   2.85 |     61 |    9.4 |    4 |   32 | 4.48 | 2.82 |  1.0 | 0.16 |
 | qwen2.5-coder:7b-instruct-q4_K_M                                                         |          |   2.70 |     71 |    7.6 |    4 |   32 | 3.69 | 2.84 | 1.81 | 0.13 |
 | hf.co/bartowski/cognitivecomputations_Dolphin-Mistral-24B-Venice-Edition-GGUF:Q4_K_M     |          |   2.67 |     22 |   24.0 |    4 |   32 | 4.29 | 1.68 | 1.91 | 0.64 |
+| hf.co/mradermacher/Olmo-3-7B-Think-GGUF:Q4_K_M                                           |          |   2.53 |     72 |    7.0 |    4 |    2 | 5.53 | 0.53 | 0.32 | 0.98 |
 | qwen2.5:7b-instruct-q4_K_M                                                               |          |   2.43 |     64 |    7.6 |    4 |  128 | 2.97 | 3.12 | 1.42 | 0.24 |
 | qwen3:1.7b-q4_K_M-no_think                                                               |          |   2.33 |    233 |    2.0 |    4 |   32 | 2.26 | 3.93 | 1.03 | 0.44 |
 | qwen2.5-coder:3b-instruct-q4_K_M                                                         |          |   2.09 |    135 |    3.1 |    4 |   32 | 3.32 | 2.04 | 0.63 | 0.29 |
@@ -91,61 +83,81 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/mradermacher/Ling-Coder-lite-GGUF:Q4_K_M                                           |          |   1.62 |     19 |   16.8 |    4 |      | 2.59 | 1.32 | 0.68 | 0.51 |
 | granite4:micro                                                                           |          |   1.61 |     95 |    3.4 |    4 |  128 | 2.78 | 1.21 | 0.57 |  0.2 |
 | llama3.2-vision:11b-instruct-q4_K_M                                                      |          |   1.60 |     33 |    9.8 |    4 |  128 |  1.9 | 2.14 | 0.68 | 0.62 |
-| qwen3-vl:2b-thinking-q4_K_M                                                              |          |   1.54 |    147 |    2.1 |    4 |      | 1.49 | 2.25 | 1.14 | 0.42 |
-| qwen3-vl-2b-instruct-mlx                                                                 |          |   1.40 |     70 |      2 |    8 |      | 2.25 | 1.22 |  0.6 | 0.09 |
+| qwen3-vl-2b-instruct-mlx                                                                 |          |   1.40 |     70 |      2 |    8 |  256 | 2.25 | 1.22 |  0.6 | 0.09 |
 | qwen2.5vl:7b-q4_K_M                                                                      |          |   1.34 |     32 |    8.3 |    4 |  128 |  1.7 | 0.69 |  2.2 | 0.15 |
-| granite4:3b-h                                                                            |          |   1.33 |     83 |    3.2 |    4 |      | 1.79 |  1.7 | 0.45 | 0.17 |
+| granite4:3b-h                                                                            |          |   1.33 |     83 |    3.2 |    4 |  131 | 1.79 |  1.7 | 0.45 | 0.17 |
+| hf.co/mradermacher/atom-v1-preview-12b-GGUF:Q4_K_M                                       |          |   1.32 |     22 |   11.8 |    4 |      | 2.05 | 1.32 | 0.53 |  0.0 |
 | hf.co/bartowski/internlm_JanusCoderV-7B-GGUF:Q4_K_M                                      |          |   1.31 |     34 |   7.62 |    4 |      | 1.93 | 1.62 | 0.16 | 0.17 |
 | granite4:micro-h                                                                         |          |   1.30 |     81 |    3.2 |    4 | 1024 | 1.82 | 1.55 | 0.45 | 0.15 |
-| hf.co/mradermacher/Olmo-3-7B-Instruct-GGUF:Q4_K_M                                        |          |   1.24 |     36 |      7 |    4 |      | 2.25 | 0.31 |  1.1 | 0.32 |
-| granite4:1b-bf16                                                                         |          |   1.19 |        |        |      |      | 1.81 |      | 0.28 | 0.08 |
+| hf.co/mradermacher/Olmo-3-7B-Instruct-GGUF:Q4_K_M                                        |          |   1.24 |     36 |      7 |    4 |    2 | 2.25 | 0.31 |  1.1 | 0.32 |
+| granite4:1b-bf16                                                                         |          |   1.21 |        |        |      |      | 1.81 |      | 0.28 | 0.08 |
 | hf.co/bartowski/HuggingFaceTB_SmolLM3-3B-GGUF:Q4_K_M                                     |          |   1.06 |     69 |   3.08 |    4 |      | 1.47 | 1.41 | 0.18 | 0.09 |
 | gemma3n:e4b                                                                              |          |   0.99 |     29 |    6.9 |    4 |   32 | 1.32 | 0.92 | 0.92 |  0.0 |
 | granite3.3:8b                                                                            |          |   0.97 |     24 |    8.0 |    4 |  128 | 1.88 | 0.63 | 0.09 |  0.1 |
-| hf.co/LiquidAI/LFM2-2.6B-GGUF:Q4_K_M                                                     |          |   0.94 |     73 |   2.57 |    4 |      | 0.98 | 1.39 | 0.52 | 0.28 |
+| hf.co/LiquidAI/LFM2-2.6B-GGUF:Q4_K_M                                                     |          |   0.94 |     73 |   2.57 |    4 |   32 | 0.98 | 1.39 | 0.52 | 0.28 |
+| hf.co/mradermacher/wraith-8b-GGUF:Q4_K_M                                                 |          |   0.93 |     23 |   8.03 |    4 |      | 1.35 | 0.91 |  0.6 | 0.02 |
 | qwen2.5-coder:1.5b-instruct-q4_K_M                                                       |          |   0.89 |    119 |    1.5 |    4 |   32 | 1.46 | 0.85 | 0.25 |  0.0 |
 | hf.co/bartowski/allenai_olmOCR-2-7B-1025-GGUF:Q4_K_M                                     |          |   0.88 |     23 |   7.62 |    4 |    2 | 1.44 | 0.75 |  0.3 | 0.21 |
 | hf.co/mradermacher/olmOCR-7B-0825-GGUF:Q4_K_M                                            |          |   0.88 |     23 |   7.62 |    4 |  128 | 1.72 | 0.36 | 0.41 | 0.02 |
 | hf.co/DevQuasar/inference-net.Schematron-8B-GGUF:Q4_K_M                                  |          |   0.88 |     22 |   8.03 |    4 |      | 1.16 | 1.01 | 0.27 | 0.55 |
 | qwen3:0.6b-q4_K_M-no_think                                                               |     0.38 |   0.87 |    232 | 0.75163 |    4 |   32 |  1.3 | 0.73 | 0.36 |  0.6 |
 | gemma3n:e2b                                                                              |          |   0.85 |     38 |    4.5 |    4 |    8 |  1.4 | 0.95 | 0.01 | 0.05 |
+| hf.co/bartowski/microsoft_Fara-7B-GGUF:Q4_K_M                                            |          |   0.85 |     22 |   7.62 |    4 |      | 0.55 | 1.85 | 0.13 | 0.45 |
 | yi-coder:1.5b-chat-q4_K_M                                                                |          |   0.84 |    112 |    1.5 |    4 |  128 | 1.53 | 0.66 | 0.08 | 0.13 |
-| granite4:1b-h-q8_0                                                                       |          |   0.80 |     53 |    1.5 |    8 |      | 1.53 | 0.35 | 0.38 | 0.06 |
+| granite4:1b-h-q8_0                                                                       |          |   0.80 |     53 |    1.5 |    8 |  131 | 1.53 | 0.35 | 0.38 | 0.06 |
 | hf.co/mradermacher/Lucy-128k-GGUF:Q4_K_M                                                 |          |   0.73 |     85 |   1.72 |    4 |      | 0.76 | 1.23 | 0.05 | 0.47 |
 | hf.co/allenai/OLMo-2-0325-32B-Instruct-GGUF:Q4_0                                         |          |   0.72 |      4 |   32.2 |    4 |    4 | 1.68 | 0.06 | 0.11 | 0.09 |
-| qwen3-vl:2b-instruct-q4_K_M                                                              |          |   0.72 |     68 |    2.1 |    4 |      | 1.07 | 0.59 |      | 0.09 |
+| qwen3-vl:2b-instruct-q4_K_M                                                              |          |   0.72 |     68 |    2.1 |    4 |  256 | 1.07 | 0.59 |      | 0.09 |
 | llama3.2:3b                                                                              |          |   0.61 |     38 |    3.2 |    4 |  128 |  1.3 | 0.27 | 0.05 |  0.0 |
-| hf.co/unsloth/medgemma-4b-it-GGUF:Q4_K_M                                                 |          |   0.60 |     31 |   3.88 |    4 |      | 1.14 | 0.28 | 0.16 | 0.28 |
+| hf.co/unsloth/medgemma-4b-it-GGUF:Q4_K_M                                                 |          |   0.60 |     31 |   3.88 |    4 |  128 | 1.14 | 0.28 | 0.16 | 0.28 |
 | gemma3:4b                                                                                |          |   0.55 |     25 |    4.3 |    4 |  128 | 1.03 | 0.35 | 0.15 |  0.0 |
 | qwen2.5vl:3b-q4_K_M                                                                      |          |   0.55 |     29 |    3.8 |    4 |  128 | 0.82 | 0.71 | 0.03 |  0.0 |
 | phi4-mini:3.8b-q4_K_M                                                                    |          |   0.50 |     26 |    3.8 |    4 |  128 | 0.66 | 0.27 | 0.78 |  0.0 |
+| hf.co/vanta-research/atom-v1-preview-4b:latest                                           |          |   0.48 |        |   3.88 |      |      | 0.72 | 0.52 | 0.19 |  0.0 |
 | qwen2.5:1.5b-instruct-q4_K_M                                                             |          |   0.44 |     59 |    1.5 |    4 |  128 | 0.92 |  0.2 | 0.03 | 0.09 |
 | hf.co/mradermacher/Arch-Router-1.5B-GGUF:Q4_K_M                                          |          |   0.40 |     52 |   1.54 |    4 |      | 0.73 | 0.32 | 0.08 |  0.0 |
 | granite3.3:2b                                                                            |          |   0.39 |     39 |    2.0 |    4 |  128 | 0.67 |  0.2 | 0.26 |  0.1 |
 | hf.co/DevQuasar/inference-net.Schematron-3B-GGUF:Q4_K_M                                  |          |   0.38 |     24 |   3.21 |    4 |      | 0.42 | 0.34 | 0.32 | 0.48 |
 | hf.co/mradermacher/medgemma-4b-it-GGUF:Q4_K_M                                            |          |   0.35 |     18 |   3.88 |    4 |      | 0.64 | 0.07 | 0.37 |  0.0 |
 | hf.co/mradermacher/UserLM-8b-GGUF:Q4_K_M                                                 |          |   0.34 |        |        |    4 |      | 0.73 | 0.05 | 0.12 |  0.1 |
-| hf.co/allenai/OLMo-2-1124-7B-Instruct-GGUF:Q4_K_M                                        |          |   0.33 |      9 |    7.3 |    4 |      | 0.69 |  0.1 | 0.08 | 0.09 |
+| hf.co/allenai/OLMo-2-1124-7B-Instruct-GGUF:Q4_K_M                                        |          |   0.33 |      9 |    7.3 |    4 |    2 | 0.69 |  0.1 | 0.08 | 0.09 |
 | hf.co/mradermacher/scout-4b-GGUF:Q4_K_M                                                  |          |   0.33 |     17 |   3.88 |    4 |      | 0.77 | 0.04 | 0.03 |  0.0 |
 | hf.co/allenai/OLMoE-1B-7B-0125-Instruct-GGUF:Q4_K_M                                      |          |   0.22 |      6 |   6.92 |    4 |    2 | 0.53 | 0.03 | 0.01 |  0.0 |
 | hf.co/mradermacher/occiglot-7b-eu5-instruct-GGUF:Q4_K_M                                  |          |   0.19 |      5 |   7.24 |    4 |      | 0.23 |  0.0 | 0.02 | 0.95 |
 | hf.co/QuantFactory/EuroLLM-9B-Instruct-GGUF:Q4_K_M                                       |          |   0.18 |      4 |   9.15 |    4 |      | 0.42 | 0.04 | 0.01 |  0.0 |
-| hf.co/LiquidAI/LFM2-1.2B-GGUF:Q4_K_M                                                     |          |   0.17 |     28 |   1.17 |    4 |      |  0.4 | 0.01 | 0.01 |  0.0 |
+| hf.co/LiquidAI/LFM2-1.2B-GGUF:Q4_K_M                                                     |          |   0.17 |     28 |   1.17 |    4 |   32 |  0.4 | 0.01 | 0.01 |  0.0 |
 | hf.co/mradermacher/Ling-lite-GGUF:Q4_K_M                                                 |          |   0.14 |      2 |   16.8 |    4 |      | 0.21 | 0.01 | 0.11 | 0.27 |
 | llama3.2:1b-instruct-q4_K_M                                                              |          |   0.10 |      8 |    1.2 |    8 |  128 | 0.22 | 0.03 |  0.0 |  0.0 |
 | qwen2.5-coder:0.5b-instruct-q4_K_M                                                       |     0.25 |   0.09 |     37 |    0.5 |    4 |   32 | 0.11 |  0.1 | 0.09 |  0.0 |
-| hf.co/mradermacher/EuroLLM-1.7B-Instruct-GGUF:Q4_K_M                                     |          |   0.09 |     11 |   1.66 |    4 |      | 0.09 | 0.09 | 0.09 | 0.09 |
+| hf.co/mradermacher/EuroLLM-1.7B-Instruct-GGUF:Q4_K_M                                     |          |   0.09 |     11 |   1.66 |    4 |  128 | 0.09 | 0.09 | 0.09 | 0.09 |
 | gemma3:270m                                                                              |          |   0.08 |     31 |   0.27 |    8 |   32 |  0.0 | 0.09 | 0.28 |  0.0 |
 | phi3:3.8b                                                                                |          |   0.08 |      4 |    3.8 |    4 |  128 |  0.1 | 0.09 | 0.07 |  0.0 |
 | granite4:350m-bf16                                                                       |          |   0.07 |     11 |   0.35 |   16 |      | 0.12 | 0.03 | 0.09 |  0.0 |
-| hf.co/LiquidAI/LFM2-350M-GGUF:Q4_K_M                                                     |     0.18 |   0.07 |     42 |  0.354 |    4 |      | 0.12 |  0.0 | 0.09 | 0.09 |
+| hf.co/LiquidAI/LFM2-350M-GGUF:Q4_K_M                                                     |     0.18 |   0.07 |     42 |  0.354 |    4 |   32 | 0.12 |  0.0 | 0.09 | 0.09 |
 | smollm2:360m-instruct-q4_K_M                                                             |          |   0.07 |      0 | 361.82 |    4 |      | 0.03 | 0.09 | 0.09 | 0.09 |
 | qwen2.5:0.5b-instruct-q4_K_M                                                             |          |   0.06 |     25 |    0.5 |    4 |  128 | 0.06 |  0.1 |  0.0 | 0.09 |
-| granite4:350m-h-q8_0                                                                     |          |   0.05 |     14 |   0.35 |    8 |      |  0.1 |  0.0 |  0.0 | 0.09 |
+| granite4:350m-h-q8_0                                                                     |          |   0.05 |     14 |   0.35 |    8 |  131 |  0.1 |  0.0 |  0.0 | 0.09 |
 | gemma3:1b                                                                                |          |   0.04 |      8 |    1.0 |    4 |   32 | 0.08 | 0.03 |  0.0 |  0.0 |
-| hf.co/LiquidAI/LFM2-700M-GGUF:Q4_K_M                                                     |          |   0.04 |        |        |    4 |      | 0.03 |  0.0 | 0.09 | 0.09 |
+| hf.co/LiquidAI/LFM2-700M-GGUF:Q4_K_M                                                     |          |   0.04 |      1 |    8.0 |    4 |   32 | 0.03 |  0.0 | 0.09 | 0.09 |
 | hf.co/allenai/OLMo-2-0425-1B-Instruct-GGUF:Q4_K_M                                        |          |   0.04 |      5 |   1.48 |    4 |    4 | 0.03 | 0.09 |  0.0 |  0.0 |
 | smollm:135m-instruct-v0.2-q8_0                                                           |     0.14 |   0.03 |     25 |  0.135 |    8 |    2 |  0.0 |  0.0 | 0.17 |  0.0 |
+
+### Thinking
+| Model                                                                                    | Best<br/>Model<br/>for<br/>Size (GB) | PE-200-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | Java | Rust | Clojure |
+| :--------------------------------------------------------------------------------------- | -----------------------------------: | ----------------: | -------------: | --------------------: | ---: | ---------------------: | -----: | ---: | ---: | ------: |
+| qwen3:30b-a3b-thinking-2507-q4_K_M                                                       |    15.25 |  44.59 |    292 |   30.5 |    4 |  128 | 47.67 | 56.83 | 31.3 | 22.16 |
+| hf.co/janhq/Jan-v1-4B-GGUF:Q4_K_M                                                        |     2.01 |  21.01 |   1045 |   4.02 |    4 |      | 31.03 | 21.99 | 8.96 |  2.1 |
+| hf.co/janhq/Jan-v1-2509-gguf:Q4_K_M                                                      |     2.01 |  20.02 |    996 |   4.02 |    4 |      | 29.27 | 23.63 | 5.84 |  0.6 |
+| hf.co/bartowski/cerebras_GLM-4.5-Air-REAP-82B-A12B-GGUF:Q4_0                             |          |  19.39 |     46 |   85.0 |    4 |      | 23.88 | 19.77 | 15.73 | 7.57 |
+| hf.co/mradermacher/apollo-astralis-4b-GGUF:Q4_K_M                                        |     2.01 |  17.16 |    854 |   4.02 |    4 |      | 24.22 | 19.35 | 6.47 | 3.75 |
+| qwen3-vl:8b-thinking-q4_K_M                                                              |          |  15.69 |    357 |    8.8 |    4 |  256 | 17.68 | 17.45 | 14.18 | 5.49 |
+| qwen3:4b-thinking-2507-q4_K_M                                                            |     2.00 |  15.30 |    765 |    4.0 |    4 |   32 | 20.88 | 16.63 | 7.49 | 4.63 |
+| qwen3-vl:4b-thinking-q4_K_M                                                              |          |  13.59 |    618 |    4.4 |    4 |  256 | 17.87 | 13.81 | 8.84 | 5.31 |
+| hf.co/bartowski/AGI-0_Art-0-8B-GGUF:Q4_K_M                                               |          |  11.90 |    291 |   8.19 |    4 |   40 | 13.08 | 15.02 | 9.78 | 2.08 |
+| hf.co/bartowski/Sky-T1-32B-Preview-GGUF:Q4_K_M                                           |          |  10.10 |     62 |   32.8 |    4 |   32 | 10.02 | 15.13 | 6.72 | 2.06 |
+| hf.co/mradermacher/VibeThinker-1.5B-GGUF:Q4_K_M                                          |     0.89 |   4.93 |    554 |   1.78 |    4 |      | 9.38 | 1.51 | 1.97 |  3.3 |
+| hf.co/mradermacher/MiroThinker-v1.0-72B-GGUF:Q4_K_M                                      |          |   4.10 |     11 |   72.7 |    4 |      |  5.1 | 3.57 | 4.42 | 1.04 |
+| qwen3-vl:2b-thinking-q4_K_M                                                              |          |   1.54 |    147 |    2.1 |    4 |  256 | 1.49 | 2.25 | 1.14 | 0.42 |
 
 ## Archived Outdated PE-Bench-100
 The following Benchmark result ("PE-Bench-Python-100", "PE-Bench-Java-100", "PE-Bench-Rust-100", "PE-Bench-Clojure-100") is an archive of a retired computation process that does not only compute only 100 problems for each language (the best models saturated those already) but also it used different prompt templates, so the benchmark values cannot be compared with the PE-Bench-200:
@@ -410,7 +422,7 @@ The following Benchmark result ("PE-Bench-Python-100", "PE-Bench-Java-100", "PE-
 | hf.co/bartowski/google_gemma-3-4b-it-qat-GGUF:Q4_0                                       |          |   0.81 |     42 |   3.88 |    4 |  128 | 1.74 | 0.35 | 0.03 | 0.03 |
 | hf.co/mradermacher/HelpingAI-9B-GGUF:Q4_K_M                                              |          |   0.78 |     18 |   8.83 |    4 |    4 | 1.64 | 0.41 |  0.0 |  0.0 |
 | qwen3:1.7b-q4_K_M-no_think                                                               |          |   0.77 |     76 |    2.0 |    4 |   32 | 1.08 | 0.99 | 0.18 |  0.0 |
-| hf.co/LiquidAI/LFM2-2.6B-GGUF:Q4_K_M                                                     |          |   0.76 |     59 |   2.57 |    4 |      | 1.86 | 0.04 |  0.0 |  0.0 |
+| hf.co/LiquidAI/LFM2-2.6B-GGUF:Q4_K_M                                                     |          |   0.76 |     59 |   2.57 |    4 |   32 | 1.86 | 0.04 |  0.0 |  0.0 |
 | hf.co/bartowski/OpenThinker-7B-GGUF:Q4_K_M                                               |          |   0.75 |     20 |   7.62 |    4 |   32 | 0.88 | 0.77 | 0.53 | 0.62 |
 | exaone-deep:32b-q4_K_M                                                                   |          |   0.70 |      4 |   32.0 |    4 |   32 | 0.93 | 0.66 | 0.36 | 0.53 |
 | command-r7b:7b-12-2024-q4_K_M                                                            |          |   0.68 |     17 |    8.0 |    4 |  128 | 1.54 | 0.03 | 0.26 | 0.04 |
@@ -437,7 +449,7 @@ The following Benchmark result ("PE-Bench-Python-100", "PE-Bench-Java-100", "PE-
 | smallthinker:3b-preview-q4_K_M                                                           |          |   0.47 |     27 |    3.4 |    4 |  128 | 0.98 | 0.25 |  0.0 |  0.0 |
 | deepseek-r1:1.5b-qwen-distill-q4_K_M                                                     |          |   0.46 |     51 |    1.8 |    4 |  128 | 0.87 | 0.24 | 0.03 | 0.37 |
 | cogito:3b-v1-preview-llama-q4_K_M                                                        |          |   0.46 |     29 |   3.21 |    4 |  128 | 0.94 | 0.25 | 0.04 | 0.03 |
-| hf.co/LiquidAI/LFM2-2.6B-GGUF:Q8_0                                                       |          |   0.46 |        |   2.57 |      |      | 0.94 | 0.24 | 0.04 |  0.0 |
+| hf.co/LiquidAI/LFM2-2.6B-GGUF:Q8_0                                                       |          |   0.46 |     18 |   2.57 |    8 |   32 | 0.94 | 0.24 | 0.04 |  0.0 |
 | hf.co/TheBloke/Yi-34B-Chat-GGUF:Q4_K_M                                                   |          |   0.44 |      3 |   34.4 |    4 |    4 | 0.67 | 0.56 | 0.03 |  0.0 |
 | granite3.2:2b-instruct-q4_K_M                                                            |          |   0.42 |     34 |    2.5 |    4 |  128 | 0.85 | 0.16 | 0.15 | 0.05 |
 | mistral:7b-instruct-q4_K_M                                                               |          |   0.41 |     12 |    7.0 |    4 |   32 | 0.48 | 0.71 | 0.04 |  0.0 |
@@ -472,7 +484,7 @@ The following Benchmark result ("PE-Bench-Python-100", "PE-Bench-Java-100", "PE-
 | hf.co/bartowski/google_gemma-3-1b-it-qat-GGUF:Q4_0                                       |          |   0.12 |     25 |    1.0 |    4 |   32 | 0.29 | 0.03 |  0.0 |  0.0 |
 | falcon:7b-instruct-q4_0                                                                  |          |   0.11 |      3 |    7.0 |    4 |    2 | 0.28 |  0.0 |  0.0 |  0.0 |
 | falcon:40b-instruct-q4_0                                                                 |          |   0.11 |      1 |   40.0 |    4 |    2 | 0.07 |  0.0 | 0.42 |  0.0 |
-| hf.co/LiquidAI/LFM2-1.2B-GGUF:Q4_K_M                                                     |          |   0.11 |     19 |   1.17 |    4 |      | 0.25 | 0.03 |  0.0 |  0.0 |
+| hf.co/LiquidAI/LFM2-1.2B-GGUF:Q4_K_M                                                     |          |   0.11 |     19 |   1.17 |    4 |   32 | 0.25 | 0.03 |  0.0 |  0.0 |
 | phi4-mini:3.8b-q4_K_M                                                                    |          |   0.11 |      6 |    3.8 |    4 |  128 | 0.23 | 0.04 | 0.01 |  0.0 |
 | falcon3:1b-instruct-q8_0                                                                 |          |   0.10 |      6 |    1.7 |    8 |    8 | 0.25 |  0.0 |  0.0 |  0.0 |
 | hf.co/mradermacher/MiniCPM4-0.5B-GGUF:Q4_K_M                                             |          |   0.10 |      0 |  434.0 |    4 |      | 0.23 | 0.02 |  0.0 |  0.0 |
@@ -480,7 +492,7 @@ The following Benchmark result ("PE-Bench-Python-100", "PE-Bench-Java-100", "PE-
 | qwen:14b-chat-v1.5-q4_K_M                                                                |          |   0.08 |      1 |   14.0 |    4 |   32 | 0.15 |  0.0 | 0.08 |  0.0 |
 | hf.co/bartowski/burtenshaw_GemmaCoder3-12B-GGUF:Q4_K_M                                   |          |   0.06 |      1 |   11.8 |    4 |  128 | 0.04 | 0.14 | 0.03 |  0.0 |
 | qwen:1.8b-chat-v1.5-q4_K_M                                                               |          |   0.06 |      6 |    2.0 |    4 |   32 |  0.0 |  0.0 |  0.0 | 0.62 |
-| hf.co/LiquidAI/LFM2-350M-GGUF:Q4_K_M                                                     |     0.18 |   0.06 |     32 |  0.354 |    4 |      | 0.14 |  0.0 |  0.0 |  0.0 |
+| hf.co/LiquidAI/LFM2-350M-GGUF:Q4_K_M                                                     |     0.18 |   0.06 |     32 |  0.354 |    4 |   32 | 0.14 |  0.0 |  0.0 |  0.0 |
 | hf.co/mradermacher/MiMo-VL-7B-RL-GGUF:Q4_K_M-no_think                                    |          |   0.06 |      1 |   7.62 |    4 |  128 | 0.14 |  0.0 |  0.0 |  0.0 |
 | hf.co/sizzlebop/Holo1-7B-Q4_K_M-GGUF                                                     |          |   0.05 |      1 |    7.0 |    4 |  128 | 0.13 |  0.0 |  0.0 |  0.0 |
 | vicuna:13b-q4_K_M                                                                        |          |   0.04 |      1 |   13.0 |    4 |    2 | 0.09 | 0.01 |  0.0 |  0.0 |

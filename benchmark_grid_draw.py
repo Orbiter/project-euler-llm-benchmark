@@ -18,6 +18,8 @@ GRID_WIDTH = BORDER + COLUMNS * (CELL_WIDTH + BORDER)
 GRID_ORIGIN_Y = 0
 LABEL_LEFT_PADDING = 12
 LABEL_RIGHT_PADDING = 12
+TITLE_TOP_PADDING = 6
+TITLE_BOTTOM_PADDING = 8
 GUIDE_TOP_PADDING = 6
 GUIDE_LINE_SPACING = 4
 GUIDE_BOTTOM_PADDING = 4
@@ -55,8 +57,8 @@ def load_benchmark_data(path: Path) -> Dict[str, Dict[str, str]]:
 
 def collect_models_with_tests(
     data: Dict[str, Dict[str, object]]
-) -> List[Tuple[str, List[str]]]:
-    models: List[Tuple[str, List[str]]] = []
+) -> List[Tuple[str, List[str], bool]]:
+    models: List[Tuple[str, List[str], bool]] = []
     required_keys = [f"{lang}-200-test" for lang in ("python", "java", "rust", "clojure")]
 
     for name, metrics in data.items():
@@ -69,7 +71,12 @@ def collect_models_with_tests(
                 break
             values.append(value)
         else:
-            models.append((name, values))
+            thinking_value = metrics.get("thinking", False)
+            if isinstance(thinking_value, str):
+                is_thinking = thinking_value.strip().lower() == "true"
+            else:
+                is_thinking = bool(thinking_value)
+            models.append((name, values, is_thinking))
 
     return models
 
@@ -119,12 +126,13 @@ def draw_grid(
     rows: int,
     colors: List[List[Tuple[int, int, int]]],
     origin_x: int,
+    origin_y: int,
 ) -> None:
     grid_width = GRID_WIDTH
     for row_index in range(rows):
         for col_index in range(COLUMNS):
             x0 = origin_x + BORDER + col_index * (CELL_WIDTH + BORDER)
-            y0 = GRID_ORIGIN_Y + BORDER + row_index * (CELL_HEIGHT + BORDER)
+            y0 = origin_y + BORDER + row_index * (CELL_HEIGHT + BORDER)
             x1 = x0 + CELL_WIDTH - 1
             y1 = y0 + CELL_HEIGHT - 1
             draw.rectangle((x0, y0, x1, y1), fill=colors[row_index][col_index])
@@ -134,31 +142,31 @@ def draw_grid(
     # Vertical grid lines
     for offset in range(0, grid_width, CELL_WIDTH + BORDER):
         x = origin_x + offset
-        draw.line((x, GRID_ORIGIN_Y, x, GRID_ORIGIN_Y + grid_height - 1), fill=BORDER_COLOR)
+        draw.line((x, origin_y, x, origin_y + grid_height - 1), fill=BORDER_COLOR)
 
     # Right-most border line
     draw.line(
         (
             origin_x + grid_width - 1,
-            GRID_ORIGIN_Y,
+            origin_y,
             origin_x + grid_width - 1,
-            GRID_ORIGIN_Y + grid_height - 1,
+            origin_y + grid_height - 1,
         ),
         fill=BORDER_COLOR,
     )
 
     # Horizontal grid lines
     for offset in range(0, grid_height, CELL_HEIGHT + BORDER):
-        y = GRID_ORIGIN_Y + offset
+        y = origin_y + offset
         draw.line((origin_x, y, origin_x + grid_width - 1, y), fill=BORDER_COLOR)
 
     # Bottom border line
     draw.line(
         (
             origin_x,
-            GRID_ORIGIN_Y + grid_height - 1,
+            origin_y + grid_height - 1,
             origin_x + grid_width - 1,
-            GRID_ORIGIN_Y + grid_height - 1,
+            origin_y + grid_height - 1,
         ),
         fill=BORDER_COLOR,
     )
@@ -169,9 +177,10 @@ def add_labels(
     models: Sequence[str],
     font: ImageFont.ImageFont,
     left_padding: int,
+    origin_y: int,
 ) -> None:
     for index, name in enumerate(models):
-        row_center_y = GRID_ORIGIN_Y + BORDER + CELL_HEIGHT / 2 + index * ROW_HEIGHT
+        row_center_y = origin_y + BORDER + CELL_HEIGHT / 2 + index * ROW_HEIGHT
         draw.text((left_padding, row_center_y), name, font=font, fill=TEXT_COLOR, anchor="lm")
 
 
@@ -180,9 +189,10 @@ def draw_column_guides(
     font: ImageFont.ImageFont,
     label_width: int,
     grid_height: int,
+    origin_y: int,
 ) -> None:
     text_height = measure_text_height(font, "0")
-    line1_y = GRID_ORIGIN_Y + grid_height + GUIDE_TOP_PADDING + text_height / 2
+    line1_y = origin_y + grid_height + GUIDE_TOP_PADDING + text_height / 2
     line2_y = line1_y + text_height + GUIDE_LINE_SPACING
 
     for col in range(COLUMNS):
@@ -247,28 +257,45 @@ def create_image(
     font: ImageFont.ImageFont,
     label_width: int,
     output_path: Path,
+    title: str,
 ) -> None:
     rows = len(models_colors)
+    title_height = measure_text_height(font, title)
+    title_block_height = TITLE_TOP_PADDING + title_height + TITLE_BOTTOM_PADDING
+
     grid_height = BORDER + rows * (CELL_HEIGHT + BORDER)
     text_height = measure_text_height(font, "0")
     guide_height = GUIDE_TOP_PADDING + text_height * 2 + GUIDE_LINE_SPACING + GUIDE_BOTTOM_PADDING
     key_height = KEY_TOP_PADDING + measure_color_key_height(font, GRID_WIDTH) + KEY_BOTTOM_PADDING
-    total_height = grid_height + guide_height + key_height
+    total_height = title_block_height + grid_height + guide_height + key_height
 
     img = Image.new("RGB", (label_width + GRID_WIDTH, int(total_height)), "white")
     draw = ImageDraw.Draw(img)
 
-    draw_grid(draw, rows, models_colors, origin_x=label_width)
-    add_labels(draw, model_names, font, left_padding=LABEL_LEFT_PADDING)
-    draw_column_guides(draw, font, label_width, grid_height)
-    draw_color_key(draw, font, origin_x=label_width, origin_y=grid_height + guide_height + KEY_TOP_PADDING, max_width=GRID_WIDTH,)
+    total_width = label_width + GRID_WIDTH
+    title_center_x = total_width / 2
+    title_center_y = TITLE_TOP_PADDING + title_height / 2
+    draw.text((title_center_x, title_center_y), title, font=font, fill=TEXT_COLOR, anchor="mm")
+
+    grid_origin_y = title_block_height
+    draw_grid(draw, rows, models_colors, origin_x=label_width, origin_y=grid_origin_y)
+    add_labels(draw, model_names, font, left_padding=LABEL_LEFT_PADDING, origin_y=grid_origin_y)
+    draw_column_guides(draw, font, label_width, grid_height, origin_y=grid_origin_y)
+    draw_color_key(
+        draw,
+        font,
+        origin_x=label_width,
+        origin_y=grid_origin_y + grid_height + guide_height + KEY_TOP_PADDING,
+        max_width=GRID_WIDTH,
+    )
 
     img.save(output_path)
 
 
 def main() -> None:
     benchmark_path = Path(__file__).with_name("benchmark.json")
-    output_path = Path(__file__).with_name("benchmark.png")
+    output_instruct_path = Path(__file__).with_name("benchmark_instruct.png")
+    output_thinking_path = Path(__file__).with_name("benchmark_thinking.png")
 
     data = load_benchmark_data(benchmark_path)
     models = collect_models_with_tests(data)
@@ -276,20 +303,26 @@ def main() -> None:
     if not models:
         raise SystemExit("No models with complete 200-test data found.")
 
-    model_names = [name for name, _ in models]
-    models_colors = []
-
     font = load_font()
-    max_label_width = max(measure_text_width(font, name) for name in model_names)
+    max_label_width = max(measure_text_width(font, name) for name, _, _ in models)
     label_width = LABEL_LEFT_PADDING + max_label_width + LABEL_RIGHT_PADDING
 
-    for _, values in models:
-        counts = count_solutions(values)
-        row_colors = [color_for_count(count) for count in counts]
-        models_colors.append(row_colors)
+    instruct = [(name, values) for name, values, is_thinking in models if not is_thinking]
+    thinking = [(name, values) for name, values, is_thinking in models if is_thinking]
 
-    create_image(models_colors, model_names, font, label_width, output_path)
-    print(f"Rendered benchmark grid for {len(models)} models to {output_path.name}")
+    def render_group(group: List[Tuple[str, List[str]]], output_path: Path, title: str) -> None:
+        group_names = [name for name, _ in group]
+        group_colors: List[List[Tuple[int, int, int]]] = []
+        for _, values in group:
+            counts = count_solutions(values)
+            row_colors = [color_for_count(count) for count in counts]
+            group_colors.append(row_colors)
+
+        create_image(group_colors, group_names, font, label_width, output_path, title=title)
+        print(f"Rendered benchmark grid for {len(group)} models to {output_path.name}")
+
+    render_group(instruct, output_instruct_path, "Project Euler LLM Benchmark: instruct models")
+    render_group(thinking, output_thinking_path, "Project Euler LLM Benchmark: thinking models")
 
 
 if __name__ == "__main__":

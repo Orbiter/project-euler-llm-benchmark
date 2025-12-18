@@ -21,15 +21,28 @@ LABEL_RIGHT_PADDING = 12
 GUIDE_TOP_PADDING = 6
 GUIDE_LINE_SPACING = 4
 GUIDE_BOTTOM_PADDING = 4
+KEY_TOP_PADDING = 8
+KEY_BOTTOM_PADDING = 8
+KEY_BOX_WIDTH = 12
+KEY_BOX_HEIGHT = 12
+KEY_ITEM_SPACING = 18
+KEY_BOX_TEXT_GAP = 6
 COLORS = {
     0: (255, 255, 255),  # white
-    1: (255, 255, 0),  # yellow
+    1: (200, 200, 200),  # light grey
     2: (0, 128, 0),  # green
     3: (65, 105, 225),  # blue
     4: (160, 32, 240),  # purple
 }
 BORDER_COLOR = (180, 180, 180)
 TEXT_COLOR = (0, 0, 0)
+COLOR_KEY_ITEMS = [
+    (0, "0 languages (unsolved)"),
+    (1, "solved in 1 language"),
+    (2, "2 languages"),
+    (3, "3 languages"),
+    (4, "4 languages"),
+]
 
 
 def load_benchmark_data(path: Path) -> Dict[str, Dict[str, str]]:
@@ -70,7 +83,8 @@ def count_solutions(values: List[str]) -> List[int]:
 
 
 def color_for_count(count: int) -> Tuple[int, int, int]:
-    if count >= 4: return COLORS[4]
+    if count >= 4:
+        return COLORS[4]
     return COLORS[count]
 
 
@@ -181,6 +195,52 @@ def draw_column_guides(
             draw.text((center_x, line2_y), digit_line2, font=font, fill=TEXT_COLOR, anchor="mm")
 
 
+def draw_color_key(
+    draw: ImageDraw.ImageDraw,
+    font: ImageFont.ImageFont,
+    origin_x: int,
+    origin_y: int,
+    max_width: int,
+) -> int:
+    x = origin_x
+    y = origin_y
+    row_height = max(KEY_BOX_HEIGHT, measure_text_height(font, "Ag"))
+    center_y = y + row_height / 2
+
+    for count, label in COLOR_KEY_ITEMS:
+        label_width = measure_text_width(font, label)
+        item_width = KEY_BOX_WIDTH + KEY_BOX_TEXT_GAP + label_width
+        if x != origin_x and x + item_width > origin_x + max_width:
+            x = origin_x
+            y += row_height + GUIDE_LINE_SPACING
+            center_y = y + row_height / 2
+
+        box_top = center_y - KEY_BOX_HEIGHT / 2
+        box_left = x
+        draw.rectangle((box_left, box_top, box_left + KEY_BOX_WIDTH - 1, box_top + KEY_BOX_HEIGHT - 1), fill=color_for_count(count), outline=BORDER_COLOR)
+        draw.text((box_left + KEY_BOX_WIDTH + KEY_BOX_TEXT_GAP, center_y), label, font=font, fill=TEXT_COLOR, anchor="lm")
+
+        x += item_width + KEY_ITEM_SPACING
+
+    return int(y + row_height - origin_y)
+
+
+def measure_color_key_height(font: ImageFont.ImageFont, max_width: int) -> int:
+    x = 0
+    rows = 1
+    row_height = max(KEY_BOX_HEIGHT, measure_text_height(font, "Ag"))
+
+    for _, label in COLOR_KEY_ITEMS:
+        label_width = measure_text_width(font, label)
+        item_width = KEY_BOX_WIDTH + KEY_BOX_TEXT_GAP + label_width
+        if x != 0 and x + item_width > max_width:
+            rows += 1
+            x = 0
+        x += item_width + KEY_ITEM_SPACING
+
+    return int(rows * row_height + (rows - 1) * GUIDE_LINE_SPACING)
+
+
 def create_image(
     models_colors: List[List[Tuple[int, int, int]]],
     model_names: List[str],
@@ -192,7 +252,8 @@ def create_image(
     grid_height = BORDER + rows * (CELL_HEIGHT + BORDER)
     text_height = measure_text_height(font, "0")
     guide_height = GUIDE_TOP_PADDING + text_height * 2 + GUIDE_LINE_SPACING + GUIDE_BOTTOM_PADDING
-    total_height = grid_height + guide_height
+    key_height = KEY_TOP_PADDING + measure_color_key_height(font, GRID_WIDTH) + KEY_BOTTOM_PADDING
+    total_height = grid_height + guide_height + key_height
 
     img = Image.new("RGB", (label_width + GRID_WIDTH, int(total_height)), "white")
     draw = ImageDraw.Draw(img)
@@ -200,6 +261,7 @@ def create_image(
     draw_grid(draw, rows, models_colors, origin_x=label_width)
     add_labels(draw, model_names, font, left_padding=LABEL_LEFT_PADDING)
     draw_column_guides(draw, font, label_width, grid_height)
+    draw_color_key(draw, font, origin_x=label_width, origin_y=grid_height + guide_height + KEY_TOP_PADDING, max_width=GRID_WIDTH,)
 
     img.save(output_path)
 

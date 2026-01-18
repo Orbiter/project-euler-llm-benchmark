@@ -3,7 +3,7 @@ import json
 import shutil
 from argparse import ArgumentParser
 from benchmark import read_benchmark, write_benchmark
-from ollama_client import ollama_list, Endpoint
+from llm_client import openai_api_list, Endpoint
 
 def test(api_base, endpoint_name, model_name, language, overwrite_existing, overwrite_failed, max_problem_number=100, think=False, no_think=False):
     # call inference.py
@@ -65,7 +65,7 @@ def main():
     # find models to test
     models = []
     local_endpoint = Endpoint(store_name=store_name, model_name=store_name, key="", url=f"{api_base[0]}/v1/chat/completions")
-    model_dict = ollama_list(local_endpoint)
+    model_dict = openai_api_list(local_endpoint)
     if args.allmodels:
         if endpoint_name:
             raise Exception("The --allmodels option cannot be used in combination with --endpoint.")

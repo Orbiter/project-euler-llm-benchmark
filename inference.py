@@ -6,7 +6,7 @@ import threading
 from typing import List
 from argparse import ArgumentParser
 from benchmark import read_benchmark, write_benchmark
-from ollama_client import ollama_list, test_multimodal, ollama_pull, ollama_check_exist, Endpoint, LoadBalancer, Server, Task, Response
+from llm_client import openai_api_list, test_multimodal, ollama_pull, openai_api_check_exist, Endpoint, LoadBalancer, Server, Task, Response
 
 def read_template(template_path):
     with open(template_path, 'r', encoding='utf-8') as file:
@@ -27,7 +27,7 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
     lb.start_distribution()
     
     # ensure that the first endpoint is loaded:
-    while not ollama_check_exist(endpoints[0]):
+    while not openai_api_check_exist(endpoints[0]):
         ollama_pull(endpoints[0])
 
     # load server concurrently; they will download a model if that is not present so far.
@@ -36,12 +36,12 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
             for _ in range(0, 3):
                 try:
                     ollama_pull(endpoint)
-                    if ollama_check_exist(endpoint):
+                    if openai_api_check_exist(endpoint):
                         lb.add_server(Server(endpoint=endpoint))
                         break
                 except Exception as e:
                     print(f"Error loading endpoint {endpoint}: {e}")
-        if not ollama_check_exist(endpoint):
+        if not openai_api_check_exist(endpoint):
             print(f"Failed to load endpoint {endpoint} after 3 attempts.")
     loading_thread = threading.Thread(target=load_endpoints, daemon=True)
     loading_thread.start()
@@ -185,7 +185,7 @@ def main():
             
             # loop over all models provided by ollama and run those which are missing in benchmark.json
             local_endpoint = Endpoint(store_name=model, api_name=model, key="", url=f"{api_base[0]}/v1/chat/completions")
-            models = ollama_list(local_endpoint)
+            models = openai_api_list(local_endpoint)
             print(f"Found {len(models)} models in ollama.")
             for model in models:
                 # in every loop we load the benchmark.json again because it might have been updated

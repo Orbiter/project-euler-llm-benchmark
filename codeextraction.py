@@ -2,7 +2,7 @@ import os
 import re
 import json
 from argparse import ArgumentParser
-from ollama_client import Endpoint
+from llm_client import Endpoint
 
 # make a function which returns the extension of the language files for each language
 def get_extension(language):

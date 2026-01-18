@@ -10,7 +10,7 @@ import multiprocessing
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from io import StringIO
-from ollama_client import Endpoint
+from llm_client import Endpoint
 from argparse import ArgumentParser
 from contextlib import redirect_stdout
 from benchmark import read_benchmark, write_benchmark, sort_benchmark

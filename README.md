@@ -638,7 +638,7 @@ The score used for the benchmark is computed in three steps:
 For a given model and a given programming language, we loop over all (or 1..100) problems within the `problems` directory and perform the following task:
 - load the problem description, i.e. from `problems/0001.txt`
 - insert the problem description into a prompt template, i.e. from `templates/template_python.md`
-- sending the resulting prompt to the selected LLM model using an api call to the ollama `/v1/chat/completions` endpoint
+- sending the resulting prompt to the selected LLM model using an api call to the openai-api `/v1/chat/completions` endpoint
 - storing the answer from the model into `solutions/<model_name>/<language>/0001.md
 
 This results in 100 answer files. This can be done calling
@@ -677,8 +677,55 @@ python3 problems_scraper.py
 
 All over 900 tests are then stored in the `problems` folder. For our 100-bench-series, we use only the first 100.
 
+
+## Inference Engine set-up
+
+We give here a very short instruction on how to set-up llama.cpp or ollama. You can also of course use LMstudio,
+vllm or any other engine that supports the openai api
+
+### llama.cpp
+
+Llama.cpp has lots of tools, one of them is a openai-api compatible server, simply called "server".
+You can build from source with:
+```
+cmake --build build --config Release -t llama-server
+```
+The server application then can be started with
+```
+build/bin/llama-server -c 32768
+```
+As default setting for the context length, we use 32k. This also starts a chat interface at http://localhost:8080
+This server has Model Management, that means you can dynamically
+load more models into its own model store, like
+```
+curl -X POST http://localhost:8080/models/load -H "Content-Type: application/json" -d '{"model": "my-model.gguf"}'
+```
+or delete a model with
+```
+curl -X POST http://localhost:8080/models/unload -H "Content-Type: application/json" -d '{"model": "my-model.gguf"}'
+```
+The model storage location is system-specific, on a mac you find it at `~/Library/Cache/llama.cpp/`.
+If you want to start the server with a pre-loaded model, run
+```
+build/bin/llama-server -c 32768
+```
+
+### Ollama
+
+Ollama comes easy-to-install with a desktop application which itself installs a command-line applications `ollama`.
+You then have commands like:
+```
+ollama ls
+ollama ps
+ollama run <model-name>
+ollama pull <model-name>
+ollama rm <model-name>
+```
+
+Ollama may be easy to use, but it sometimes takes a long time until they support the latest model architectures.
+They also apply download limitations, so you will not be able to load as many models as you want.
+
 ## Test Preparation
-To compute the benchmark, we use ollama as local inference engine.
 To run a test (i.e. for the model `athene-v2:72b-q8_0`), the following command sequence is required:
 
 ```
@@ -701,23 +748,10 @@ You can also call
 python3 test.py --language python --allmodels --skip_existing
 ```
 
-which loads the list of models from ollama and iterates over all models stored with ollama.
-This will take some time, if you have a large model collection in ollama maybe this takes
+which loads the list of models from the openai api and iterates over all available models.
+This will take some time, if you have a large model collection, maybe this takes
 longer than a week.
 
-## Contribution
-
-My current set-up does not allow to run models greater than 128GB. Models greater than this size
-had been tested using the API of the providing institution (i.e. OpenAI, DeepSeek). Other bigger models
-cannot be tested on my hardware.
-
-### Wanted
-
-Please send me a pull request for the following cases:
-
-- If you have better hardware and want to contribute your contribution is welcome. 
-- The code runner for python, java, rust, clojure (see `execute.py`) can possibly be enhanced. That would cause better benchmark scorings for affected models. Please see if this can be enhanced.
-- bugfixes (code and documentation)
 
 ## License
 

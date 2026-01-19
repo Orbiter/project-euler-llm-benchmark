@@ -37,7 +37,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-1M-GGUF:Q4_K_M                                        |    15.25 |  14.18 |     93 |   30.5 |    4 |  256 | 14.02 | 17.25 | 12.92 | 8.11 |
 | qwen3:30b-a3b-q4_K_M-no_think                                                                    |    15.25 |  13.00 |     85 |   30.5 |    4 |   40 | 14.5 | 15.85 | 10.06 | 4.36 |
 | qwen2.5vl:32b-q4_K_M                                                                             |          |  12.51 |     75 |   33.5 |    4 |  128 | 15.56 | 11.71 | 13.44 | 0.82 |
-| devstral-2:123b-instruct-2512-q4_K_M                                                             |          |  10.61 |     17 |  125.0 |    4 |  256 | 13.9 |      |      |      |
+| devstral-2:123b-instruct-2512-q4_K_M                                                             |          |  10.58 |     17 |  125.0 |    4 |  256 | 13.9 |      |      |      |
 | olmo-3.1:32b-instruct-q4_K_M                                                                     |          |  10.25 |     64 |   32.2 |    4 |  128 | 17.37 | 6.19 | 6.68 | 1.11 |
 | qwen2.5-coder:32b-instruct-q4_K_M                                                                |          |   9.28 |     57 |   32.8 |    4 |   32 | 11.6 | 11.5 | 4.69 | 2.53 |
 | qwen2.5vl:72b-q4_K_M                                                                             |          |   9.03 |     25 |   73.4 |    4 |  128 | 10.11 | 10.98 | 7.64 | 1.67 |
@@ -55,6 +55,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | qwen3-vl-8b-instruct-mlx                                                                         |          |   7.00 |    159 |    8.8 |    4 |  256 | 8.23 | 9.48 | 4.07 | 0.54 |
 | phi4:14b-q4_K_M                                                                                  |          |   6.89 |     94 |   14.7 |    4 |   16 | 8.92 | 8.42 | 3.49 | 0.98 |
 | qwen2.5:32b-instruct-q4_K_M                                                                      |          |   6.88 |     42 |   32.8 |    4 |   32 | 9.74 | 6.08 |  5.6 | 0.35 |
+| bartowski/FutureMa_Eva-4B-GGUF:Q4_K_M                                                            |     2.00 |   6.72 |    336 |      4 |    4 |      | 10.86 | 5.05 | 3.98 | 0.69 |
 | granite4:small-h                                                                                 |          |   6.61 |     41 |   32.2 |    4 |  131 | 8.34 | 7.04 | 5.54 | 0.54 |
 | hf.co/mradermacher/Qwen2.5-VL-32B-Instruct-abliterated-GGUF:Q4_K_M                               |          |   6.08 |     37 |   32.8 |    4 |   32 |  7.6 | 6.33 | 5.52 | 0.32 |
 | qwen2.5-coder:14b-instruct-q4_K_M                                                                |          |   6.01 |     81 |   14.8 |    4 |  128 | 6.35 | 8.46 | 4.08 | 1.15 |
@@ -152,6 +153,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/tiiuae/Falcon-H1-0.5B-Instruct-GGUF:Q4_K_M                                                 |     0.26 |   0.50 |    192 |  0.521 |    4 |      | 1.08 | 0.21 | 0.02 |  0.0 |
 | hf.co/vanta-research/atom-v1-preview-4b:latest                                                   |          |   0.48 |        |   3.88 |      |      | 0.72 | 0.52 | 0.19 |  0.0 |
 | qwen2.5:1.5b-instruct-q4_K_M                                                                     |          |   0.44 |     59 |    1.5 |    4 |  128 | 0.92 |  0.2 | 0.03 | 0.09 |
+| bartowski/LiquidAI_LFM2.5-1.2B-Instruct-GGUF:Q4_K_M                                              |          |   0.43 |        |        |    4 |      | 0.92 | 0.15 | 0.09 |  0.0 |
 | hf.co/arcee-ai/Trinity-Nano-Preview-GGUF:Q4_K_M                                                  |          |   0.42 |     22 |    3.8 |    4 |  128 | 0.39 | 0.29 | 0.18 | 1.46 |
 | hf.co/mradermacher/Arch-Router-1.5B-GGUF:Q4_K_M                                                  |          |   0.40 |     52 |   1.54 |    4 |      | 0.73 | 0.32 | 0.08 |  0.0 |
 | granite3.3:2b                                                                                    |          |   0.39 |     39 |    2.0 |    4 |  128 | 0.67 |  0.2 | 0.26 |  0.1 |

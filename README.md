@@ -44,7 +44,6 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/bartowski/Athene-V2-Agent-GGUF:Q4_K_M                                                      |          |   8.72 |     24 |   72.7 |    4 |  128 | 11.13 | 10.62 | 5.03 | 0.77 |
 | hf.co/bartowski/internlm_JanusCoder-14B-GGUF:Q4_K_M                                              |     7.40 |   8.64 |    117 |   14.8 |    4 |      | 11.89 | 6.45 | 9.47 | 0.58 |
 | ministral-3:14b-instruct-2512-q4_K_M                                                             |     6.95 |   8.55 |    123 |   13.9 |    4 |  256 | 11.11 | 8.43 | 7.35 | 1.09 |
-| glm-4.7-flash:Q4_K_M                                                                             |          |   8.54 |        |        |    4 |  200 | 10.84 | 10.01 | 4.54 | 2.89 |
 | qwen2.5:72b-instruct-q4_K_M                                                                      |          |   8.47 |     23 |   72.7 |    4 |  128 | 11.5 | 8.83 | 5.27 | 1.69 |
 | hf.co/vanta-research/apollo-astralis-8b:Q4_K_M                                                   |     4.09 |   8.00 |    195 |   8.19 |    4 |      | 8.36 | 12.08 | 4.45 | 1.38 |
 | hf.co/tiiuae/Falcon-H1-34B-Instruct-GGUF:Q4_K_M                                                  |          |   7.89 |     47 |   33.6 |    4 |      | 7.87 | 9.73 | 8.81 | 0.57 |
@@ -111,9 +110,11 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | granite4:3b                                                                                      |          |   1.69 |     99 |    3.4 |    4 |      | 3.06 | 1.09 | 0.57 |  0.2 |
 | hf.co/mradermacher/Ling-Coder-lite-GGUF:Q4_K_M                                                   |          |   1.62 |     19 |   16.8 |    4 |      | 2.59 | 1.32 | 0.68 | 0.51 |
 | granite4:micro                                                                                   |          |   1.61 |     95 |    3.4 |    4 |  128 | 2.78 | 1.21 | 0.57 |  0.2 |
+| hf.co/mradermacher/Kimi-VL-A3B-Instruct-GGUF:Q4_K_M                                              |          |   1.61 |     20 |   16.0 |    4 |      | 2.26 | 0.97 | 0.68 | 2.78 |
 | hf.co/bartowski/allura-forge_Llama-3.3-8B-Instruct-GGUF:Q4_K_M                                   |          |   1.60 |     40 |   8.03 |    4 |    8 | 2.78 | 1.03 | 0.77 |  0.3 |
 | llama3.2-vision:11b-instruct-q4_K_M                                                              |          |   1.60 |     33 |    9.8 |    4 |  128 |  1.9 | 2.14 | 0.68 | 0.62 |
 | hf.co/tiiuae/Falcon-H1-1.5B-Instruct-GGUF:Q4_K_M                                                 |          |   1.59 |    205 |   1.55 |    4 |      | 3.36 |  0.7 | 0.18 | 0.01 |
+| hf.co/gabriellarson/Moonlight-16B-A3B-Instruct-GGUF:Q4_K_M                                       |          |   1.49 |     19 |   16.0 |    4 |      | 2.95 | 0.68 | 0.44 | 0.14 |
 | hf.co/shb777/Llama-3.3-8B-Instruct-128K-GGUF:Q4_K_M                                              |          |   1.43 |     36 |   8.03 |    4 |  128 | 1.54 |  1.9 | 1.02 | 0.37 |
 | qwen2.5vl:7b-q4_K_M                                                                              |          |   1.34 |     32 |    8.3 |    4 |  128 |  1.7 | 0.69 |  2.2 | 0.15 |
 | granite4:3b-h                                                                                    |          |   1.33 |     83 |    3.2 |    4 |  131 | 1.79 |  1.7 | 0.45 | 0.17 |
@@ -217,12 +218,16 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/mradermacher/apollo-astralis-4b-GGUF:Q4_K_M                                                |     2.01 |  17.16 |    854 |   4.02 |    4 |      | 24.22 | 19.35 | 6.47 | 3.75 |
 | gpt-oss:20b                                                                                      |          |  16.33 |     78 |   20.9 |    8 |  128 | 16.51 | 16.85 | 17.86 | 10.99 |
 | qwen3-vl:8b-thinking-q4_K_M                                                                      |          |  15.69 |    357 |    8.8 |    4 |  256 | 17.68 | 17.45 | 14.18 | 5.49 |
+| hf.co/mradermacher/FrogMini-14B-2510-GGUF:Q4_K_M                                                 |          |  15.45 |    221 |     14 |    4 |      | 16.38 | 26.28 | 3.51 | 3.16 |
 | qwen3:4b-thinking-2507-q4_K_M                                                                    |     2.00 |  15.30 |    765 |    4.0 |    4 |   32 | 20.88 | 16.63 | 7.49 | 4.63 |
 | hf.co/mradermacher/MiroThinker-v1.0-30B-GGUF:Q4_K_M                                              |          |  14.48 |     95 |   30.5 |    4 |      | 19.25 | 14.9 |  9.4 | 4.27 |
 | qwen3-vl:4b-thinking-q4_K_M                                                                      |          |  13.59 |    618 |    4.4 |    4 |  256 | 17.87 | 13.81 | 8.84 | 5.31 |
 | hf.co/t-tech/T-pro-it-2.1-GGUF:Q4_K_M                                                            |          |  13.58 |     83 |   32.8 |    4 |      | 17.56 | 14.77 | 7.87 | 5.48 |
 | hf.co/bartowski/AGI-0_Art-0-8B-GGUF:Q4_K_M                                                       |          |  11.90 |    291 |   8.19 |    4 |   40 | 13.08 | 15.02 | 9.78 | 2.08 |
 | hf.co/bartowski/Sky-T1-32B-Preview-GGUF:Q4_K_M                                                   |          |  10.10 |     62 |   32.8 |    4 |   32 | 10.02 | 15.13 | 6.72 | 2.06 |
+| glm-4.7-flash:Q4_K_M                                                                             |          |   9.54 |     62 |     31 |    4 |      | 11.83 | 10.13 |  7.7 | 2.27 |
+| hf.co/mradermacher/DASD-4B-Thinking-GGUF:Q4_K_M                                                  |     2.00 |   9.43 |    472 |      4 |    4 |      | 10.73 | 9.72 | 9.18 | 3.87 |
+| hf.co/mradermacher/Kimi-VL-A3B-Thinking-2506-GGUF:Q4_K_M                                         |          |   7.30 |     91 |   16.0 |    4 |  128 | 9.27 | 6.38 | 7.86 | 1.07 |
 | hf.co/mradermacher/MiroThinker-v1.0-8B-GGUF:Q4_K_M                                               |          |   5.42 |    132 |   8.19 |    4 |      | 6.82 | 6.08 | 3.77 | 1.14 |
 | hf.co/t-tech/T-lite-it-2.1-GGUF:Q4_K_M                                                           |          |   5.08 |    124 |   8.19 |    4 |      | 6.84 | 5.82 | 2.41 | 1.11 |
 | hf.co/mradermacher/VibeThinker-1.5B-GGUF:Q4_K_M                                                  |     0.89 |   4.93 |    554 |   1.78 |    4 |      | 9.38 | 1.51 | 1.97 |  3.3 |

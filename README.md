@@ -23,6 +23,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 ### Non-Thinking
 | Model                                                                                            | Best<br/>Model<br/>for<br/>Size (GB) | PE-200-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | Java | Rust | Clojure |
 | :----------------------------------------------------------------------------------------------- | -----------------------------------: | ----------------: | -------------: | --------------------: | ---: | ---------------------: | -----: | ---: | ---: | ------: |
+| frob/qwen3-coder-next:80b-a3b-q4_K_M                                                             |    40.00 |  44.47 |    111 |     80 |    4 |  256 | 53.11 | 49.34 | 36.68 | 10.83 |
 | qwen3-next:80b-a3b-instruct-q4_K_M                                                               |    39.85 |  42.71 |    107 |   79.7 |    4 |  256 | 48.41 | 50.71 | 32.66 | 16.0 |
 | qwen3-vl:235b-a22b-instruct-q4_K_M                                                               |          |  37.08 |     31 |  235.7 |    4 |  256 | 36.44 | 47.94 | 34.77 | 11.66 |
 | qwen3:235b-a22b-instruct-2507-q4_K_M                                                             |          |  36.33 |     31 |  235.1 |    4 |  256 | 43.09 | 41.18 | 28.46 | 10.53 |

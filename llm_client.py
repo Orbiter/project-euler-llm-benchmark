@@ -126,7 +126,9 @@ def openai_api_chat(
     base64_image: str = None,
     temperature: float = 0.0,
     max_tokens: int = 32768, # thats large and it requires that you set the context length in llm to 65536
-    stream: bool = True
+    stream: bool = True,
+    think = False,
+    no_think = False
 ) -> tuple[str, int, float]:
     """
     Function to interact with the LLM API for chat completions.
@@ -212,6 +214,18 @@ def openai_api_chat(
         payload["max_completion_tokens"] = max_tokens
     else:
         payload["max_tokens"] = max_tokens
+    # Forward optional backend-specific thinking flags when requested.
+    # Qwen3/Qwen3.5 chat templates expect `chat_template_kwargs.enable_thinking`
+    # inside `extra_body` (matching the OpenAI SDK `extra_body=...` example).
+    modelname_lower = modelname.lower()
+    if "qwen3.5" in modelname_lower:
+        if think or no_think:
+            payload.setdefault("extra_body", {})
+            payload["extra_body"].setdefault("chat_template_kwargs", {})
+            # If both are set, prefer disabling thinking.
+            payload["enable_thinking"] = False if no_think else True
+            payload["extra_body"]["chat_template_kwargs"]["enable_thinking"] = False if no_think else True
+            print(f"Set thinking flags for {modelname}: {payload}")
 
     # use the endpoints array as failover mechanism
     response = None
@@ -346,6 +360,8 @@ class Task:
     prompt: str         # the prompt to be sent to the model
     base64_image: str   # the base64 encoded image to be sent to the model
     response_processing: Callable[['Response'], None] # a function to process the result
+    think: bool = False         # use thinking settings
+    no_think: bool = False      # use non-thinking settings
 
 @dataclass
 class Response:
@@ -439,7 +455,9 @@ class LoadBalancer:
             answer, total_tokens, token_per_second = openai_api_chat(
                 endpoint,
                 task.prompt, 
-                base64_image=task.base64_image
+                base64_image=task.base64_image,
+                think = task.think,
+                no_think = task.no_think
             )
             t1 = time.time()
             # Call the response processing function
@@ -508,6 +526,8 @@ def main():
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
     parser.add_argument('--image', required=False, default=None, help='path to an image that shall be processed')
+    parser.add_argument('--think', action='store_true', help='forward a "think" flag to compatible backends')
+    parser.add_argument('--no_think', action='store_true', help='forward a "no_think" flag to compatible backends')
     
     # parse the arguments
     args = parser.parse_args()
@@ -515,6 +535,8 @@ def main():
     endpoint_name = args.endpoint
     model_name = args.model
     image_path = args.image
+    think = args.think
+    no_think = args.no_think
 
     # load the endpoint file
     endpoints:List[Endpoint] = []
@@ -558,9 +580,19 @@ def main():
         print(f"Model: {model}: {attr}")
     try:
         if base64_image:
-            answer, total_tokens, token_per_second = openai_api_chat(endpoints[0], prompt="what is in the image", base64_image=base64_image)
+            answer, total_tokens, token_per_second = openai_api_chat(
+                endpoints[0],
+                prompt="what is in the image",
+                base64_image=base64_image,
+                think=think,
+                no_think=no_think,
+            )
         else:
-            answer, total_tokens, token_per_second = openai_api_chat(endpoints[0])
+            answer, total_tokens, token_per_second = openai_api_chat(
+                endpoints[0],
+                think=think,
+                no_think=no_think,
+            )
     except Exception as e:
         answer = f"Error: {str(e)}"
     print(answer)

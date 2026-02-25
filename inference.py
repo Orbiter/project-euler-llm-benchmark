@@ -97,10 +97,6 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
         # Construct the prompt using the template
         prompt = template_content.replace('$$$PROBLEM$$$', problem_content)
 
-        # attach soft thinking switches if asked to prompt
-        if think: prompt += " /think"
-        if no_think: prompt += " /no_think"
-
         def save_solution(resonse: Response):
             # Save the solution to a file
             process_result_file_path = os.path.join(solutions_dir, f"{resonse.task.id}.md")
@@ -113,7 +109,9 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
             description = f"problem {problem_number}, language {language}, model {store_name}",
             prompt = prompt,
             base64_image = base64_image,
-            response_processing = save_solution
+            response_processing = save_solution,
+            think = think,
+            no_think = no_think,
         )    
         while not lb.add_task(task):
             print(f"Waiting to add task {problem_number} - queue full")
@@ -133,8 +131,8 @@ def main():
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     parser.add_argument('--allmodels', action='store_true', help='loop over all models provided by ollama and run those which are missing in benchmark.json')
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
-    parser.add_argument('--think', action='store_true', help='if set, the prompt will get an additional "/think" appended at the end')
-    parser.add_argument('--no_think', action='store_true', help='if set, the prompt will get an additional "/no_think" appended at the end')
+    parser.add_argument('--think', action='store_true', help='enable thinking mode via backend request parameters (when supported)')
+    parser.add_argument('--no_think', action='store_true', help='disable thinking mode via backend request parameters (when supported)')
     parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the languages to test, default is python,java,rust,clojure')
     parser.add_argument('--overwrite_existing', action='store_true', help='if set, re-calculate all problems that already have an answer')
     parser.add_argument('--overwrite_failed', action='store_true', help='if set, re-calculate those problems with wrong answers')

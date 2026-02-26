@@ -70,7 +70,7 @@ def execute_python_code_worker(code, output_queue):
 
         # exception
         'Exception', 'StopIteration', 'ValueError', 'ZeroDivisionError',
-        'OverflowError', 'TypeError', 'IndexError', 'KeyError'
+        'OverflowError', 'TypeError', 'IndexError', 'KeyError', 'format'
     ]
     allowed_builtins = {name: getattr(builtins, name) for name in safe_builtins}
     allowed_builtins['setrecursionlimit'] = sys.setrecursionlimit
@@ -163,7 +163,7 @@ def execute_clojure_code(code, timeout=10):
     try:
         # Execute the Clojure program using the Clojure CLI with a timeout
         result = subprocess.run(
-            ["clj", "-M", "-e", code],  # Use the `-e` flag to evaluate the program directly
+            ["clojure", "-e", code],  # Use the `-e` flag to evaluate the program directly
             capture_output=True,  # Capture stdout and stderr
             text=True,            # Return output as a string
             timeout=timeout       # Set a timeout

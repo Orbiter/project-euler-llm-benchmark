@@ -26,7 +26,6 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | qwen3.5:122b-a10b-q4_K_M-no_think                                                                |    61.00 |  46.85 |     77 |  122.0 |    4 |  256 | 50.48 | 49.91 | 52.0 | 12.89 |
 | qwen3-coder-next:Q4_K_M                                                                          |    39.85 |  44.95 |    113 |   79.7 |    4 |  256 | 54.49 | 42.84 | 47.33 | 8.38 |
 | qwen3.5:35b-a3b-q4_K_M-no_think                                                                  |    17.50 |  44.63 |    255 |   35.0 |    4 |  256 | 55.29 | 49.26 | 32.29 | 12.74 |
-| hf.co/inclusionAI/Ring-flash-2.0-GGUF:Q4_K_M                                                     |          |  43.65 |        |        |    4 |      | 57.25 |      |      |      |
 | qwen3-next:80b-a3b-instruct-q4_K_M                                                               |          |  42.71 |    107 |   79.7 |    4 |  256 | 48.41 | 50.71 | 32.66 | 16.0 |
 | qwen3-vl:235b-a22b-instruct-q4_K_M                                                               |          |  37.08 |     31 |  235.7 |    4 |  256 | 36.44 | 47.94 | 34.77 | 11.66 |
 | qwen3:235b-a22b-instruct-2507-q4_K_M                                                             |          |  36.33 |     31 |  235.1 |    4 |  256 | 43.09 | 41.18 | 28.46 | 10.53 |
@@ -209,6 +208,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | Model                                                                                            | Best<br/>Model<br/>for<br/>Size (GB) | PE-200-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | Java | Rust | Clojure |
 | :----------------------------------------------------------------------------------------------- | -----------------------------------: | ----------------: | -------------: | --------------------: | ---: | ---------------------: | -----: | ---: | ---: | ------: |
 | qwen3:30b-a3b-thinking-2507-q4_K_M                                                               |    15.25 |  44.59 |    292 |   30.5 |    4 |  128 | 47.67 | 56.83 | 31.3 | 22.16 |
+| hf.co/inclusionAI/Ring-flash-2.0-GGUF:Q4_K_M                                                     |          |  43.65 |        |        |    4 |      | 57.25 |      |      |      |
 | qwen3-next:80b-a3b-thinking-q4_K_M                                                               |          |  43.61 |    109 |   79.7 |    4 |  256 | 45.31 | 53.11 | 39.97 | 15.62 |
 | nemotron-3-nano:30b-a3b-q4_K_M                                                                   |          |  43.52 |    275 |   31.6 |    4 | 1024 | 48.01 | 57.0 | 29.47 | 13.21 |
 | qwen3.5:122b-a10b-q4_K_M-think                                                                   |          |  36.13 |     59 |    122 |    4 |  256 | 47.39 |      |      |      |

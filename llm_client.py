@@ -161,8 +161,8 @@ def openai_api_chat(
     
     # special requirements of certain models
     if modelname.startswith("o1") or modelname.startswith("gpt-o1"): temperature = 1.0
-    if modelname.startswith("qwen3"): temperature = 0.6
-    if modelname.startswith("qwen3.5"): temperature = 0.7
+    #if modelname.startswith("qwen3"): temperature = 0.6
+    #if modelname.startswith("qwen3.5"): temperature = 0.7
     if modelname.startswith("4o") or modelname.startswith("gpt-4o") or modelname.startswith("gpt-3.5"):
         # reduce number of stoptokes to 4
         stoptokens = ["[/INST]", "<|im_end|>", "<|end_of_turn|>", "<|eot_id|>"]
@@ -219,7 +219,7 @@ def openai_api_chat(
     # Qwen3/Qwen3.5 chat templates expect `chat_template_kwargs.enable_thinking`
     # inside `extra_body` (matching the OpenAI SDK `extra_body=...` example).
     modelname_lower = modelname.lower()
-    if "qwen3.5" in modelname_lower and no_think:
+    if no_think:
         payload["reasoning_effort"] = "none"
         payload["enable_thinking"] = False
 

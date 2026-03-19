@@ -23,18 +23,20 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 ### Non-Thinking
 | Model                                                                                            | Best<br/>Model<br/>for<br/>Size (GB) | PE-200-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | Java | Rust | Clojure |
 | :----------------------------------------------------------------------------------------------- | -----------------------------------: | ----------------: | -------------: | --------------------: | ---: | ---------------------: | -----: | ---: | ---: | ------: |
-| qwen3.5:122b-a10b-q4_K_M-no_think                                                                |    61.00 |  46.85 |     77 |  122.0 |    4 |  256 | 50.48 | 49.91 | 52.0 | 12.89 |
-| qwen3-coder-next:Q4_K_M                                                                          |    39.85 |  44.95 |    113 |   79.7 |    4 |  256 | 54.49 | 42.84 | 47.33 | 8.38 |
-| qwen3.5:35b-a3b-q4_K_M-no_think                                                                  |    17.50 |  44.63 |    255 |   35.0 |    4 |  256 | 55.29 | 49.26 | 32.29 | 12.74 |
+| qwen3.5:122b-a10b-q4_K_M-no_think                                                                |    61.00 |  49.13 |     81 |  122.0 |    4 |  256 | 56.16 | 49.91 | 52.0 | 12.89 |
+| qwen3.5:35b-a3b-q4_K_M-no_think                                                                  |    17.50 |  46.67 |    267 |   35.0 |    4 |  256 | 68.46 | 39.13 | 33.71 | 8.01 |
+| qwen3-coder-next:Q4_K_M                                                                          |          |  44.95 |    113 |   79.7 |    4 |  256 | 54.49 | 42.84 | 47.33 | 8.38 |
 | qwen3-next:80b-a3b-instruct-q4_K_M                                                               |          |  42.71 |    107 |   79.7 |    4 |  256 | 48.41 | 50.71 | 32.66 | 16.0 |
+| qwen3.5:27b-q4_K_M-no_think                                                                      |    13.50 |  41.98 |    311 |   27.0 |    4 |  256 | 45.09 | 55.69 | 32.6 | 7.21 |
+| nemotron-3-super:120b-a12b-q4_K_M-no_think                                                       |          |  38.78 |     65 |    120 |    4 | 1000 | 46.35 | 46.37 | 28.73 | 5.82 |
 | qwen3-vl:235b-a22b-instruct-q4_K_M                                                               |          |  37.08 |     31 |  235.7 |    4 |  256 | 36.44 | 47.94 | 34.77 | 11.66 |
 | qwen3:235b-a22b-instruct-2507-q4_K_M                                                             |          |  36.33 |     31 |  235.1 |    4 |  256 | 43.09 | 41.18 | 28.46 | 10.53 |
-| qwen3.5:27b-q4_K_M-no_think                                                                      |    13.50 |  34.77 |    258 |   27.0 |    4 |  256 | 38.31 | 41.97 | 32.2 | 4.13 |
 | hf.co/inclusionAI/Ling-flash-2.0-GGUF:Q4_K_M                                                     |          |  33.29 |     65 |    103 |    4 |  128 | 42.38 | 34.36 | 23.3 | 13.74 |
-| qwen3.5:9b-q4_K_M-no_think                                                                       |     4.50 |  23.17 |    515 |    9.0 |    4 |  256 | 34.75 | 20.97 | 14.82 | 0.17 |
+| hf.co/mradermacher/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-i1-GGUF:Q4_K_M-no_think       |          |  24.88 |        |        |    4 |      | 28.18 | 32.16 |      |      |
 | qwen3-vl:32b-instruct-q4_K_M                                                                     |          |  20.56 |    123 |   33.4 |    4 |  256 | 27.78 | 21.15 | 13.91 | 3.19 |
 | hf.co/cturan/IQuest-Coder-V1-40B-Instruct-GGUF:Q4_K_M                                            |          |  20.09 |    101 |   39.8 |    4 |  128 | 26.12 | 19.65 | 17.81 | 1.83 |
-| hf.co/mradermacher/Ling-mini-2.0-GGUF:Q4_K_M                                                     |          |  20.00 |    250 |     16 |    4 |  128 | 26.89 | 19.74 | 15.66 | 1.91 |
+| hf.co/mradermacher/Ling-mini-2.0-GGUF:Q4_K_M                                                     |     8.00 |  20.00 |    250 |     16 |    4 |  128 | 26.89 | 19.74 | 15.66 | 1.91 |
+| qwen3.5:9b-q4_K_M-no_think                                                                       |     4.50 |  18.37 |    408 |    9.0 |    4 |  256 | 25.67 | 19.64 | 10.59 | 0.89 |
 | qwen3-vl:30b-a3b-instruct-q8_0                                                                   |          |  17.61 |     57 |   31.1 |    8 |  256 | 18.64 | 20.51 | 18.53 | 2.98 |
 | qwen3-vl:30b-a3b-instruct-q4_K_M                                                                 |          |  17.33 |    111 |   31.1 |    4 |  128 | 18.95 | 21.38 | 16.01 | 1.38 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M                                                               |          |  17.31 |    114 |   30.5 |    4 |  256 | 16.93 | 23.76 | 16.1 | 1.89 |
@@ -45,15 +47,17 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-1M-GGUF:Q4_K_M                                        |          |  14.18 |     93 |   30.5 |    4 |  256 | 14.02 | 17.25 | 12.92 | 8.11 |
 | qwen3:30b-a3b-q4_K_M-no_think                                                                    |          |  13.00 |     85 |   30.5 |    4 |   40 | 14.5 | 15.85 | 10.06 | 4.36 |
 | qwen2.5vl:32b-q4_K_M                                                                             |          |  12.51 |     75 |   33.5 |    4 |  128 | 15.56 | 11.71 | 13.44 | 0.82 |
-| devstral-2:123b-instruct-2512-q4_K_M                                                             |          |  10.61 |     17 |  125.0 |    4 |  256 | 13.9 |      |      |      |
+| hf.co/mradermacher/Qwen3.5-35B-A3B-Claude-4.6-Opus-Reasoning-Distilled-i1-GGUF:Q4_K_M-no_think   |          |  12.42 |        |        |    4 |      | 14.22 | 13.16 | 13.15 | 1.57 |
+| devstral-2:123b-instruct-2512-q4_K_M                                                             |          |  11.84 |     19 |  125.0 |    4 |  256 | 13.9 | 13.36 | 9.61 | 3.49 |
 | olmo-3.1:32b-instruct-q4_K_M                                                                     |          |  10.25 |     64 |   32.2 |    4 |  128 | 17.37 | 6.19 | 6.68 | 1.11 |
-| qwen3.5:4b-q4_K_M-no_think                                                                       |     2.00 |  10.16 |    508 |      4 |    4 |  256 | 14.9 | 8.23 | 8.39 | 0.51 |
 | qwen2.5-coder:32b-instruct-q4_K_M                                                                |          |   9.28 |     57 |   32.8 |    4 |   32 | 11.6 | 11.5 | 4.69 | 2.53 |
 | qwen2.5vl:72b-q4_K_M                                                                             |          |   9.03 |     25 |   73.4 |    4 |  128 | 10.11 | 10.98 | 7.64 | 1.67 |
 | hf.co/bartowski/Athene-V2-Agent-GGUF:Q4_K_M                                                      |          |   8.72 |     24 |   72.7 |    4 |  128 | 11.13 | 10.62 | 5.03 | 0.77 |
 | hf.co/bartowski/internlm_JanusCoder-14B-GGUF:Q4_K_M                                              |          |   8.64 |    117 |   14.8 |    4 |   40 | 11.89 | 6.45 | 9.47 | 0.58 |
+| nemotron-3-nano:30b-a3b-q4_K_M-no_think                                                          |          |   8.60 |     57 |   30.0 |    4 |  256 | 11.05 | 10.86 | 4.23 | 0.71 |
 | ministral-3:14b-instruct-2512-q4_K_M                                                             |          |   8.55 |    123 |   13.9 |    4 |  256 | 11.11 | 8.43 | 7.35 | 1.09 |
 | qwen2.5:72b-instruct-q4_K_M                                                                      |          |   8.47 |     23 |   72.7 |    4 |  128 | 11.5 | 8.83 | 5.27 | 1.69 |
+| qwen3.5:4b-q4_K_M-no_think                                                                       |     2.00 |   8.25 |    412 |      4 |    4 |  256 | 10.54 | 9.12 | 6.11 | 0.76 |
 | hf.co/janhq/Jan-v3-4B-base-instruct-gguf:Q4_K_M                                                  |     2.00 |   8.19 |    409 |      4 |    4 |  256 | 13.51 | 5.06 | 6.05 | 0.56 |
 | hf.co/vanta-research/apollo-astralis-8b:Q4_K_M                                                   |          |   8.00 |    195 |   8.19 |    4 |   32 | 8.36 | 12.08 | 4.45 | 1.38 |
 | hf.co/tiiuae/Falcon-H1-34B-Instruct-GGUF:Q4_K_M                                                  |          |   7.89 |     47 |   33.6 |    4 |  256 | 7.87 | 9.73 | 8.81 | 0.57 |
@@ -107,7 +111,8 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/mradermacher/Qwen2.5-Coder-7B-Instruct-abliterated-GGUF:Q4_K_M                             |          |   2.65 |     70 |   7.62 |    4 |  128 | 3.33 | 3.58 |  1.1 | 0.23 |
 | hf.co/mradermacher/Olmo-3-7B-Think-GGUF:Q4_K_M                                                   |          |   2.53 |     72 |    7.0 |    4 |    2 | 5.53 | 0.53 | 0.32 | 0.98 |
 | qwen2.5:7b-instruct-q4_K_M                                                                       |          |   2.43 |     64 |    7.6 |    4 |  128 | 2.97 | 3.12 | 1.42 | 0.24 |
-| magistral:24b-small-2506-q4_K_M                                                                  |          |   2.37 |     20 |     24 |    4 |      | 4.38 | 1.51 | 0.59 | 0.42 |
+| nemotron-3-nano:4b-q8_0-no_think                                                                 |          |   2.37 |      8 |   30.0 |    8 |  256 |  3.5 | 2.25 | 1.08 | 0.76 |
+| magistral:24b-small-2506-q4_K_M                                                                  |          |   2.37 |     20 |     24 |    4 |   32 | 4.38 | 1.51 | 0.59 | 0.42 |
 | qwen3:1.7b-q4_K_M-no_think                                                                       |          |   2.33 |    233 |    2.0 |    4 |   32 | 2.26 | 3.93 | 1.03 | 0.44 |
 | olmo-3:7b-instruct-q4_K_M                                                                        |          |   2.22 |     61 |    7.3 |    4 |   64 | 4.69 | 0.49 | 0.72 | 0.52 |
 | hf.co/tiiuae/Falcon-H1-3B-Instruct-GGUF:Q4_K_M                                                   |          |   2.20 |    140 |   3.15 |    4 |      | 3.56 | 1.48 | 1.45 | 0.45 |
@@ -115,10 +120,12 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | qwen2.5-coder:3b-instruct-q4_K_M                                                                 |          |   2.09 |    135 |    3.1 |    4 |   32 | 3.32 | 2.04 | 0.63 | 0.29 |
 | granite4:tiny-h                                                                                  |          |   2.08 |     60 |    6.9 |    4 | 1024 | 2.63 | 2.69 | 1.03 | 0.19 |
 | hf.co/internlm/internlm3-8b-instruct-gguf:Q4_K_M                                                 |          |   2.02 |     46 |    8.8 |    4 |   32 | 3.07 | 1.96 |  1.0 | 0.01 |
+| hf.co/bartowski/nvidia_Nemotron-3-Nano-4B-GGUF:Q4_K_M                                            |          |   2.01 |     13 |   30.0 |    4 |  256 | 2.95 | 1.51 | 1.49 | 0.81 |
 | hf.co/mradermacher/Qwen2.5-Coder-3B-Instruct-abliterated-GGUF:Q4_K_M                             |          |   1.94 |    126 |   3.09 |    4 |   64 | 2.55 | 2.37 | 1.07 |  0.0 |
 | hf.co/tiiuae/Falcon-H1-1.5B-Deep-Instruct-GGUF:Q4_K_M                                            |          |   1.90 |    245 |   1.55 |    4 |      | 3.77 | 0.45 | 1.25 | 0.09 |
 | hf.co/mradermacher/Josiefied-Qwen3-4B-Instruct-2507-gabliterated-v2-GGUF:Q4_K_M                  |          |   1.90 |     95 |   4.02 |    4 |      | 3.15 | 1.72 | 0.58 | 0.09 |
 | hf.co/janhq/Jan-v1-edge-gguf:Q4_K_M                                                              |          |   1.88 |    219 |   1.72 |    4 |      | 3.03 | 1.92 | 0.12 | 0.73 |
+| qwen3.5:2b-q4_K_M-think                                                                          |          |   1.78 |    178 |      2 |    4 |  256 | 1.42 | 1.04 | 4.06 | 0.84 |
 | granite4:3b                                                                                      |          |   1.69 |     99 |    3.4 |    4 |      | 3.06 | 1.09 | 0.57 |  0.2 |
 | hf.co/mradermacher/Ling-Coder-lite-GGUF:Q4_K_M                                                   |          |   1.62 |     19 |   16.8 |    4 |      | 2.59 | 1.32 | 0.68 | 0.51 |
 | granite4:micro                                                                                   |          |   1.61 |     95 |    3.4 |    4 |  128 | 2.78 | 1.21 | 0.57 |  0.2 |
@@ -127,6 +134,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | llama3.2-vision:11b-instruct-q4_K_M                                                              |          |   1.60 |     33 |    9.8 |    4 |  128 |  1.9 | 2.14 | 0.68 | 0.62 |
 | hf.co/tiiuae/Falcon-H1-1.5B-Instruct-GGUF:Q4_K_M                                                 |          |   1.59 |    205 |   1.55 |    4 |      | 3.36 |  0.7 | 0.18 | 0.01 |
 | hf.co/gabriellarson/Moonlight-16B-A3B-Instruct-GGUF:Q4_K_M                                       |          |   1.49 |     19 |   16.0 |    4 |    8 | 2.95 | 0.68 | 0.44 | 0.14 |
+| qwen3.5:2b-q4_K_M-no_think                                                                       |          |   1.47 |    147 |      2 |    4 |  256 | 1.19 | 1.68 | 1.55 | 1.84 |
 | hf.co/shb777/Llama-3.3-8B-Instruct-128K-GGUF:Q4_K_M                                              |          |   1.43 |     36 |   8.03 |    4 |  128 | 1.54 |  1.9 | 1.02 | 0.37 |
 | qwen2.5vl:7b-q4_K_M                                                                              |          |   1.34 |     32 |    8.3 |    4 |  128 |  1.7 | 0.69 |  2.2 | 0.15 |
 | granite4:3b-h                                                                                    |          |   1.33 |     83 |    3.2 |    4 |  131 | 1.79 |  1.7 | 0.45 | 0.17 |
@@ -160,13 +168,13 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/bartowski/ai21labs_AI21-Jamba2-3B-GGUF:Q4_K_M                                              |          |   0.71 |     47 |    3.0 |    4 |  256 | 1.35 | 0.21 | 0.28 | 0.48 |
 | hf.co/bartowski/utter-project_EuroLLM-22B-Instruct-2512-GGUF:Q4_K_M                              |          |   0.68 |      6 |   22.6 |    4 |      |  1.5 | 0.12 | 0.23 | 0.01 |
 | qwen3-vl:2b-instruct-q4_K_M                                                                      |          |   0.67 |     64 |    2.1 |    4 |  256 | 1.07 | 0.59 | 0.29 | 0.09 |
-| qwen3.5:2b-q4_K_M-no_think                                                                       |          |   0.63 |     63 |      2 |    4 |  256 | 0.65 | 0.44 | 0.51 | 1.33 |
 | llama3.2:3b                                                                                      |          |   0.61 |     38 |    3.2 |    4 |  128 |  1.3 | 0.27 | 0.05 |  0.0 |
 | hf.co/unsloth/medgemma-4b-it-GGUF:Q4_K_M                                                         |          |   0.60 |     31 |   3.88 |    4 |  128 | 1.14 | 0.28 | 0.16 | 0.28 |
 | hf.co/DavidAU/Llama-3.2-8X3B-MOE-Dark-Champion-Instruct-uncensored-abliterated-18.4B-GGUF:Q4_K_M |          |   0.60 |      6 |   18.4 |    4 |      | 1.05 |  0.3 |  0.3 | 0.28 |
 | hf.co/mradermacher/Qwen2.5-1.5B-Instruct-abliterated-GGUF:Q4_K_M                                 |          |   0.56 |     72 |   1.54 |    4 |  128 | 0.35 | 0.67 | 0.15 | 1.85 |
 | gemma3:4b                                                                                        |          |   0.55 |     25 |    4.3 |    4 |  128 | 1.03 | 0.35 | 0.15 |  0.0 |
 | qwen2.5vl:3b-q4_K_M                                                                              |          |   0.55 |     29 |    3.8 |    4 |  128 | 0.82 | 0.71 | 0.03 |  0.0 |
+| qwen3.5:0.8b-q8_0-no_think                                                                       |          |   0.54 |    136 |    0.8 |    4 |  256 | 0.53 | 0.17 | 0.52 | 1.77 |
 | phi4-mini:3.8b-q4_K_M                                                                            |          |   0.50 |     26 |    3.8 |    4 |  128 | 0.66 | 0.27 | 0.78 |  0.0 |
 | hf.co/tiiuae/Falcon-H1-0.5B-Instruct-GGUF:Q4_K_M                                                 |     0.26 |   0.50 |    192 |  0.521 |    4 |      | 1.08 | 0.21 | 0.02 |  0.0 |
 | hf.co/vanta-research/atom-v1-preview-4b:latest                                                   |          |   0.48 |        |   3.88 |      |      | 0.72 | 0.52 | 0.19 |  0.0 |
@@ -180,7 +188,6 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/mradermacher/UserLM-8b-GGUF:Q4_K_M                                                         |          |   0.34 |      9 |      8 |    4 |      | 0.73 | 0.05 | 0.12 |  0.1 |
 | hf.co/allenai/OLMo-2-1124-7B-Instruct-GGUF:Q4_K_M                                                |          |   0.33 |      9 |    7.3 |    4 |    2 | 0.69 |  0.1 | 0.08 | 0.09 |
 | hf.co/mradermacher/scout-4b-GGUF:Q4_K_M                                                          |          |   0.33 |     17 |   3.88 |    4 |      | 0.77 | 0.04 | 0.03 |  0.0 |
-| qwen3.5:0.8b-q8_0-no_think                                                                       |          |   0.31 |     76 |    0.8 |    4 |  256 | 0.42 | 0.38 |  0.0 | 0.23 |
 | hf.co/allenai/OLMoE-1B-7B-0125-Instruct-GGUF:Q4_K_M                                              |          |   0.22 |      6 |   6.92 |    4 |    2 | 0.53 | 0.03 | 0.01 |  0.0 |
 | hf.co/mradermacher/Qwen2.5-Coder-0.5B-Instruct-abliterated-GGUF:Q4_K_M                           |          |   0.22 |      0 |  494.0 |    4 |  128 | 0.05 | 0.02 | 0.95 |  0.0 |
 | hf.co/mradermacher/Qwen2.5-VL-3B-Instruct-abliterated-GGUF:Q4_K_M                                |          |   0.21 |     14 |   3.09 |    4 |   64 | 0.48 | 0.07 | 0.01 |  0.0 |
@@ -212,10 +219,10 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | Model                                                                                            | Best<br/>Model<br/>for<br/>Size (GB) | PE-200-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | Java | Rust | Clojure |
 | :----------------------------------------------------------------------------------------------- | -----------------------------------: | ----------------: | -------------: | --------------------: | ---: | ---------------------: | -----: | ---: | ---: | ------: |
 | hf.co/inclusionAI/Ring-flash-2.0-GGUF:Q4_K_M                                                     |    51.50 |  52.90 |    103 |    103 |    4 |  128 | 57.25 | 58.6 | 41.79 | 40.64 |
+| qwen3.5:122b-a10b-q4_K_M-think                                                                   |          |  46.02 |     75 |  122.0 |    4 |  256 | 45.11 | 60.8 | 40.94 | 15.43 |
 | qwen3:30b-a3b-thinking-2507-q4_K_M                                                               |    15.25 |  44.59 |    292 |   30.5 |    4 |  128 | 47.67 | 56.83 | 31.3 | 22.16 |
 | qwen3-next:80b-a3b-thinking-q4_K_M                                                               |          |  43.61 |    109 |   79.7 |    4 |  256 | 45.31 | 53.11 | 39.97 | 15.62 |
 | nemotron-3-nano:30b-a3b-q4_K_M                                                                   |          |  43.52 |    275 |   31.6 |    4 | 1024 | 48.01 | 57.0 | 29.47 | 13.21 |
-| qwen3.5:122b-a10b-q4_K_M-think                                                                   |          |  36.16 |     59 |    122 |    4 |  256 | 47.39 |      |      |      |
 | hf.co/mradermacher/Ring-mini-2.0-GGUF:Q4_K_M                                                     |     8.00 |  35.66 |    446 |     16 |    4 |  128 | 37.07 | 46.09 | 31.0 | 8.01 |
 | hf.co/bartowski/nvidia_Nemotron-Cascade-8B-Thinking-GGUF:Q4_K_M                                  |     4.09 |  32.76 |    800 |   8.19 |    4 |  128 | 45.65 | 39.25 | 13.4 | 0.45 |
 | olmo-3.1:32b-think-q4_K_M                                                                        |          |  30.46 |    189 |   32.2 |    4 |   64 | 36.34 | 40.86 | 15.51 | 5.65 |
@@ -223,7 +230,6 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/bartowski/nvidia_Nemotron-Cascade-8B-GGUF:Q4_K_M                                           |     4.09 |  28.03 |    684 |   8.19 |    4 |  128 | 40.79 | 31.35 | 11.2 | 0.69 |
 | hf.co/bartowski/NousResearch_NousCoder-14B-GGUF:Q4_K_M                                           |          |  24.57 |    332 |   14.8 |    4 |      | 33.87 | 20.18 | 23.3 | 3.09 |
 | gpt-oss:120b                                                                                     |          |  24.39 |     42 |  116.8 |    4 |  128 | 23.7 | 23.82 | 25.17 | 27.33 |
-| qwen3.5:27b-q4_K_M-think                                                                         |          |  24.19 |    179 |   27.0 |    4 |  256 | 24.96 | 29.79 | 21.49 |  9.7 |
 | hf.co/mradermacher/Qwen3-30B-A3B-YOYO-V2-Claude-4.6-Opus-High-INSTRUCT-GGUF:Q4_K_M               |          |  24.06 |    160 |     30 |    4 |  256 | 26.09 | 27.4 | 22.85 | 8.38 |
 | hf.co/bartowski/nvidia_Orchestrator-8B-GGUF:Q4_K_M                                               |     4.09 |  23.65 |    578 |   8.19 |    4 |  128 | 33.75 | 25.36 | 11.03 | 3.39 |
 | hf.co/ijohn07/QED-Nano-Q4_K_M-GGUF:Q4_K_M                                                        |     2.00 |  22.60 |   1130 |      4 |    4 |      | 30.11 | 31.38 | 3.66 | 4.11 |
@@ -246,6 +252,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/mradermacher/MiroThinker-v1.0-30B-GGUF:Q4_K_M                                              |          |  14.48 |     95 |   30.5 |    4 |      | 19.25 | 14.9 |  9.4 | 4.27 |
 | qwen3-vl:4b-thinking-q4_K_M                                                                      |          |  13.59 |    618 |    4.4 |    4 |  256 | 17.87 | 13.81 | 8.84 | 5.31 |
 | hf.co/t-tech/T-pro-it-2.1-GGUF:Q4_K_M                                                            |          |  13.58 |     83 |   32.8 |    4 |      | 17.56 | 14.77 | 7.87 | 5.48 |
+| qwen3.5:4b-q4_K_M-think                                                                          |          |  13.01 |    650 |      4 |    4 |  256 | 21.4 | 10.84 | 2.97 |      |
 | hf.co/bartowski/AGI-0_Art-0-8B-GGUF:Q4_K_M                                                       |          |  11.90 |    291 |   8.19 |    4 |   40 | 13.08 | 15.02 | 9.78 | 2.08 |
 | hf.co/bartowski/Sky-T1-32B-Preview-GGUF:Q4_K_M                                                   |          |  10.10 |     62 |   32.8 |    4 |   32 | 10.02 | 15.13 | 6.72 | 2.06 |
 | glm-4.7-flash:Q4_K_M                                                                             |          |   9.54 |     62 |     31 |    4 |  198 | 11.83 | 10.13 |  7.7 | 2.27 |

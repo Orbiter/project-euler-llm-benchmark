@@ -44,6 +44,27 @@ def get_language_from_extension(extension):
     else:
         raise Exception(f"Unsupported extension: {extension}")
 
+def get_problem_number_from_stem(stem):
+    match = re.fullmatch(r'(?:tool-)?(\d+)', stem)
+    if not match:
+        raise ValueError(f"Unsupported solution filename: {stem}")
+    return match.group(1)
+
+def is_tool_solution_file(filename, extension):
+    return filename.startswith('tool-') and filename.endswith('.' + extension)
+
+def is_standard_solution_file(filename, extension):
+    return (
+        not filename.startswith('.')
+        and not filename.startswith('tool-')
+        and filename.endswith('.' + extension)
+    )
+
+def get_series_name(language, max_problem_number, tool_mode=False):
+    if tool_mode:
+        return f"{language}-tool-{max_problem_number}"
+    return f"{language}-{max_problem_number}"
+
 def execute_python_code_worker(code, output_queue):
     # Define allowed built-ins
     safe_builtins = [
@@ -278,7 +299,7 @@ def execute_rust_code(code, timeout=10):
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
-def process_solutions(model_name, language, max_problem_number, expected_solutions):
+def process_solutions(model_name, language, max_problem_number, expected_solutions, tool_mode=False):
     results_dir = os.path.join('solutions', model_name, language)
     solutions_json_path = os.path.join('solutions', model_name, language, 'solutions.json')
     extension = get_extension(language)
@@ -290,10 +311,13 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
     tasks = []
     program_files = sorted(os.listdir(results_dir))
     for program_file in program_files:
-        if program_file.startswith('.')  or not program_file.endswith('.' + extension): continue
+        if tool_mode:
+            if not is_tool_solution_file(program_file, extension): continue
+        else:
+            if not is_standard_solution_file(program_file, extension): continue
         program_file_path = os.path.join(results_dir, program_file)
         extlen = len(extension) + 1
-        problem_number = program_file[:-extlen]  # Remove extension
+        problem_number = get_problem_number_from_stem(program_file[:-extlen])
         if int(problem_number) > max_problem_number: break
 
         expected = expected_solutions.get(problem_number, None)
@@ -364,11 +388,11 @@ def execute_solution(program_file_path, expected):
 
 def _execute_solution_task(args):
     program_file_path, expected = args
-    problem_number = os.path.splitext(os.path.basename(program_file_path))[0]
+    problem_number = get_problem_number_from_stem(os.path.splitext(os.path.basename(program_file_path))[0])
     output = execute_solution(program_file_path, expected)
     return problem_number, output
 
-def evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions):
+def evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions, tool_mode=False):
 
     if len(solutions) == max_problem_number:
         # evaluate the solutions by comparing with the expected results
@@ -419,7 +443,7 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
 
         # update the benchmark entry
         entry = benchmark.get(model_name, {})
-        series_name = f"{language}-{max_problem_number}"
+        series_name = get_series_name(language, max_problem_number, tool_mode=tool_mode)
         series_name_test = f"{series_name}-test"
         entry[series_name] = candidate_point_average
         entry[series_name_test] = ''.join(test_results)
@@ -441,6 +465,7 @@ def main():
     parser.add_argument('--no_think', action='store_true', help='if set, the prompt will get an additional "/no_think" appended at the end')
     parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the programming language to use, default is python')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
+    parser.add_argument('--tool', action='store_true', help='execute tool-generated source files with the tool- prefix and store separate benchmark keys')
     parser.add_argument('--n100', action='store_true', help='only 100 problems') # this is the default
     parser.add_argument('--n200', action='store_true', help='only 200 problems')
     parser.add_argument('--n400', action='store_true', help='only 400 problems')
@@ -477,11 +502,11 @@ def main():
             benchmark = read_benchmark()
             # the keys are the model names
             for store_name in benchmark:
-                solutions = process_solutions(store_name, language, max_problem_number, expected_solutions)
-                evaluate_solutions(solutions, store_name, language, max_problem_number, expected_solutions)
+                solutions = process_solutions(store_name, language, max_problem_number, expected_solutions, tool_mode=args.tool)
+                evaluate_solutions(solutions, store_name, language, max_problem_number, expected_solutions, tool_mode=args.tool)
         else:
-            solutions = process_solutions(store_name, language, max_problem_number, expected_solutions)
-            evaluate_solutions(solutions, store_name, language, max_problem_number, expected_solutions)
+            solutions = process_solutions(store_name, language, max_problem_number, expected_solutions, tool_mode=args.tool)
+            evaluate_solutions(solutions, store_name, language, max_problem_number, expected_solutions, tool_mode=args.tool)
 
 if __name__ == "__main__":
     main()

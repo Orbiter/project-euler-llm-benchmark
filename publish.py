@@ -1,12 +1,20 @@
 from typing import Dict
 from pathlib import Path
 from argparse import ArgumentParser
-from benchmark import read_benchmark, score_key, bench_score, sort_benchmark
+from benchmark import read_benchmark, score_key, sort_benchmark
 
 SECTION_HEADERS: Dict[int, str] = {
     200: "## Results for PE-Bench-200",
     100: "## Archived Outdated PE-Bench-100",
 }
+
+LANGUAGE_WEIGHTS: Dict[str, float] = {
+    "python": 4.0,
+    "java": 3.0,
+    "rust": 2.0,
+    "clojure": 1.0,
+}
+TOTAL_WEIGHT = sum(LANGUAGE_WEIGHTS.values())
 
 class BenchmarkPublisher:
     """Generate the README table from the benchmark results."""
@@ -18,13 +26,10 @@ class BenchmarkPublisher:
         self.sorted_benchmark: dict = {}
 
     def publish(self) -> None:
-        #self.sorted_benchmark = self.benchmark # we do not sort here becuase the generating code sorts already with a combined score
         self.sorted_benchmark = sort_benchmark(self.benchmark, self.batch_size)
-        #print(self.sorted_benchmark)
         readme_text = self.readme_path.read_text(encoding="utf-8")
         new_table = self._build_table()
         updated_readme, existing_table = self._replace_table(readme_text, new_table)
-        #if existing_table: print(existing_table)
         print(new_table)
         self.readme_path.write_text(updated_readme, encoding="utf-8")
 
@@ -129,18 +134,57 @@ class BenchmarkPublisher:
             (thinking if self._is_thinking(entry) else non_thinking)[model_name] = entry
         return non_thinking, thinking
 
+    def _result_key(self, language: str, tool_mode: bool = False) -> str:
+        if tool_mode:
+            return f"{language}-tool-{self.batch_size}"
+        return score_key(language, self.batch_size)
+
+    def _has_results(self, entry: dict, tool_mode: bool = False) -> bool:
+        return entry.get(self._result_key("python", tool_mode), "") not in (None, "")
+
+    def _entry_score(self, entry: dict, tool_mode: bool = False) -> float:
+        python_score = self._safe_float(entry.get(self._result_key("python", tool_mode)))
+        if python_score is None:
+            return 0.0
+
+        combined_score = 0.0
+        for language, weight in LANGUAGE_WEIGHTS.items():
+            language_score = self._safe_float(entry.get(self._result_key(language, tool_mode)))
+            if language_score is None:
+                language_score = 0.0
+            combined_score += weight * language_score
+        return combined_score / TOTAL_WEIGHT
+
+    def _sorted_entries(self, entries: dict, tool_mode: bool = False) -> dict:
+        filtered_entries = {
+            model_name: entry
+            for model_name, entry in entries.items()
+            if self._has_results(entry, tool_mode)
+        }
+        sorted_items = sorted(
+            filtered_entries.items(),
+            key=lambda item: self._entry_score(item[1], tool_mode),
+            reverse=True,
+        )
+        return dict(sorted_items)
+
     def _build_table(self) -> str:
         max_model_name = max((len(name) for name in self.sorted_benchmark), default=len("Model"))
 
         if self.batch_size == 200:
             non_thinking, thinking = self._partition_by_thinking()
-            groups = [("### Non-Thinking", non_thinking), ("### Thinking", thinking)]
+            groups = [
+                ("### Non-Thinking", self._sorted_entries(non_thinking, tool_mode=False), False),
+                ("### Thinking", self._sorted_entries(thinking, tool_mode=False), False),
+                ("### Non-Thinking Tool Usage", self._sorted_entries(non_thinking, tool_mode=True), True),
+                ("### Thinking Tool Usage", self._sorted_entries(thinking, tool_mode=True), True),
+            ]
         else:
-            groups = [(None, self.sorted_benchmark)]
+            groups = [(None, self._sorted_entries(self.sorted_benchmark, tool_mode=False), False)]
 
         tables: list[str] = []
-        for heading, entries in groups:
-            table_text = self._build_table_for_entries(entries, max_model_name)
+        for heading, entries, tool_mode in groups:
+            table_text = self._build_table_for_entries(entries, max_model_name, tool_mode=tool_mode)
             if heading:
                 tables.append(f"{heading}\n{table_text}")
             else:
@@ -148,7 +192,7 @@ class BenchmarkPublisher:
 
         return "\n\n".join(tables).rstrip() + "\n\n"
 
-    def _build_table_for_entries(self, entries: dict, max_model_name: int) -> str:
+    def _build_table_for_entries(self, entries: dict, max_model_name: int, tool_mode: bool = False) -> str:
         col_best = "Best<br/>Model<br/>for<br/>Size (GB)"
         col_bench_score = f"PE-{self.batch_size}-<br/>Score"
         col_memory_score = "Mem-<br/>Score"
@@ -174,7 +218,7 @@ class BenchmarkPublisher:
         lines = [header, alignment]
         lowest_memory_amount = float("inf")
 
-        python_key = score_key("python", self.batch_size)
+        python_key = self._result_key("python", tool_mode)
         for model_name, entry in entries.items():
             python_value = entry.get(python_key, "")
             if python_value in (None, ""): continue
@@ -190,7 +234,7 @@ class BenchmarkPublisher:
                 if size_value is not None and size_value > 0 and quant_value is not None and quant_value > 0
                 else float("inf")
             )
-            bench_score_value = bench_score(self.benchmark, entry, self.batch_size)
+            bench_score_value = self._entry_score(entry, tool_mode)
             memory_score = (
                 (100.0 * bench_score_value / memory_amount) if memory_amount not in (0.0, float("inf")) else None
             )
@@ -201,9 +245,9 @@ class BenchmarkPublisher:
                 best_model = True
 
             bench_python = self._stringify(python_value)
-            bench_java = self._stringify(entry.get(score_key("java", self.batch_size), ""))
-            bench_rust = self._stringify(entry.get(score_key("rust", self.batch_size), ""))
-            bench_clojure = self._stringify(entry.get(score_key("clojure", self.batch_size), ""))
+            bench_java = self._stringify(entry.get(self._result_key("java", tool_mode), ""))
+            bench_rust = self._stringify(entry.get(self._result_key("rust", tool_mode), ""))
+            bench_clojure = self._stringify(entry.get(self._result_key("clojure", tool_mode), ""))
 
             best_value = ""
             if best_model and memory_amount not in (float("inf"), 0.0):

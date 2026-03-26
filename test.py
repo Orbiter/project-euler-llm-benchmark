@@ -5,9 +5,16 @@ from argparse import ArgumentParser
 from benchmark import read_benchmark, write_benchmark
 from llm_client import openai_api_list, Endpoint
 
-def test(api_base, endpoint_name, model_name, language, overwrite_existing, overwrite_failed, max_problem_number=100, think=False, no_think=False):
-    # call inference.py
-    cmd = f"python3.12 inference.py --language {language} --api_base {api_base}"
+def get_bench_name(language, max_problem_number, tool_mode=False):
+    if tool_mode:
+        return f"{language}-tool-{max_problem_number}"
+    return f"{language}-{max_problem_number}"
+
+def test(api_base, endpoint_name, model_name, language, overwrite_existing, overwrite_failed, max_problem_number=100, think=False, no_think=False, tool_mode=False):
+    inference_script = "inference-with-tools.py" if tool_mode else "inference.py"
+
+    # call inference script
+    cmd = f"python3.12 {inference_script} --language {language} --api_base {api_base}"
     cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
     if max_problem_number == 200: cmd += " --n200"
     if overwrite_existing: cmd += " --overwrite_existing"
@@ -17,19 +24,21 @@ def test(api_base, endpoint_name, model_name, language, overwrite_existing, over
     print(f"Running command: {cmd}")
     os.system(cmd)
 
-    # call codeextraction.py
-    cmd = f"python3.12 codeextraction.py --language {language}"
-    cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
-    if think: cmd += " --think"
-    if no_think: cmd += " --no_think"
-    print(f"Running command: {cmd}")
-    os.system(cmd)
+    if not tool_mode:
+        # call codeextraction.py
+        cmd = f"python3.12 codeextraction.py --language {language}"
+        cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
+        if think: cmd += " --think"
+        if no_think: cmd += " --no_think"
+        print(f"Running command: {cmd}")
+        os.system(cmd)
 
     # call execute.py
     cmd = f"python3.12 execute.py --language {language}"
     cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
     if think: cmd += " --think"
     if no_think: cmd += " --no_think"
+    if tool_mode: cmd += " --tool"
     print(f"Running command: {cmd}")
     os.system(cmd)
 
@@ -45,6 +54,7 @@ def main():
     parser.add_argument('--overwrite_existing', action='store_true', help='if set, re-calculate all problems that already have an answer')
     parser.add_argument('--overwrite_failed', action='store_true', help='if set, re-calculate those problems with wrong answers')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
+    parser.add_argument('--tool', action='store_true', help='use inference-with-tools.py and execute tool-prefixed source files')
     parser.add_argument('--n100', action='store_true', help='only 100 problems') # this is the default
     parser.add_argument('--n200', action='store_true', help='only 200 problems')
     parser.add_argument('--n400', action='store_true', help='only 400 problems')
@@ -107,7 +117,7 @@ def main():
         for language in languages:
 
             print(f"Testing model {model} with language {language}")
-            bench_name = f"{language}-{max_problem_number}"
+            bench_name = get_bench_name(language, max_problem_number, tool_mode=args.tool)
 
             # in every loop we load the benchmark.json again because it might have been updated
             benchmark = read_benchmark()
@@ -119,7 +129,7 @@ def main():
             # add metadata to benchmark.json
             if not model_benchmark_name in benchmark or not bench_name in benchmark[model_benchmark_name] or overwrite_existing or overwrite_failed:
                 # run the model; this writes a news entry to benchmark.json
-                test(",".join(api_base), endpoint_name, model, language, overwrite_existing, overwrite_failed, max_problem_number, think = args.think, no_think = args.no_think)
+                test(",".join(api_base), endpoint_name, model, language, overwrite_existing, overwrite_failed, max_problem_number, think = args.think, no_think = args.no_think, tool_mode = args.tool)
                 # load benchmark.json again because the test has updated it
                 benchmark = read_benchmark()
                 # because testing can be interrupted, there is no guarantee that the entry is present

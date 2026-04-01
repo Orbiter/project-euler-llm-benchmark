@@ -229,11 +229,16 @@ class BenchmarkPublisher:
             size_value = self._safe_float(size_raw)
             quant_value = self._safe_float(quant_raw)
 
-            memory_amount = (
-                (size_value * quant_value / 8.0)
-                if size_value is not None and size_value > 0 and quant_value is not None and quant_value > 0
-                else float("inf")
-            )
+            if size_value is None or size_value <= 0 or quant_value is None or quant_value <= 0:
+                memory_amount = float("inf")
+            else:
+                if quant_value == 4:
+                    memory_amount = size_value * 3.0 / 4.0
+                elif quant_value == 8:
+                    memory_amount = size_value
+                else:
+                    memory_amount = size_value * 2
+ 
             bench_score_value = self._entry_score(entry, tool_mode)
             memory_score = (
                 (100.0 * bench_score_value / memory_amount) if memory_amount not in (0.0, float("inf")) else None

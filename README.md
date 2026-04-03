@@ -23,24 +23,31 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 ### Non-Thinking
 | Model                                                                                            | Best<br/>Model<br/>for<br/>Size (GB) | PE-200-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | Java | Rust | Clojure |
 | :----------------------------------------------------------------------------------------------- | -----------------------------------: | ----------------: | -------------: | --------------------: | ---: | ---------------------: | -----: | ---: | ---: | ------: |
-| qwen3.5:122b-a10b-q4_K_M-no_think                                                                |    91.50 |  49.13 |     54 |  122.0 |    4 |  256 | 56.16 | 49.91 | 52.0 | 12.89 |
-| qwen3.5:35b-a3b-q4_K_M-no_think                                                                  |    26.25 |  46.67 |    178 |   35.0 |    4 |  256 | 68.46 | 39.13 | 33.71 | 8.01 |
-| qwen3.5:35b-a3b-coding-mxfp8-no_think                                                            |          |  45.28 |        |        |    8 |      | 55.85 | 50.17 | 39.47 |      |
+| openrouter/qwen3.6-plus:free-no_think                                                            |          |  78.66 |        |        |   16 | 1024 | 83.93 | 88.63 | 75.56 | 33.89 |
+| qwen3.5:27b-nvfp4-no_think                                                                       |    20.25 |  53.89 |    266 |   27.0 |    4 |  256 | 66.39 | 61.25 | 42.64 | 4.29 |
+| qwen3.5:122b-a10b-q4_K_M-no_think                                                                |          |  49.13 |     54 |  122.0 |    4 |  256 | 56.16 | 49.91 | 52.0 | 12.89 |
+| qwen3.5:35b-a3b-mxfp8-no_think                                                                   |          |  48.64 |    139 |   35.0 |    8 |  256 | 60.31 | 51.69 | 42.46 | 5.17 |
+| qwen3.5:35b-a3b-q4_K_M-no_think                                                                  |          |  46.67 |    178 |   35.0 |    4 |  256 | 68.46 | 39.13 | 33.71 | 8.01 |
+| qwen3.5:35b-a3b-coding-mxfp8-no_think                                                            |          |  45.57 |    130 |   35.0 |    8 |  256 | 55.85 | 50.17 | 39.47 | 2.83 |
 | qwen3-coder-next:Q4_K_M                                                                          |          |  44.95 |     75 |   79.7 |    4 |  256 | 54.49 | 42.84 | 47.33 | 8.38 |
 | qwen3-next:80b-a3b-instruct-q4_K_M                                                               |          |  42.71 |     71 |   79.7 |    4 |  256 | 48.41 | 50.71 | 32.66 | 16.0 |
-| qwen3.5:35b-a3b-coding-nvfp4-no_think                                                            |    26.25 |  42.28 |    161 |     35 |    4 |  256 | 58.53 | 39.28 | 33.06 | 4.72 |
+| qwen3.5:35b-a3b-coding-nvfp4-no_think                                                            |          |  42.28 |    161 |     35 |    4 |  256 | 58.53 | 39.28 | 33.06 | 4.72 |
 | qwen3.5:27b-q4_K_M-no_think                                                                      |    20.25 |  41.98 |    207 |   27.0 |    4 |  256 | 45.09 | 55.69 | 32.6 | 7.21 |
 | qwen3.5:35b-a3b-nvfp4-no_think                                                                   |          |  41.71 |    159 |     35 |    4 |  256 | 48.34 | 49.56 | 33.42 | 8.22 |
+| qwen3.5:27b-mxfp8-no_think                                                                       |          |  40.01 |    148 |   27.0 |    8 |  256 | 46.06 | 45.84 | 38.21 | 1.89 |
 | nemotron-3-super:120b-a12b-q4_K_M-no_think                                                       |          |  38.78 |     43 |    120 |    4 | 1000 | 46.35 | 46.37 | 28.73 | 5.82 |
 | qwen3-vl:235b-a22b-instruct-q4_K_M                                                               |          |  37.08 |     21 |  235.7 |    4 |  256 | 36.44 | 47.94 | 34.77 | 11.66 |
+| frob/qwen3.5-instruct:35b                                                                        |          |  36.72 |    140 |   35.0 |    4 |  256 | 55.6 | 48.26 |      |      |
 | qwen3:235b-a22b-instruct-2507-q4_K_M                                                             |          |  36.33 |     21 |  235.1 |    4 |  256 | 43.09 | 41.18 | 28.46 | 10.53 |
 | hf.co/inclusionAI/Ling-flash-2.0-GGUF:Q4_K_M                                                     |          |  33.29 |     43 |    103 |    4 |  128 | 42.38 | 34.36 | 23.3 | 13.74 |
+| gemma4:26b-a4b-it-q4_K_M-no_think                                                                |    19.50 |  22.51 |    115 |   26.0 |    4 |  256 | 56.28 |      |      |      |
+| frob/qwen3.5-instruct:9b                                                                         |     6.75 |  21.12 |    313 |      9 |    4 |  256 | 32.51 | 17.72 | 13.29 | 1.45 |
 | hf.co/mradermacher/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-i1-GGUF:Q4_K_M-no_think       |          |  20.92 |    100 |     28 |    4 |  256 | 28.18 | 32.16 |      |      |
 | qwen3-vl:32b-instruct-q4_K_M                                                                     |          |  20.56 |     82 |   33.4 |    4 |  256 | 27.78 | 21.15 | 13.91 | 3.19 |
 | hf.co/cturan/IQuest-Coder-V1-40B-Instruct-GGUF:Q4_K_M                                            |          |  20.09 |     67 |   39.8 |    4 |  128 | 26.12 | 19.65 | 17.81 | 1.83 |
-| hf.co/mradermacher/Ling-mini-2.0-GGUF:Q4_K_M                                                     |    12.00 |  20.00 |    167 |     16 |    4 |  128 | 26.89 | 19.74 | 15.66 | 1.91 |
-| hf.co/mradermacher/Ling-mini-2.0-i1-GGUF:Q4_K_M                                                  |    12.00 |  19.36 |    161 |     16 |    4 |  128 | 29.58 | 20.74 | 6.35 | 0.39 |
-| hf.co/mradermacher/OmniCoder-9B-i1-GGUF:Q4_K_M                                                   |     6.75 |  18.90 |    280 |      9 |    4 |      | 25.28 | 21.23 | 11.73 | 0.71 |
+| hf.co/mradermacher/Ling-mini-2.0-GGUF:Q4_K_M                                                     |          |  20.00 |    167 |     16 |    4 |  128 | 26.89 | 19.74 | 15.66 | 1.91 |
+| hf.co/mradermacher/Ling-mini-2.0-i1-GGUF:Q4_K_M                                                  |          |  19.36 |    161 |     16 |    4 |  128 | 29.58 | 20.74 | 6.35 | 0.39 |
+| hf.co/mradermacher/OmniCoder-9B-i1-GGUF:Q4_K_M                                                   |     6.75 |  18.90 |    280 |      9 |    4 |  256 | 25.28 | 21.23 | 11.73 | 0.71 |
 | qwen3.5:9b-q4_K_M-no_think                                                                       |     6.75 |  18.37 |    272 |    9.0 |    4 |  256 | 25.67 | 19.64 | 10.59 | 0.89 |
 | qwen3-vl:30b-a3b-instruct-q8_0                                                                   |          |  17.61 |     57 |   31.1 |    8 |  256 | 18.64 | 20.51 | 18.53 | 2.98 |
 | qwen3-vl:30b-a3b-instruct-q4_K_M                                                                 |          |  17.33 |     74 |   31.1 |    4 |  128 | 18.95 | 21.38 | 16.01 | 1.38 |
@@ -49,11 +56,11 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | qwen/qwen3-vl-30b                                                                                |          |  15.45 |     66 |   31.1 |    4 |  128 | 18.98 | 19.02 | 9.83 | 1.88 |
 | qwen3-coder:30b-a3b-q4_K_M                                                                       |          |  15.18 |     66 |   30.5 |    4 |  256 | 19.51 | 13.41 | 14.03 | 5.46 |
 | hf.co/mradermacher/Huihui-Qwen3-Coder-30B-A3B-Instruct-abliterated-GGUF:Q4_K_M                   |          |  14.97 |     65 |   30.5 |    4 |  160 | 17.56 | 18.06 | 10.43 |  4.4 |
+| qwen3.5:9b-nvfp4-no_think                                                                        |     6.75 |  14.88 |    220 |    9.0 |    4 |  256 | 12.42 | 26.32 | 9.44 | 1.27 |
 | hf.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-1M-GGUF:Q4_K_M                                        |          |  14.18 |     62 |   30.5 |    4 |  256 | 14.02 | 17.25 | 12.92 | 8.11 |
-| frob/qwen3.5-instruct:9b                                                                         |     6.75 |  13.00 |    193 |      9 |    4 |  256 | 32.51 |      |      |      |
 | qwen3:30b-a3b-q4_K_M-no_think                                                                    |          |  13.00 |     57 |   30.5 |    4 |   40 | 14.5 | 15.85 | 10.06 | 4.36 |
 | qwen2.5vl:32b-q4_K_M                                                                             |          |  12.51 |     50 |   33.5 |    4 |  128 | 15.56 | 11.71 | 13.44 | 0.82 |
-| hf.co/mradermacher/Qwen3.5-35B-A3B-Claude-4.6-Opus-Reasoning-Distilled-i1-GGUF:Q4_K_M-no_think   |     3.00 |  12.42 |    414 |      4 |    4 |      | 14.22 | 13.16 | 13.15 | 1.57 |
+| hf.co/mradermacher/Qwen3.5-35B-A3B-Claude-4.6-Opus-Reasoning-Distilled-i1-GGUF:Q4_K_M-no_think   |     3.00 |  12.42 |    414 |      4 |    4 |  256 | 14.22 | 13.16 | 13.15 | 1.57 |
 | devstral-2:123b-instruct-2512-q4_K_M                                                             |          |  11.84 |     13 |  125.0 |    4 |  256 | 13.9 | 13.36 | 9.61 | 3.49 |
 | olmo-3.1:32b-instruct-q4_K_M                                                                     |          |  10.25 |     42 |   32.2 |    4 |  128 | 17.37 | 6.19 | 6.68 | 1.11 |
 | qwen2.5-coder:32b-instruct-q4_K_M                                                                |          |   9.28 |     38 |   32.8 |    4 |   32 | 11.6 | 11.5 | 4.69 | 2.53 |

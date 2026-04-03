@@ -84,8 +84,22 @@ def openai_api_list(endpoint) -> dict:
         return {}
 
 def openai_api_check_exist(endpoint: Endpoint) -> bool:
-    list = openai_api_list(endpoint)
-    return endpoint.model_name in list
+    models = openai_api_list(endpoint)
+    if endpoint.model_name in models:
+        return True
+
+    # Remote OpenAI-compatible providers do not always expose every usable chat
+    # model through /v1/models. Treat a missing listing as non-fatal so the real
+    # chat request can return a concrete API error instead of the caller hanging
+    # forever while waiting for discovery to succeed.
+    if endpoint.key and not models:
+        print(
+            f"Could not verify model {endpoint.model_name} via {get_llm_url_stub(endpoint)}/v1/models; "
+            "continuing and letting the chat request validate the model."
+        )
+        return True
+
+    return False
 
 def ollama_pull(endpoint: Endpoint) -> dict:
     # Try to pull the model from the endpoint. If that does not work, we simply return.

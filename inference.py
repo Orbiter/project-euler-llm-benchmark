@@ -26,23 +26,38 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
     lb = LoadBalancer()
     lb.start_distribution()
     
-    # ensure that the first endpoint is loaded:
-    while not openai_api_check_exist(endpoints[0]):
-        ollama_pull(endpoints[0])
+    # ensure that the first endpoint is loaded, but fail loudly instead of
+    # waiting forever when endpoint discovery is broken or the model is wrong.
+    primary_endpoint = endpoints[0]
+    primary_ready = False
+    for attempt in range(1, 4):
+        if openai_api_check_exist(primary_endpoint):
+            primary_ready = True
+            break
+        print(f"Primary endpoint check failed for {primary_endpoint.model_name} (attempt {attempt}/3).")
+        ollama_pull(primary_endpoint)
+        time.sleep(1)
+    if not primary_ready:
+        raise RuntimeError(
+            f"Could not verify endpoint {primary_endpoint.url} with model {primary_endpoint.model_name}. "
+            "If this is a remote OpenAI-compatible provider, check that /v1/models is reachable or that the model id is correct."
+        )
 
     # load server concurrently; they will download a model if that is not present so far.
     def load_endpoints():
         for endpoint in endpoints:
+            loaded = False
             for _ in range(0, 3):
                 try:
                     ollama_pull(endpoint)
                     if openai_api_check_exist(endpoint):
                         lb.add_server(Server(endpoint=endpoint))
+                        loaded = True
                         break
                 except Exception as e:
                     print(f"Error loading endpoint {endpoint}: {e}")
-        if not openai_api_check_exist(endpoint):
-            print(f"Failed to load endpoint {endpoint} after 3 attempts.")
+            if not loaded:
+                print(f"Failed to load endpoint {endpoint} after 3 attempts.")
     loading_thread = threading.Thread(target=load_endpoints, daemon=True)
     loading_thread.start()
 

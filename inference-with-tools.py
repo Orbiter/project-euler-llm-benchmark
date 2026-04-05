@@ -24,20 +24,19 @@ from llm_client import (
     ollama_pull,
     openai_api_check_exist,
     openai_api_list,
-    test_multimodal,
 )
+from llm_modal_test import ensure_model_capabilities
 
 
 SYSTEM_PROMPT = (
-    "You are a coding agent working inside a virtual file system. You do not have "
-    "access to the real shell or the real file system. Use the provided tools to "
-    "inspect files, update files in the virtual file system, and check syntax. "
-    "Prefer iterating by checking syntax after edits and fixing errors you "
-    "observe. Return runnable source code only. When the task is finished, you "
-    "must call deliver_code to return the final code, either by passing the full "
-    "code directly or by naming a file from the virtual file system. Do not stop "
-    "before calling deliver_code. Do not return markdown. "
-    "Do not return text without a final deliver_code tool call, this would be a failure."
+    "You are a coding agent operating in a virtual workspace. "
+    "You can only act by calling the provided tools. "
+    "Use this workflow: inspect the workspace, read files when needed, write or "
+    "rewrite complete files, run syntax checks, and continue until the program is ready. "
+    "When the final program is ready, call deliver_code exactly once. "
+    "Do not end with plain text. Every assistant turn must contain a tool call. "
+    "If you need to explain progress, put that explanation in the assistant message that accompanies the tool call. "
+    "Return runnable source code with no markdown fences in delivered content."
 )
 
 TOOLS = [
@@ -45,7 +44,10 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "list_files",
-            "description": "List all files currently present in the virtual file system.",
+            "description": (
+                "List the current virtual workspace files. Use this first when you need "
+                "to discover what files exist."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {},
@@ -58,13 +60,17 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "read_file",
-            "description": "Read a file from the virtual file system.",
+            "description": (
+                "Read one virtual workspace file by relative path. Use this to inspect "
+                "existing code before editing."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "path": {
                         "type": "string",
                         "description": "Virtual workspace-relative file path.",
+                        "minLength": 1,
                     }
                 },
                 "required": ["path"],
@@ -77,13 +83,17 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "write_file",
-            "description": "Replace or create a file in the virtual file system.",
+            "description": (
+                "Create or fully replace one virtual workspace file. The content must be "
+                "the complete file contents, not a diff."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "path": {
                         "type": "string",
                         "description": "Virtual workspace-relative file path.",
+                        "minLength": 1,
                     },
                     "content": {
                         "type": "string",
@@ -99,28 +109,83 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "delete_file",
+            "description": "Delete one virtual workspace file by relative path.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Virtual workspace-relative file path.",
+                        "minLength": 1,
+                    }
+                },
+                "required": ["path"],
+                "additionalProperties": False,
+            },
+            "strict": True,
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "rename_file",
+            "description": (
+                "Rename or move one virtual workspace file from `source_path` to "
+                "`destination_path`."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "source_path": {
+                        "type": "string",
+                        "description": "Existing virtual workspace-relative file path.",
+                        "minLength": 1,
+                    },
+                    "destination_path": {
+                        "type": "string",
+                        "description": "New virtual workspace-relative file path.",
+                        "minLength": 1,
+                    },
+                },
+                "required": ["source_path", "destination_path"],
+                "additionalProperties": False,
+            },
+            "strict": True,
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "syntax_check",
             "description": (
-                "Check syntax for python, java, rust, or clojure using inline code "
-                "or a file from the virtual file system."
+                "Check syntax for python, java, rust, or clojure. Provide exactly one of "
+                "`path` or `content`. Prefer `path` after writing a file."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "language": {
                         "type": "string",
-                        "description": "Language to check: python, java, rust, or clojure.",
+                        "description": "Language to check.",
+                        "enum": ["python", "java", "rust", "clojure"],
                     },
                     "path": {
                         "type": "string",
                         "description": "Optional virtual workspace-relative file path.",
+                        "minLength": 1,
                     },
                     "content": {
                         "type": "string",
                         "description": "Optional inline code content.",
+                        "minLength": 1,
                     },
                 },
                 "required": ["language"],
+                "oneOf": [
+                    {"required": ["path"]},
+                    {"required": ["content"]},
+                ],
                 "additionalProperties": False,
             },
             "strict": True,
@@ -130,13 +195,17 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "calculator",
-            "description": "Evaluate a mathematical Python expression and return the result.",
+            "description": (
+                "Evaluate a mathematical expression for planning or verification. "
+                "Use only for arithmetic, not for general code execution."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "expression": {
                         "type": "string",
                         "description": "Mathematical expression to evaluate.",
+                        "minLength": 1,
                     }
                 },
                 "required": ["expression"],
@@ -150,9 +219,8 @@ TOOLS = [
         "function": {
             "name": "deliver_code",
             "description": (
-                "Deliver the final answer for the coding task. Provide either the "
-                "full code directly in content or a path to a file in the virtual "
-                "file system."
+                "Finish the task and deliver the final runnable program. Provide exactly "
+                "one of `path` or `content`. Call this only when the code is complete."
             ),
             "parameters": {
                 "type": "object",
@@ -160,12 +228,18 @@ TOOLS = [
                     "path": {
                         "type": "string",
                         "description": "Optional virtual workspace-relative file path to deliver.",
+                        "minLength": 1,
                     },
                     "content": {
                         "type": "string",
                         "description": "Optional full code content to deliver directly.",
+                        "minLength": 1,
                     },
                 },
+                "oneOf": [
+                    {"required": ["path"]},
+                    {"required": ["content"]},
+                ],
                 "additionalProperties": False,
             },
             "strict": True,
@@ -174,8 +248,6 @@ TOOLS = [
 ]
 
 MAX_TOOL_CALLS = 12
-
-
 @dataclass
 class State:
     max_tool_calls: int = MAX_TOOL_CALLS
@@ -209,6 +281,12 @@ class VirtualFileSystem:
     def write_file(self, path: str, content: str) -> None:
         self.files[path] = content
 
+    def delete_file(self, path: str) -> None:
+        del self.files[path]
+
+    def rename_file(self, source_path: str, destination_path: str) -> None:
+        self.files[destination_path] = self.files.pop(source_path)
+
 
 def read_template(template_path):
     with open(template_path, "r", encoding="utf-8") as file:
@@ -238,84 +316,61 @@ def preview_text(text: str, limit: int = 160) -> str:
     return compact[: limit - 3] + "..."
 
 
-def dump_message_payload(prefix: str, response_json: dict) -> None:
+def summarize_tool_args(tool_name: str, parsed_args: dict) -> str:
+    if tool_name in {"read_file", "write_file", "delete_file", "deliver_code"}:
+        path = parsed_args.get("path")
+        if path:
+            return f"path={path}"
+    if tool_name == "rename_file":
+        source_path = parsed_args.get("source_path")
+        destination_path = parsed_args.get("destination_path")
+        if source_path and destination_path:
+            return f"source_path={source_path} destination_path={destination_path}"
+    if tool_name == "syntax_check":
+        language = parsed_args.get("language", "?")
+        path = parsed_args.get("path")
+        if path:
+            return f"language={language} path={path}"
+        return f"language={language} inline-content"
+    if tool_name == "calculator":
+        expr = parsed_args.get("expression", "")
+        return f"expression={preview_text(expr, 80)}"
+    return ""
+
+
+def summarize_response(response_json: dict) -> str:
     message = response_json.get("choices", [{}])[0].get("message", {})
-    try:
-        payload = json.dumps(message, ensure_ascii=False, indent=2)
-    except TypeError:
-        payload = repr(message)
-    log(f"{prefix} message payload:\n{payload}")
-
-
-def dump_request_payload(prefix: str, payload: dict) -> None:
-    try:
-        rendered = json.dumps(payload, ensure_ascii=False, indent=2)
-    except TypeError:
-        rendered = repr(payload)
-    log(f"{prefix} request payload:\n{rendered}")
-
-
-def test_tool_calling(endpoint: Endpoint, think: bool = False, no_think: bool = False) -> bool:
-    log(f"Testing tool-calling capability for model {endpoint.store_name}...")
-    headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    if endpoint.key:
-        headers["Authorization"] = f"Bearer {endpoint.key}"
-
-    payload = {
-        "model": endpoint.model_name,
-        "messages": [
-            {"role": "system", "content": "You are a helpful assistant. Use tools when needed."},
-            {"role": "user", "content": "Switch on the light"},
-        ],
-        "tools": [
-            {
-                "type": "function",
-                "function": {
-                    "name": "lightswitch",
-                    "description": "Switch the light on or off.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "state": {
-                                "type": "string",
-                                "enum": ["on", "off"],
-                            }
-                        },
-                        "required": ["state"],
-                        "additionalProperties": False,
-                    },
-                },
-            }
-        ],
-        "stream": False,
-        "temperature": 0.0,
-    }
-    if no_think:
-        payload["reasoning_effort"] = "none"
-        payload["enable_thinking"] = False
-    elif think:
-        payload["enable_thinking"] = True
-
-    dump_request_payload(f"[tool-test:{endpoint.store_name}]", payload)
-    try:
-        response = requests.post(endpoint.url, headers=headers, json=payload, verify=False, timeout=120)
-        response.raise_for_status()
-        response_json = response.json()
-    except Exception as exc:
-        log(f"Tool-calling test failed with request error for {endpoint.store_name}: {exc}")
-        return False
-
-    dump_message_payload(f"[tool-test:{endpoint.store_name}]", response_json)
-    message = response_json.get("choices", [{}])[0].get("message", {})
+    chunk = extract_text_content(message.get("content"))
     tool_calls = message.get("tool_calls") or []
-    if not tool_calls:
-        log(f"Tool-calling test returned no tool calls for {endpoint.store_name}.")
-        return False
+    if tool_calls:
+        first_call = tool_calls[0]
+        function = first_call.get("function", {})
+        tool_name = function.get("name") or first_call.get("name") or "unknown_tool"
+        raw_args = function.get("arguments", "")
+        try:
+            parsed_args = json.loads(raw_args) if raw_args else {}
+        except json.JSONDecodeError:
+            parsed_args = {}
+        detail = summarize_tool_args(tool_name, parsed_args)
+        if chunk and detail:
+            return f"model plans to {tool_name} ({detail}); note={preview_text(chunk, 120)}"
+        if detail:
+            return f"model plans to {tool_name} ({detail})"
+        if chunk:
+            return f"model plans to {tool_name}; note={preview_text(chunk, 120)}"
+        return f"model plans to {tool_name}"
+    if chunk:
+        return f"model replied without a tool call: {preview_text(chunk, 120)}"
+    return "model returned neither tool call nor text"
 
-    function = tool_calls[0].get("function", {})
-    tool_name = function.get("name") or tool_calls[0].get("name") or ""
-    log(f"Tool-calling test requested tool: {tool_name}")
-    return tool_name == "lightswitch"
+
+def describe_next_agent_step(messages: List[dict], vfs: VirtualFileSystem) -> str:
+    if not vfs.files:
+        return "asking the agent to inspect the empty workspace and draft the first solution file"
+    last_message = messages[-1] if messages else {}
+    if last_message.get("role") == "tool":
+        return "asking the agent to use the latest tool result and continue editing or deliver the final code"
+    return "asking the agent to continue the coding loop with the next tool call"
 
 
 def normalize_virtual_path(path: str) -> str:
@@ -585,6 +640,37 @@ def run_virtual_tool(vfs: VirtualFileSystem, tool_name: str, parsed_args: dict) 
         vfs.write_file(path, parsed_args.get("content", ""))
         return ToolResult(exit_code=0, stdout=f"Wrote {path}", stderr="")
 
+    if tool_name == "delete_file":
+        try:
+            path = normalize_virtual_path(parsed_args.get("path", ""))
+        except ValueError as exc:
+            return ToolResult(exit_code=1, stdout="", stderr=str(exc))
+        if path not in vfs.files:
+            return ToolResult(exit_code=1, stdout="", stderr=f"File not found: {path}")
+        vfs.delete_file(path)
+        return ToolResult(exit_code=0, stdout=f"Deleted {path}", stderr="")
+
+    if tool_name == "rename_file":
+        try:
+            source_path = normalize_virtual_path(parsed_args.get("source_path", ""))
+            destination_path = normalize_virtual_path(parsed_args.get("destination_path", ""))
+        except ValueError as exc:
+            return ToolResult(exit_code=1, stdout="", stderr=str(exc))
+        if source_path not in vfs.files:
+            return ToolResult(exit_code=1, stdout="", stderr=f"File not found: {source_path}")
+        if destination_path in vfs.files:
+            return ToolResult(
+                exit_code=1,
+                stdout="",
+                stderr=f"Destination already exists: {destination_path}",
+            )
+        vfs.rename_file(source_path, destination_path)
+        return ToolResult(
+            exit_code=0,
+            stdout=f"Renamed {source_path} to {destination_path}",
+            stderr="",
+        )
+
     if tool_name == "syntax_check":
         return run_syntax_check(vfs, parsed_args)
 
@@ -629,6 +715,7 @@ def handle_tool_call(
     state: State,
     vfs: VirtualFileSystem,
     messages: List[dict],
+    assistant_content: str,
     tool_name: str,
     tool_id: str,
     tool_args_unescaped: str,
@@ -638,14 +725,18 @@ def handle_tool_call(
         log(f"[{problem_number}] Model returned no tool call.")
         return DeliveryResult(delivered=False)
 
-    log(f"[{problem_number}] Tool requested: {tool_name} args={preview_text(tool_args_unescaped, 220)}")
-
     try:
         parsed_args = json.loads(tool_args_unescaped)
     except json.JSONDecodeError:
         result = ToolResult(exit_code=1, stdout="", stderr="Tool arguments are not valid JSON.")
         delivery = DeliveryResult(delivered=False)
+        log(f"[{problem_number}] Executing {tool_name}: invalid JSON arguments.")
     else:
+        summary = summarize_tool_args(tool_name, parsed_args)
+        if summary:
+            log(f"[{problem_number}] Executing {tool_name}: {summary}")
+        else:
+            log(f"[{problem_number}] Executing {tool_name}.")
         if state.tool_call_counts.get(tool_name, 0) >= state.max_tool_calls:
             result = ToolResult(
                 exit_code=1,
@@ -665,6 +756,7 @@ def handle_tool_call(
     messages.append(
         {
             "role": "assistant",
+            "content": assistant_content or "",
             "tool_calls": [
                 {
                     "id": call_id,
@@ -743,6 +835,8 @@ def run_tool_agent(
             "model": endpoint.model_name,
             "messages": messages,
             "tools": get_visible_tools(state),
+            "tool_choice": "required",
+            "parallel_tool_calls": False,
             "stream": False,
             "temperature": 0.0,
         }
@@ -752,27 +846,42 @@ def run_tool_agent(
         elif think:
             payload["enable_thinking"] = True
 
-        log(f"[{problem_number}] Turn {turn + 1}: sending {len(messages)} messages to {endpoint.model_name}")
-        dump_request_payload(f"[{problem_number}] Turn {turn + 1}", payload)
+        log(
+            f"[{problem_number}] Turn {turn + 1}: "
+            f"{describe_next_agent_step(messages, vfs)}."
+        )
         response = requests.post(url, headers=headers, json=payload, verify=False, timeout=600)
         response.raise_for_status()
         response_json = response.json()
-        dump_message_payload(f"[{problem_number}] Turn {turn + 1}", response_json)
+        log(f"[{problem_number}] Turn {turn + 1}: {summarize_response(response_json)}")
 
         chunk, tool_name, tool_id, tool_args_unescaped = extract_response_fields(response_json)
         if chunk:
             log(f"[{problem_number}] Assistant text: {preview_text(chunk, 220)}")
-            messages.append({"role": "assistant", "content": chunk})
         else:
             log(f"[{problem_number}] Assistant returned no text chunk.")
 
-        delivery = handle_tool_call(state, vfs, messages, tool_name, tool_id, tool_args_unescaped, problem_number)
+        if not tool_name:
+            if chunk:
+                messages.append({"role": "assistant", "content": chunk})
+            raise RuntimeError(
+                f"Model violated tool-calling contract on turn {turn + 1}: "
+                "assistant response did not include a tool call."
+            )
+
+        delivery = handle_tool_call(
+            state,
+            vfs,
+            messages,
+            chunk,
+            tool_name,
+            tool_id,
+            tool_args_unescaped,
+            problem_number,
+        )
         if delivery.delivered:
             log(f"[{problem_number}] deliver_code succeeded.")
             delivered = delivery
-            break
-        if not tool_name:
-            log(f"[{problem_number}] Stopping loop because no tool call was returned.")
             break
 
     if not delivered.delivered:
@@ -890,31 +999,15 @@ def process_problem_files(
 
     benchmark = read_benchmark()
     entry = benchmark.get(store_name, {})
-    if "tool_calling" in entry:
-        has_tool_calling = bool(entry["tool_calling"])
-        print(f"Tool-calling capability cached for {store_name}: {has_tool_calling}")
-    else:
-        has_tool_calling = test_tool_calling(available_endpoints[0], think=think, no_think=no_think)
-        entry["tool_calling"] = has_tool_calling
+    entry, entry_changed = ensure_model_capabilities(entry, available_endpoints[0], think=think, no_think=no_think)
+    if entry_changed:
         benchmark[store_name] = entry
         write_benchmark(benchmark)
-        print(f"Tool-calling capability for {store_name}: {has_tool_calling}")
+    has_tool_calling = bool(entry.get("tooling", False))
 
     if not has_tool_calling:
         raise Exception(f"Model {store_name} does not support tool calling on {available_endpoints[0].url}")
-
-    benchmark = read_benchmark()
-    entry = benchmark.get(store_name, {})
-    if "vision" in entry:
-        is_vision = entry["vision"]
-        print(f"Vision capability cached for {store_name}: {is_vision}")
-    else:
-        print(f"Testing vision capability for {store_name}...")
-        is_vision = bool(test_multimodal(available_endpoints[0]))
-        entry["vision"] = is_vision
-        benchmark[store_name] = entry
-        write_benchmark(benchmark)
-        print(f"Vision capability for {store_name}: {is_vision}")
+    is_vision = bool(entry.get("vision", False))
 
     problem_jobs = []
     for problem_file in sorted(os.listdir(problems_dir)):

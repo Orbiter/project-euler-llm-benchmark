@@ -1,24 +1,29 @@
 #!/usr/bin/env python3
 import ast
 import base64
+from datetime import datetime
+import faulthandler
 import json
 import math
 import os
 import posixpath
-import shutil
-import subprocess
+import signal
 import sys
-import tempfile
+import threading
+import time
 from argparse import ArgumentParser
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import redirect_stdout
 from dataclasses import dataclass, field
 from io import BytesIO
+from io import StringIO
 from typing import Dict, List, Tuple
 
 import requests
 from PIL import Image
 
-from benchmark import read_benchmark, write_benchmark
+from benchmark import read_benchmark, write_benchmark, sort_benchmark
+from execute import execute_solution
 from llm_client import (
     Endpoint,
     ollama_pull,
@@ -26,6 +31,19 @@ from llm_client import (
     openai_api_list,
 )
 from llm_modal_test import ensure_model_capabilities
+from execute_clojure import syntax_check_clojure
+from execute_java import syntax_check_java
+from execute_python import syntax_check_python
+from execute_rust import syntax_check_rust
+
+
+faulthandler.enable(file=sys.stderr, all_threads=True)
+if hasattr(signal, "SIGUSR1"):
+    faulthandler.register(signal.SIGUSR1, file=sys.stderr, all_threads=True)
+if hasattr(signal, "SIGQUIT"):
+    faulthandler.register(signal.SIGQUIT, file=sys.stderr, all_threads=True)
+
+LOG_CONTEXT = threading.local()
 
 
 SYSTEM_PROMPT = (
@@ -305,8 +323,71 @@ def get_extension(language):
     raise Exception(f"Unsupported language: {language}")
 
 
+def get_tooling_series_name(language: str, max_problem_number: int) -> str:
+    return f"{language}-{max_problem_number}-tool"
+
+
+def get_recorded_tooling_vector(store_name: str, language: str, max_problem_number: int) -> str:
+    benchmark = read_benchmark()
+    entry = benchmark.get(store_name, {})
+    return entry.get(get_tooling_series_name(language, max_problem_number), "")
+
+
+def tooling_result_recorded(test_vector: str, problem_number: str) -> bool:
+    index = int(problem_number) - 1
+    return 0 <= index < len(test_vector) and test_vector[index] in {"0", "1"}
+
+
+def record_tooling_result(
+    store_name: str,
+    language: str,
+    problem_number: str,
+    output: str,
+    correct: bool,
+    max_problem_number: int,
+    solutions_json_path: str,
+    benchmark_lock: threading.Lock,
+) -> None:
+    t0 = time.monotonic()
+    with benchmark_lock:
+        solutions = {}
+        if os.path.exists(solutions_json_path):
+            with open(solutions_json_path, "r", encoding="utf-8") as json_file:
+                try:
+                    solutions = json.load(json_file)
+                except json.JSONDecodeError:
+                    solutions = {}
+        solutions[problem_number] = output
+        with open(solutions_json_path, "w", encoding="utf-8") as json_file:
+            json.dump(solutions, json_file, indent=4)
+
+        benchmark = read_benchmark()
+        entry = benchmark.get(store_name, {})
+        tooling_series_name = get_tooling_series_name(language, max_problem_number)
+        test_vector = list(entry.get(tooling_series_name, "?" * max_problem_number))
+        if len(test_vector) < max_problem_number:
+            test_vector.extend(["?"] * (max_problem_number - len(test_vector)))
+        index = int(problem_number) - 1
+        if 0 <= index < max_problem_number:
+            test_vector[index] = "1" if correct else "0"
+        entry[tooling_series_name] = "".join(test_vector)
+        benchmark[store_name] = entry
+        write_benchmark(sort_benchmark(benchmark))
+    log(
+        f"[{problem_number}] Recorded benchmark result in {time.monotonic() - t0:.2f}s: "
+        f"key={get_tooling_series_name(language, max_problem_number)} value={'1' if correct else '0'}"
+    )
+
+
 def log(message: str) -> None:
-    print(f"[tool-inference] {message}")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    endpoint = getattr(LOG_CONTEXT, "endpoint", "")
+    endpoint_text = f" endpoint={endpoint}" if endpoint else ""
+    print(f"[tool-inference {timestamp}{endpoint_text}] {message}")
+
+
+def set_log_endpoint(endpoint: str) -> None:
+    LOG_CONTEXT.endpoint = endpoint
 
 
 def preview_text(text: str, limit: int = 160) -> str:
@@ -314,6 +395,12 @@ def preview_text(text: str, limit: int = 160) -> str:
     if len(compact) <= limit:
         return compact
     return compact[: limit - 3] + "..."
+
+
+def byte_size(text: str) -> int:
+    if not text:
+        return 0
+    return len(text.encode("utf-8"))
 
 
 def summarize_tool_args(tool_name: str, parsed_args: dict) -> str:
@@ -342,6 +429,15 @@ def summarize_response(response_json: dict) -> str:
     message = response_json.get("choices", [{}])[0].get("message", {})
     chunk = extract_text_content(message.get("content"))
     tool_calls = message.get("tool_calls") or []
+    usage = response_json.get("usage", {}) if isinstance(response_json.get("usage", {}), dict) else {}
+    prompt_tokens = usage.get("prompt_tokens")
+    completion_tokens = usage.get("completion_tokens", usage.get("output_tokens"))
+    usage_summary = []
+    if isinstance(prompt_tokens, int):
+        usage_summary.append(f"prompt_tokens={prompt_tokens}")
+    if isinstance(completion_tokens, int):
+        usage_summary.append(f"completion_tokens={completion_tokens}")
+    usage_text = f"{', '.join(usage_summary)}; " if usage_summary else ""
     if tool_calls:
         first_call = tool_calls[0]
         function = first_call.get("function", {})
@@ -352,25 +448,29 @@ def summarize_response(response_json: dict) -> str:
         except json.JSONDecodeError:
             parsed_args = {}
         detail = summarize_tool_args(tool_name, parsed_args)
+        arg_bytes = byte_size(raw_args)
+        content_bytes = byte_size(chunk)
         if chunk and detail:
-            return f"model plans to {tool_name} ({detail}); note={preview_text(chunk, 120)}"
+            return (
+                f"{usage_text}model plans to {tool_name} ({detail}); "
+                f"arg_bytes={arg_bytes}; content_bytes={content_bytes}; "
+                f"note={preview_text(chunk, 120)}"
+            )
         if detail:
-            return f"model plans to {tool_name} ({detail})"
+            return f"{usage_text}model plans to {tool_name} ({detail}); arg_bytes={arg_bytes}"
         if chunk:
-            return f"model plans to {tool_name}; note={preview_text(chunk, 120)}"
-        return f"model plans to {tool_name}"
+            return f"{usage_text}model plans to {tool_name}; arg_bytes={arg_bytes}; content_bytes={content_bytes}; note={preview_text(chunk, 120)}"
+        return f"{usage_text}model plans to {tool_name}; arg_bytes={arg_bytes}"
     if chunk:
-        return f"model replied without a tool call: {preview_text(chunk, 120)}"
-    return "model returned neither tool call nor text"
+        return f"{usage_text}model replied without a tool call; content_bytes={byte_size(chunk)}; text={preview_text(chunk, 120)}"
+    return f"{usage_text}model returned neither tool call nor text"
 
 
 def describe_next_agent_step(messages: List[dict], vfs: VirtualFileSystem) -> str:
-    if not vfs.files:
-        return "asking the agent to inspect the empty workspace and draft the first solution file"
     last_message = messages[-1] if messages else {}
     if last_message.get("role") == "tool":
-        return "asking the agent to use the latest tool result and continue editing or deliver the final code"
-    return "asking the agent to continue the coding loop with the next tool call"
+        return "starting the next agent turn using the latest tool result"
+    return "starting the next agent turn"
 
 
 def normalize_virtual_path(path: str) -> str:
@@ -398,92 +498,6 @@ def resolve_code_input(vfs: VirtualFileSystem, parsed_args: dict) -> Tuple[str, 
         return "", raw_content
 
     raise ValueError("Either path or content is required.")
-
-
-def syntax_check_python(code: str, filename: str) -> ToolResult:
-    try:
-        ast.parse(code, filename=filename or "<inline>")
-        return ToolResult(exit_code=0, stdout="Syntax OK", stderr="")
-    except SyntaxError as exc:
-        location = f"line {exc.lineno}, column {exc.offset}"
-        return ToolResult(exit_code=1, stdout="", stderr=f"SyntaxError at {location}: {exc.msg}")
-
-
-def syntax_check_java(code: str) -> ToolResult:
-    temp_dir = tempfile.mkdtemp(prefix="opx_java_")
-    try:
-        source_path = posixpath.join(temp_dir.replace("\\", "/"), "Main.java")
-        with open(source_path, "w", encoding="utf-8") as handle:
-            handle.write(code)
-        result = subprocess.run(["javac", source_path], capture_output=True, text=True)
-        if result.returncode == 0:
-            return ToolResult(exit_code=0, stdout="Syntax OK", stderr="")
-        stderr = (result.stderr or result.stdout or "Java syntax check failed").strip()
-        return ToolResult(exit_code=1, stdout="", stderr=stderr)
-    except OSError as exc:
-        return ToolResult(exit_code=1, stdout="", stderr=f"Failed to run javac: {exc}")
-    finally:
-        shutil.rmtree(temp_dir, ignore_errors=True)
-
-
-def syntax_check_rust(code: str) -> ToolResult:
-    temp_dir = tempfile.mkdtemp(prefix="opx_rust_")
-    try:
-        source_path = posixpath.join(temp_dir.replace("\\", "/"), "main.rs")
-        output_path = posixpath.join(temp_dir.replace("\\", "/"), "main")
-        with open(source_path, "w", encoding="utf-8") as handle:
-            handle.write(code)
-        result = subprocess.run(
-            ["rustc", "--emit", "metadata", "-o", output_path, source_path],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode == 0:
-            return ToolResult(exit_code=0, stdout="Syntax OK", stderr="")
-        stderr = (result.stderr or result.stdout or "Rust syntax check failed").strip()
-        return ToolResult(exit_code=1, stdout="", stderr=stderr)
-    except OSError as exc:
-        return ToolResult(exit_code=1, stdout="", stderr=f"Failed to run rustc: {exc}")
-    finally:
-        shutil.rmtree(temp_dir, ignore_errors=True)
-
-
-def syntax_check_clojure(code: str) -> ToolResult:
-    pairs = {"(": ")", "[": "]", "{": "}"}
-    closing = {")": "(", "]": "[", "}": "{"}
-    stack: List[Tuple[str, int]] = []
-    in_string = False
-    escape = False
-    line = 1
-
-    for char in code:
-        if char == "\n":
-            line += 1
-        if in_string:
-            if escape:
-                escape = False
-            elif char == "\\":
-                escape = True
-            elif char == "\"":
-                in_string = False
-            continue
-        if char == "\"":
-            in_string = True
-            continue
-        if char in pairs:
-            stack.append((char, line))
-            continue
-        if char in closing:
-            if not stack or stack[-1][0] != closing[char]:
-                return ToolResult(exit_code=1, stdout="", stderr=f"Unmatched '{char}' at line {line}")
-            stack.pop()
-
-    if in_string:
-        return ToolResult(exit_code=1, stdout="", stderr="Unterminated string literal")
-    if stack:
-        opener, opener_line = stack[-1]
-        return ToolResult(exit_code=1, stdout="", stderr=f"Unclosed '{opener}' from line {opener_line}")
-    return ToolResult(exit_code=0, stdout="Parentheses OK", stderr="")
 
 
 def run_calculator(expression: str) -> ToolResult:
@@ -564,12 +578,16 @@ def run_syntax_check(vfs: VirtualFileSystem, parsed_args: dict) -> ToolResult:
         return ToolResult(exit_code=1, stdout="", stderr=str(exc))
 
     if language == "python":
-        return syntax_check_python(code, filename)
+        exit_code, stdout, stderr = syntax_check_python(code, filename)
+        return ToolResult(exit_code=exit_code, stdout=stdout, stderr=stderr)
     if language == "java":
-        return syntax_check_java(code)
+        exit_code, stdout, stderr = syntax_check_java(code)
+        return ToolResult(exit_code=exit_code, stdout=stdout, stderr=stderr)
     if language == "rust":
-        return syntax_check_rust(code)
-    return syntax_check_clojure(code)
+        exit_code, stdout, stderr = syntax_check_rust(code)
+        return ToolResult(exit_code=exit_code, stdout=stdout, stderr=stderr)
+    exit_code, stdout, stderr = syntax_check_clojure(code)
+    return ToolResult(exit_code=exit_code, stdout=stdout, stderr=stderr)
 
 
 def extract_text_content(content) -> str:
@@ -724,6 +742,7 @@ def handle_tool_call(
     if not tool_name or not tool_args_unescaped:
         log(f"[{problem_number}] Model returned no tool call.")
         return DeliveryResult(delivered=False)
+    t0 = time.monotonic()
 
     try:
         parsed_args = json.loads(tool_args_unescaped)
@@ -778,8 +797,10 @@ def handle_tool_call(
     )
     log(
         f"[{problem_number}] Tool finished: {tool_name} exit={result.exit_code} "
+        f"result_bytes={byte_size(result.stdout) + byte_size(result.stderr)} "
         f"stdout={preview_text(result.stdout, 120) if result.stdout else ''} "
-        f"stderr={preview_text(result.stderr, 120) if result.stderr else ''}"
+        f"stderr={preview_text(result.stderr, 120) if result.stderr else ''} "
+        f"duration={time.monotonic() - t0:.2f}s"
     )
     return delivery
 
@@ -850,10 +871,15 @@ def run_tool_agent(
             f"[{problem_number}] Turn {turn + 1}: "
             f"{describe_next_agent_step(messages, vfs)}."
         )
+        request_t0 = time.monotonic()
+        log(f"[{problem_number}] Turn {turn + 1}: waiting for model response from {endpoint.model_name}.")
         response = requests.post(url, headers=headers, json=payload, verify=False, timeout=600)
         response.raise_for_status()
         response_json = response.json()
-        log(f"[{problem_number}] Turn {turn + 1}: {summarize_response(response_json)}")
+        log(
+            f"[{problem_number}] Turn {turn + 1}: model response received in "
+            f"{time.monotonic() - request_t0:.2f}s; {summarize_response(response_json)}"
+        )
 
         chunk, tool_name, tool_id, tool_args_unescaped = extract_response_fields(response_json)
         if chunk:
@@ -891,25 +917,96 @@ def run_tool_agent(
 
 def process_single_problem(
     endpoint: Endpoint,
+    store_name: str,
     language: str,
     problem_number: str,
     prompt: str,
     output_path: str,
+    expected: dict,
+    max_problem_number: int,
+    solutions_json_path: str,
+    benchmark_lock: threading.Lock,
     base64_image: str = None,
     think: bool = False,
     no_think: bool = False,
-) -> None:
-    code = run_tool_agent(
-        endpoint,
-        prompt,
-        problem_number,
-        base64_image=base64_image,
-        think=think,
-        no_think=no_think,
+) -> Tuple[str, str, bool]:
+    t0 = time.monotonic()
+    previous_endpoint = getattr(LOG_CONTEXT, "endpoint", "")
+    set_log_endpoint(endpoint.url)
+    try:
+        code = run_tool_agent(
+            endpoint,
+            prompt,
+            problem_number,
+            base64_image=base64_image,
+            think=think,
+            no_think=no_think,
+        )
+        with open(output_path, "w", encoding="utf-8") as file:
+            file.write(code)
+        log(
+            f"[{problem_number}] Saved {language} solution to {output_path} "
+            f"after generation time {time.monotonic() - t0:.2f}s"
+        )
+        return evaluate_existing_solution(
+            store_name,
+            language,
+            problem_number,
+            output_path,
+            expected,
+            max_problem_number,
+            solutions_json_path,
+            benchmark_lock,
+            reused_existing=False,
+        )
+    finally:
+        set_log_endpoint(previous_endpoint)
+
+
+def evaluate_existing_solution(
+    store_name: str,
+    language: str,
+    problem_number: str,
+    output_path: str,
+    expected: dict,
+    max_problem_number: int,
+    solutions_json_path: str,
+    benchmark_lock: threading.Lock,
+    reused_existing: bool = True,
+) -> Tuple[str, str, bool]:
+    previous_endpoint = getattr(LOG_CONTEXT, "endpoint", "")
+    if not previous_endpoint:
+        set_log_endpoint("local")
+    if reused_existing:
+        log(f"[{problem_number}] Evaluating existing solution from {output_path}")
+    else:
+        log(f"[{problem_number}] Evaluating generated solution from {output_path}")
+    exec_t0 = time.monotonic()
+    captured_stdout = StringIO()
+    with redirect_stdout(captured_stdout):
+        output = execute_solution(output_path, expected)
+    expected_solution = expected.get("solution", "") if expected else ""
+    correct = output == expected_solution
+    log(
+        f"[{problem_number}] Execution result on {store_name}: output={preview_text(output, 120)} "
+        f"expected={expected_solution} correct={correct} "
+        f"duration={time.monotonic() - exec_t0:.2f}s"
     )
-    with open(output_path, "w", encoding="utf-8") as file:
-        file.write(code)
-    log(f"Saved {language} solution for problem {problem_number} to {output_path}")
+    try:
+        record_tooling_result(
+            store_name,
+            language,
+            problem_number,
+            output,
+            correct,
+            max_problem_number,
+            solutions_json_path,
+            benchmark_lock,
+        )
+        return problem_number, output, correct
+    finally:
+        if not previous_endpoint:
+            set_log_endpoint(previous_endpoint)
 
 
 def prepare_endpoints(endpoints: List[Endpoint]) -> List[Endpoint]:
@@ -922,9 +1019,9 @@ def prepare_endpoints(endpoints: List[Endpoint]) -> List[Endpoint]:
                     available_endpoints.append(endpoint)
                     break
             except Exception as e:
-                print(f"Error loading endpoint {endpoint}: {e}")
+                log(f"Error loading endpoint {endpoint}: {e}")
         if endpoint not in available_endpoints:
-            print(f"Failed to load endpoint {endpoint} after 3 attempts.")
+            log(f"Failed to load endpoint {endpoint} after 3 attempts.")
     return available_endpoints
 
 
@@ -979,8 +1076,7 @@ def process_problem_files(
     think=False,
     no_think=False,
 ):
-    del expected_solutions
-    print(f"Processing problems in {problems_dir} with language {language} and endpoint: {endpoints[0]}")
+    log(f"Processing problems in {problems_dir} with language {language} and endpoint: {endpoints[0]}")
     store_name = endpoints[0].store_name
     if think:
         store_name += "-think"
@@ -988,6 +1084,7 @@ def process_problem_files(
         store_name += "-no_think"
     solutions_dir = os.path.join("solutions", store_name, language)
     os.makedirs(solutions_dir, exist_ok=True)
+    solutions_json_path = os.path.join(solutions_dir, "solutions.json")
     extension = get_extension(language)
 
     while not openai_api_check_exist(endpoints[0]):
@@ -1003,13 +1100,17 @@ def process_problem_files(
     if entry_changed:
         benchmark[store_name] = entry
         write_benchmark(benchmark)
-    has_tool_calling = bool(entry.get("tooling", False))
+    has_tool_calling = bool(entry.get("has_tooling", False))
 
     if not has_tool_calling:
         raise Exception(f"Model {store_name} does not support tool calling on {available_endpoints[0].url}")
-    is_vision = bool(entry.get("vision", False))
+    is_vision = bool(entry.get("has_vision", False))
+    tooling_series_name = get_tooling_series_name(language, max_problem_number)
+    benchmark_lock = threading.Lock()
+    recorded_vector = get_recorded_tooling_vector(store_name, language, max_problem_number)
 
     problem_jobs = []
+    execution_only_jobs = []
     for problem_file in sorted(os.listdir(problems_dir)):
         if problem_file.startswith(".") or not problem_file.endswith(".txt"):
             continue
@@ -1018,9 +1119,17 @@ def process_problem_files(
             break
 
         output_path = os.path.join(solutions_dir, f"tool-{problem_number}.{extension}")
-        if not overwrite_existing and not overwrite_failed and os.path.exists(output_path):
-            print(f"Skipping problem {problem_number} as it already has a tool solution.")
+        expected = expected_solutions.get(problem_number, {})
+        already_recorded = tooling_result_recorded(recorded_vector, problem_number)
+        if already_recorded and not overwrite_existing:
+            log(f"[{problem_number}] Skipping because tooling result is already recorded.")
             continue
+        if os.path.exists(output_path):
+            if overwrite_existing:
+                pass
+            else:
+                execution_only_jobs.append((problem_number, output_path, expected))
+                continue
 
         problem_path = os.path.join(problems_dir, problem_file)
         with open(problem_path, "r", encoding="utf-8") as file:
@@ -1035,45 +1144,75 @@ def process_problem_files(
                 break
 
         if base64_image and not is_vision:
-            print(
+            log(
                 f"Problem {problem_number} requires a vision-capable model for image processing but the model lacks vision support."
             )
             base64_image = None
 
         prompt = build_tool_prompt(template_content, problem_content, language)
-        problem_jobs.append((problem_number, prompt, output_path, base64_image))
+        problem_jobs.append((problem_number, prompt, output_path, base64_image, expected))
 
-    if not problem_jobs:
-        print("No problems queued.")
+    if not problem_jobs and not execution_only_jobs:
+        log("No problems queued.")
         return
 
     with ThreadPoolExecutor(max_workers=len(available_endpoints)) as executor:
         future_to_problem = {}
-        for index, (problem_number, prompt, output_path, base64_image) in enumerate(problem_jobs):
+        for problem_number, output_path, expected in execution_only_jobs:
+            future = executor.submit(
+                evaluate_existing_solution,
+                store_name,
+                language,
+                problem_number,
+                output_path,
+                expected,
+                max_problem_number,
+                solutions_json_path,
+                benchmark_lock,
+                True,
+            )
+            future_to_problem[future] = (problem_number, store_name, expected)
+            log(f"[{problem_number}] Queued existing tool solution for evaluation on {store_name}")
+        for index, (problem_number, prompt, output_path, base64_image, expected) in enumerate(problem_jobs):
             endpoint = available_endpoints[index % len(available_endpoints)]
             future = executor.submit(
                 process_single_problem,
                 endpoint,
+                store_name,
                 language,
                 problem_number,
                 prompt,
                 output_path,
+                expected,
+                max_problem_number,
+                solutions_json_path,
+                benchmark_lock,
                 base64_image,
                 think,
                 no_think,
             )
-            future_to_problem[future] = (problem_number, endpoint.store_name)
-            print(f"Added problem {problem_number}, language {language}, model {endpoint.store_name} to processing queue")
+            future_to_problem[future] = (problem_number, endpoint.store_name, expected)
+            log(f"[{problem_number}] Queued generation on {endpoint.store_name}")
 
         for future in as_completed(future_to_problem):
-            problem_number, endpoint_name = future_to_problem[future]
+            problem_number, endpoint_name, expected = future_to_problem[future]
             try:
                 future.result()
-                print(f"Processed problem {problem_number} with {endpoint_name}")
             except Exception as e:
-                print(f"Failed problem {problem_number} with {endpoint_name}: {e}")
+                failure_output = f"Error: {e}"
+                record_tooling_result(
+                    store_name,
+                    language,
+                    problem_number,
+                    failure_output,
+                    False,
+                    max_problem_number,
+                    solutions_json_path,
+                    benchmark_lock,
+                )
+                log(f"[{problem_number}] Failed on {endpoint_name}: {e}")
 
-    print("All problems processed!")
+    log("All problems processed!")
 
 
 def main():
@@ -1131,11 +1270,12 @@ def main():
 
             local_endpoint = Endpoint(store_name=store_name, model_name=store_name, key="", url=f"{api_base[0]}/v1/chat/completions")
             models = openai_api_list(local_endpoint)
-            print(f"Found {len(models)} models in ollama.")
+            log(f"Found {len(models)} models in ollama.")
             for model in models:
                 benchmark = read_benchmark()
-                if model not in benchmark or bench_name not in benchmark[model]:
-                    print(f"Inference with tools: Using model {model} and language {language}")
+                tooling_bench_name = get_tooling_series_name(language, max_problem_number)
+                if model not in benchmark or tooling_bench_name not in benchmark[model]:
+                    log(f"Inference with tools: Using model {model} and language {language}")
                     endpoints = [
                         Endpoint(store_name=model, model_name=model, key="", url=f"{api_stub}/v1/chat/completions")
                         for api_stub in api_base
@@ -1155,15 +1295,15 @@ def main():
         else:
             endpoints = []
             if endpoint_name:
-                print(f"Inference with tools: Using endpoint {endpoint_name} and language {language}")
+                log(f"Inference with tools: Using endpoint {endpoint_name} and language {language}")
                 endpoint_path = os.path.join("endpoints", f"{endpoint_name}.json")
-                print(f"Using endpoint file {endpoint_path}")
+                log(f"Using endpoint file {endpoint_path}")
                 if not os.path.exists(endpoint_path):
                     raise Exception(f"Endpoint file {endpoint_path} does not exist.")
                 with open(endpoint_path, "r", encoding="utf-8") as file:
                     endpoints = [Endpoint(**json.load(file))]
             else:
-                print(f"Inference with tools: Using model {store_name} and language {language}")
+                log(f"Inference with tools: Using model {store_name} and language {language}")
                 endpoints = [
                     Endpoint(store_name=store_name, model_name=store_name, key="", url=f"{api_stub}/v1/chat/completions")
                     for api_stub in api_base

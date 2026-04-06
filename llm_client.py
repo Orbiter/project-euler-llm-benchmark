@@ -134,6 +134,63 @@ def ollama_pull(endpoint: Endpoint) -> dict:
 def hex2base64(hex_string) -> str:
     return base64.b64encode(bytes.fromhex(hex_string)).decode('utf-8')
 
+
+def _extract_reasoning_tokens(usage: dict) -> Optional[int]:
+    if not isinstance(usage, dict):
+        return None
+    detail_candidates = [
+        usage.get("completion_tokens_details"),
+        usage.get("output_tokens_details"),
+        usage.get("reasoning"),
+        usage.get("details"),
+    ]
+    for details in detail_candidates:
+        if not isinstance(details, dict):
+            continue
+        for key in ("reasoning_tokens", "reasoning"):
+            value = details.get(key)
+            if isinstance(value, int):
+                return value
+    value = usage.get("reasoning_tokens")
+    if isinstance(value, int):
+        return value
+    return None
+
+
+def _normalize_usage(usage: dict, fallback_total_tokens: int = 0) -> dict:
+    if not isinstance(usage, dict):
+        usage = {}
+
+    prompt_tokens = usage.get("prompt_tokens")
+    if not isinstance(prompt_tokens, int):
+        prompt_tokens = None
+
+    completion_tokens = usage.get("completion_tokens")
+    if not isinstance(completion_tokens, int):
+        completion_tokens = usage.get("output_tokens")
+    if not isinstance(completion_tokens, int):
+        completion_tokens = None
+
+    total_tokens = usage.get("total_tokens")
+    if not isinstance(total_tokens, int):
+        total_tokens = None
+
+    reasoning_tokens = _extract_reasoning_tokens(usage)
+
+    if total_tokens is None and prompt_tokens is not None and completion_tokens is not None:
+        total_tokens = prompt_tokens + completion_tokens
+    if completion_tokens is None and total_tokens is not None and prompt_tokens is not None:
+        completion_tokens = total_tokens - prompt_tokens
+    if total_tokens is None:
+        total_tokens = fallback_total_tokens
+
+    return {
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "reasoning_tokens": reasoning_tokens,
+        "total_tokens": total_tokens,
+    }
+
 def openai_api_chat(
     endpoint: Endpoint,
     prompt: str = 'Hello World',
@@ -141,9 +198,13 @@ def openai_api_chat(
     temperature: float = 0.0,
     max_tokens: int = 32768, # thats large and it requires that you set the context length in llm to 65536
     stream: bool = True,
+    system_message: str = "You are a helpful assistant",
+    tools: list = None,
+    response_format: dict = None,
+    return_response_json: bool = False,
     think = False,
     no_think = False
-) -> tuple[str, int, float]:
+) -> tuple:
     """
     Function to interact with the LLM API for chat completions.
     
@@ -171,7 +232,7 @@ def openai_api_chat(
 
     modelname = endpoint.model_name
     messages = []
-    messages.append({"role": "system", "content": "You are a helpful assistant"})
+    messages.append({"role": "system", "content": system_message})
     
     # special requirements of certain models
     if modelname.startswith("o1") or modelname.startswith("gpt-o1"): temperature = 1.0
@@ -223,6 +284,12 @@ def openai_api_chat(
         "presence_penalty": 1.5,
         "stream": stream
     }
+    if tools:
+        payload["tools"] = tools
+    if response_format:
+        payload["response_format"] = response_format
+    if stream:
+        payload["stream_options"] = {"include_usage": True}
     if len(stoptokens) > 0 and not modelname.startswith("o4"):
         payload["stop"] = stoptokens
     if modelname.startswith("o1") or modelname.startswith("o4"):
@@ -240,6 +307,7 @@ def openai_api_chat(
     # use the endpoints array as failover mechanism
     response = None
     text_chunks = []
+    usage = None
     read_timeout = 600 # seconds
     token_count = 0
     parsed_url = urlparse(endpoint.url)
@@ -273,6 +341,9 @@ def openai_api_chat(
                         break
                     try:
                         evt = json.loads(payload_line)
+                        evt_usage = evt.get("usage")
+                        if isinstance(evt_usage, dict):
+                            usage = evt_usage
                         choices = evt.get("choices", [])
                         if choices:
                             delta = choices[0].get("delta", {})
@@ -307,9 +378,11 @@ def openai_api_chat(
     try:
         if stream:
             answer = "".join(text_chunks).strip()
-            total_tokens = len(text_chunks)
+            usage_summary = _normalize_usage(usage, fallback_total_tokens=len(text_chunks))
+            total_tokens = usage_summary["total_tokens"]
             token_per_second = 0.0 if (t1 - t0) <= 0 else total_tokens / (t1 - t0)
             if not answer: print(f"Empty streamed response from the API at {endpoint.url}")
+            response_json = None
         else:
             ctype = response.headers.get('Content-Type', '')
             text  = response.text or ''
@@ -322,8 +395,8 @@ def openai_api_chat(
                 raise Exception(f"Non-JSON response (status {response.status_code}, Content-Type {ctype}): {snippet}")
 
             data = response.json()
-            usage = data.get('usage', {})
-            total_tokens = usage.get('total_tokens', 0)
+            usage_summary = _normalize_usage(data.get('usage', {}))
+            total_tokens = usage_summary["total_tokens"]
             token_per_second = total_tokens / (t1 - t0)
             #print(f"Total tokens: {total_tokens}, tokens per second: {token_per_second:.2f}")
             choices = data.get('choices', [])
@@ -331,29 +404,12 @@ def openai_api_chat(
                 raise Exception("No response from the API: " + str(data))
             message = choices[0].get('message', {})
             answer = message.get('content', '')
-        return answer, total_tokens, token_per_second
+            response_json = data
+        if return_response_json:
+            return answer, total_tokens, token_per_second, usage_summary, t1 - t0, response_json
+        return answer, total_tokens, token_per_second, usage_summary, t1 - t0
     except json.JSONDecodeError as e:
         raise Exception(f"Failed to parse JSON response from the API: {e}")
-
-def test_multimodal(endpoint: dict) -> bool:
-    image_path = "llmtest/testimage.png"
-    # test if the image exists in that path
-    if not os.path.exists(image_path):
-        raise Exception(f"Test image not found: {image_path}")
-    with open(image_path, "rb") as image_file:
-        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
-    try:
-        print(f"Testing multimodal capabilities of model {endpoint.store_name}...")
-        answer, total_tokens, token_per_second = openai_api_chat(endpoint, prompt="what is in the image", base64_image=base64_image)
-        result = "42" in answer
-        if result:
-            print(f"Model {endpoint.store_name} is multimodal.")
-        else:
-            print(f"Model {endpoint.store_name} is not multimodal; it returned the following answer: {answer}")
-        return result
-    except Exception as e:
-        print(f"Model {endpoint.store_name} is not multimodal; it created an error: {e}")
-        return False
 
 busy_waiting_time = 1 # seconds
 
@@ -384,6 +440,10 @@ class Response:
     result: str         # The result of the task processing
     total_tokens: int   # Total tokens used in the response
     token_per_second: float # Tokens per second used in the response
+    duration_seconds: float = 0.0
+    prompt_tokens: Optional[int] = None
+    completion_tokens: Optional[int] = None
+    reasoning_tokens: Optional[int] = None
 
 @dataclass
 class Server:
@@ -461,19 +521,26 @@ class LoadBalancer:
         endpoint = server.endpoint
         try:
             #print(f"Processing task ID {task.id} on server {server.endpoint} with model {task.model}")
-            t0 = time.time()
-            answer, total_tokens, token_per_second = openai_api_chat(
+            answer, total_tokens, token_per_second, usage_summary, duration_seconds = openai_api_chat(
                 endpoint,
                 task.prompt, 
                 base64_image=task.base64_image,
                 think = task.think,
                 no_think = task.no_think
             )
-            t1 = time.time()
             # Call the response processing function
-            response = Response(task, answer, total_tokens, token_per_second)
+            response = Response(
+                task,
+                answer,
+                total_tokens,
+                token_per_second,
+                duration_seconds=duration_seconds,
+                prompt_tokens=usage_summary.get("prompt_tokens"),
+                completion_tokens=usage_summary.get("completion_tokens"),
+                reasoning_tokens=usage_summary.get("reasoning_tokens"),
+            )
             task.response_processing(response)
-            print(f"Processed {task.description}, on {server.endpoint.url} with model {endpoint.model_name} in {t1 - t0:.2f} seconds with {total_tokens} tokens ({token_per_second:.2f} tokens/sec)")
+            print(f"Processed {task.description}, on {server.endpoint.url} with model {endpoint.model_name} in {duration_seconds:.2f} seconds with {total_tokens} tokens ({token_per_second:.2f} tokens/sec)")
             
             # mark server available
             self.mark_server_available(server)
@@ -531,6 +598,8 @@ class LoadBalancer:
         print("All servers finished processing.")
 
 def main():
+    from llm_modal_test import test_vision
+
     parser = ArgumentParser(description="Testing the LLM API.")
     parser.add_argument('--api_base', required=False, default='http://localhost:11434', help='API base URL for the LLM, default is http://localhost:11434')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
@@ -573,7 +642,7 @@ def main():
         ]
 
     # test if the endpoint is a multimodal model
-    if test_multimodal(endpoints[0]):
+    if test_vision(endpoints[0]):
         print("Endpoint is a multimodal model.")
     else:
         print("Endpoint is not a multimodal model.")
@@ -590,7 +659,7 @@ def main():
         print(f"Model: {model}: {attr}")
     try:
         if base64_image:
-            answer, total_tokens, token_per_second = openai_api_chat(
+            answer, total_tokens, token_per_second, usage_summary, duration_seconds = openai_api_chat(
                 endpoints[0],
                 prompt="what is in the image",
                 base64_image=base64_image,
@@ -598,7 +667,7 @@ def main():
                 no_think=no_think,
             )
         else:
-            answer, total_tokens, token_per_second = openai_api_chat(
+            answer, total_tokens, token_per_second, usage_summary, duration_seconds = openai_api_chat(
                 endpoints[0],
                 think=think,
                 no_think=no_think,

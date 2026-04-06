@@ -6,7 +6,8 @@ import threading
 from typing import List
 from argparse import ArgumentParser
 from benchmark import read_benchmark, write_benchmark
-from llm_client import openai_api_list, test_multimodal, ollama_pull, openai_api_check_exist, Endpoint, LoadBalancer, Server, Task, Response
+from llm_client import openai_api_list, ollama_pull, openai_api_check_exist, Endpoint, LoadBalancer, Server, Task, Response
+from llm_modal_test import ensure_model_capabilities
 
 def read_template(template_path):
     with open(template_path, 'r', encoding='utf-8') as file:
@@ -61,19 +62,14 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
     loading_thread = threading.Thread(target=load_endpoints, daemon=True)
     loading_thread.start()
 
-    # determine if the model supports vision; cache result in benchmark.json
+    # determine model capabilities; cache them in benchmark.json
     benchmark = read_benchmark()
     entry = benchmark.get(store_name, {})
-    if 'vision' in entry:
-        is_vision = entry['vision']
-        print(f"Vision capability cached for {store_name}: {is_vision}")
-    else:
-        print(f"Testing vision capability for {store_name}...")
-        is_vision = bool(test_multimodal(endpoints[0]))  # cached by test helper
-        entry['vision'] = is_vision
+    entry, entry_changed = ensure_model_capabilities(entry, endpoints[0], think=think, no_think=no_think)
+    if entry_changed:
         benchmark[store_name] = entry
         write_benchmark(benchmark)
-        print(f"Vision capability for {store_name}: {is_vision}")
+    is_vision = bool(entry.get('has_vision', False))
 
     # iterate over all problem files and process them
     for problem_file in sorted(os.listdir(problems_dir)):
@@ -117,6 +113,15 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
             process_result_file_path = os.path.join(solutions_dir, f"{resonse.task.id}.md")
             with open(process_result_file_path, 'w', encoding='utf-8') as file:
                 file.write(resonse.result)
+            telemetry_result_file_path = os.path.join(solutions_dir, f"{resonse.task.id}.json")
+            telemetry = {
+                "duration_seconds": resonse.duration_seconds,
+                "prompt_tokens": resonse.prompt_tokens,
+                "completion_tokens": resonse.completion_tokens,
+                "reasoning_tokens": resonse.reasoning_tokens,
+            }
+            with open(telemetry_result_file_path, 'w', encoding='utf-8') as file:
+                json.dump(telemetry, file, indent=4)
 
         # Create task and add to load balancer
         task = Task(

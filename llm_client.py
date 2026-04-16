@@ -324,9 +324,6 @@ def openai_api_chat(
         payload["max_completion_tokens"] = max_tokens
     else:
         payload["max_tokens"] = max_tokens
-    # Forward optional backend-specific thinking flags when requested.
-    # Qwen3/Qwen3.5 chat templates expect `chat_template_kwargs.enable_thinking`
-    # inside `extra_body` (matching the OpenAI SDK `extra_body=...` example).
     modelname_lower = modelname.lower()
     if no_think:
         payload["reasoning_effort"] = "none"

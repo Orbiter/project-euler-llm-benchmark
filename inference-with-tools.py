@@ -267,6 +267,28 @@ TOOLS = [
 ]
 
 MAX_TOOL_CALLS = 12
+MAX_PRE_TOOL_STREAM_BYTES = 8192
+
+
+def _sanitize_tool_schema(value):
+    if isinstance(value, dict):
+        sanitized = {}
+        for key, item in value.items():
+            # Some OpenAI-compatible servers accept basic tool schemas but hang or
+            # reject requests once strict JSON schema features are added.
+            if key in {"strict", "oneOf", "anyOf", "allOf"}:
+                continue
+            sanitized[key] = _sanitize_tool_schema(item)
+        return sanitized
+    if isinstance(value, list):
+        return [_sanitize_tool_schema(item) for item in value]
+    return value
+
+
+def get_api_tools(tools: List[dict]) -> List[dict]:
+    return [_sanitize_tool_schema(tool) for tool in tools]
+
+
 @dataclass
 class State:
     max_tool_calls: int = MAX_TOOL_CALLS
@@ -328,15 +350,84 @@ def get_tooling_series_name(language: str, max_problem_number: int) -> str:
     return f"{language}-{max_problem_number}-tool"
 
 
+def get_tooling_score_name(language: str, max_problem_number: int) -> str:
+    return f"{language}-{max_problem_number}"
+
+
+def get_tooling_batch_bounds(args) -> Tuple[int, int, int]:
+    if args.n100:
+        return 100, 1, 100
+    if args.n200:
+        return 200, 1, 200
+    if args.n400:
+        return 400, 301, 400
+    if args.nall:
+        return 9999, 1, 9999
+    return 300, 201, 300
+
+
 def get_recorded_tooling_vector(store_name: str, language: str, max_problem_number: int) -> str:
     benchmark = read_benchmark()
     entry = benchmark.get(store_name, {})
     return entry.get(get_tooling_series_name(language, max_problem_number), "")
 
 
-def tooling_result_recorded(test_vector: str, problem_number: str) -> bool:
-    index = int(problem_number) - 1
+def tooling_result_recorded(test_vector: str, problem_number: str, problem_start: int, problem_end: int) -> bool:
+    index = int(problem_number) - problem_start
+    vector_length = problem_end - problem_start + 1
+    if not (problem_start <= int(problem_number) <= problem_end):
+        return False
+    if len(test_vector) < vector_length:
+        return False
     return 0 <= index < len(test_vector) and test_vector[index] in {"0", "1"}
+
+
+def update_tooling_score(
+    store_name: str,
+    language: str,
+    max_problem_number: int,
+    problem_start: int,
+    problem_end: int,
+    benchmark_lock: threading.Lock,
+) -> None:
+    with benchmark_lock:
+        solutions_json_path = os.path.join("solutions", store_name, language, "solutions.json")
+        if not os.path.exists(solutions_json_path) or not os.path.exists("solutions.json"):
+            return
+
+        with open(solutions_json_path, "r", encoding="utf-8") as json_file:
+            try:
+                outputs = json.load(json_file)
+            except json.JSONDecodeError:
+                return
+
+        with open("solutions.json", "r", encoding="utf-8") as json_file:
+            expected_solutions = json.load(json_file)
+
+        problem_numbers = [
+            f"{problem_number:04d}"
+            for problem_number in range(problem_start, problem_end + 1)
+        ]
+        if any(problem_number not in outputs for problem_number in problem_numbers):
+            return
+
+        candidate_points = 0.0
+        total_count = 0
+        for problem_number in problem_numbers:
+            expected = expected_solutions.get(problem_number)
+            if not expected:
+                continue
+            total_count += 1
+            if outputs.get(problem_number) == expected.get("solution", ""):
+                candidate_points += expected.get("points", 0.0)
+        if total_count == 0:
+            return
+
+        benchmark = read_benchmark()
+        entry = benchmark.get(store_name, {})
+        entry[get_tooling_score_name(language, max_problem_number)] = round(candidate_points / total_count, 2)
+        benchmark[store_name] = entry
+        write_benchmark(sort_benchmark(benchmark))
 
 
 def record_tooling_result(
@@ -346,6 +437,8 @@ def record_tooling_result(
     output: str,
     correct: bool,
     max_problem_number: int,
+    problem_start: int,
+    problem_end: int,
     solutions_json_path: str,
     benchmark_lock: threading.Lock,
 ) -> None:
@@ -365,15 +458,24 @@ def record_tooling_result(
         benchmark = read_benchmark()
         entry = benchmark.get(store_name, {})
         tooling_series_name = get_tooling_series_name(language, max_problem_number)
-        test_vector = list(entry.get(tooling_series_name, "?" * max_problem_number))
-        if len(test_vector) < max_problem_number:
-            test_vector.extend(["?"] * (max_problem_number - len(test_vector)))
-        index = int(problem_number) - 1
-        if 0 <= index < max_problem_number:
+        vector_length = problem_end - problem_start + 1
+        test_vector = list(entry.get(tooling_series_name, "?" * vector_length))
+        if len(test_vector) < vector_length:
+            test_vector.extend(["?"] * (vector_length - len(test_vector)))
+        index = int(problem_number) - problem_start
+        if 0 <= index < vector_length:
             test_vector[index] = "1" if correct else "0"
         entry[tooling_series_name] = "".join(test_vector)
         benchmark[store_name] = entry
         write_benchmark(sort_benchmark(benchmark))
+    update_tooling_score(
+        store_name,
+        language,
+        max_problem_number,
+        problem_start,
+        problem_end,
+        benchmark_lock,
+    )
     log(
         f"[{problem_number}] Recorded benchmark result in {time.monotonic() - t0:.2f}s: "
         f"key={get_tooling_series_name(language, max_problem_number)} value={'1' if correct else '0'}"
@@ -384,7 +486,7 @@ def log(message: str) -> None:
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     endpoint = getattr(LOG_CONTEXT, "endpoint", "")
     endpoint_text = f" endpoint={endpoint}" if endpoint else ""
-    print(f"[tool-inference {timestamp}{endpoint_text}] {message}")
+    print(f"[tool-inference {timestamp}{endpoint_text}] {message}", flush=True)
 
 
 def set_log_endpoint(endpoint: str) -> None:
@@ -618,6 +720,168 @@ def extract_response_fields(response_json: dict) -> Tuple[str, str, str, str]:
     return chunk, tool_name, tool_id, raw_args
 
 
+def _extract_delta_text(delta_value) -> str:
+    if isinstance(delta_value, str):
+        return delta_value
+    if isinstance(delta_value, list):
+        parts = []
+        for item in delta_value:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict):
+                text = item.get("text")
+                if isinstance(text, str):
+                    parts.append(text)
+        return "".join(parts)
+    if isinstance(delta_value, dict):
+        text = delta_value.get("text")
+        if isinstance(text, str):
+            return text
+    return ""
+
+
+def consume_streaming_tool_response(response, problem_number: str, turn: int) -> dict:
+    usage = {}
+    content_parts: List[str] = []
+    reasoning_parts: List[str] = []
+    tool_calls_by_index: Dict[int, dict] = {}
+    args_bytes_logged: Dict[int, int] = {}
+    current_stream_kind = ""
+    pre_tool_text_bytes = 0
+    pre_tool_reasoning_bytes = 0
+
+    def ensure_stream_prefix(stream_kind: str) -> None:
+        nonlocal current_stream_kind
+        if current_stream_kind == stream_kind:
+            return
+        if current_stream_kind:
+            sys.stdout.write("\n")
+        current_stream_kind = stream_kind
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        endpoint = getattr(LOG_CONTEXT, "endpoint", "")
+        endpoint_text = f" endpoint={endpoint}" if endpoint else ""
+        sys.stdout.write(
+            f"[tool-inference {timestamp}{endpoint_text}] "
+            f"[{problem_number}] Turn {turn}: stream {stream_kind}: "
+        )
+        sys.stdout.flush()
+
+    def close_stream_prefix() -> None:
+        nonlocal current_stream_kind
+        if current_stream_kind:
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+            current_stream_kind = ""
+
+    for raw_line in response.iter_lines(decode_unicode=True):
+        if not raw_line:
+            continue
+        if not raw_line.startswith("data: "):
+            continue
+        payload_line = raw_line[len("data: "):].strip()
+        if payload_line == "[DONE]":
+            close_stream_prefix()
+            break
+        try:
+            event = json.loads(payload_line)
+        except json.JSONDecodeError:
+            close_stream_prefix()
+            log(f"[{problem_number}] Turn {turn}: stream event was not valid JSON.")
+            continue
+
+        event_usage = event.get("usage")
+        if isinstance(event_usage, dict):
+            usage = event_usage
+
+        choices = event.get("choices", [])
+        if not choices:
+            continue
+
+        delta = choices[0].get("delta", {})
+        text_delta = _extract_delta_text(delta.get("content"))
+        if text_delta:
+            content_parts.append(text_delta)
+            ensure_stream_prefix("text")
+            sys.stdout.write(text_delta)
+            sys.stdout.flush()
+            if not tool_calls_by_index:
+                pre_tool_text_bytes += len(text_delta.encode("utf-8"))
+                if pre_tool_text_bytes > MAX_PRE_TOOL_STREAM_BYTES:
+                    close_stream_prefix()
+                    raise RuntimeError(
+                        f"Model exceeded pre-tool text budget of {MAX_PRE_TOOL_STREAM_BYTES} bytes "
+                        f"without calling a tool on turn {turn}."
+                    )
+
+        reasoning_delta = _extract_delta_text(delta.get("reasoning"))
+        if reasoning_delta:
+            reasoning_parts.append(reasoning_delta)
+            ensure_stream_prefix("reasoning")
+            sys.stdout.write(reasoning_delta)
+            sys.stdout.flush()
+            if not tool_calls_by_index:
+                pre_tool_reasoning_bytes += len(reasoning_delta.encode("utf-8"))
+                if pre_tool_reasoning_bytes > MAX_PRE_TOOL_STREAM_BYTES:
+                    close_stream_prefix()
+                    raise RuntimeError(
+                        f"Model exceeded pre-tool reasoning budget of {MAX_PRE_TOOL_STREAM_BYTES} bytes "
+                        f"without calling a tool on turn {turn}."
+                    )
+
+        for tool_call in delta.get("tool_calls") or []:
+            close_stream_prefix()
+            index = tool_call.get("index", 0)
+            current = tool_calls_by_index.setdefault(
+                index,
+                {
+                    "id": "",
+                    "type": "function",
+                    "function": {"name": "", "arguments": ""},
+                },
+            )
+            if tool_call.get("id"):
+                current["id"] = tool_call["id"]
+            if tool_call.get("type"):
+                current["type"] = tool_call["type"]
+
+            function = tool_call.get("function", {})
+            if function.get("name"):
+                current["function"]["name"] += function["name"]
+                log(
+                    f"[{problem_number}] Turn {turn}: stream tool name[{index}]="
+                    f"{current['function']['name']}"
+                )
+            if function.get("arguments"):
+                current["function"]["arguments"] += function["arguments"]
+                args_text = current["function"]["arguments"]
+                args_bytes = len(args_text.encode("utf-8"))
+                previous_bytes = args_bytes_logged.get(index, 0)
+                if args_bytes > previous_bytes:
+                    args_bytes_logged[index] = args_bytes
+                    log(
+                        f"[{problem_number}] Turn {turn}: stream tool args[{index}] "
+                        f"total {args_bytes}B: {preview_text(args_text, 120)}"
+                    )
+
+    close_stream_prefix()
+
+    tool_calls = [tool_calls_by_index[index] for index in sorted(tool_calls_by_index)]
+    message = {}
+    if content_parts:
+        message["content"] = "".join(content_parts)
+    else:
+        message["content"] = ""
+    if reasoning_parts:
+        message["reasoning"] = "".join(reasoning_parts)
+    if tool_calls:
+        message["tool_calls"] = tool_calls
+
+    return {
+        "choices": [{"message": message}],
+        "usage": usage,
+    }
+
+
 def tool_result_json(tool_name: str, result: ToolResult) -> str:
     return json.dumps(
         {
@@ -832,6 +1096,59 @@ def build_user_message(prompt: str, base64_image: str = None) -> dict:
     }
 
 
+def validate_tool_agent_contract(
+    endpoint: Endpoint,
+    think: bool = False,
+    no_think: bool = False,
+) -> None:
+    headers = {"Content-Type": "application/json", "Accept": "application/json"}
+    if endpoint.key:
+        headers["Authorization"] = f"Bearer {endpoint.key}"
+
+    probe_messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": "List the workspace files, then stop."},
+    ]
+    payload = {
+        "model": endpoint.model_name,
+        "messages": probe_messages,
+        "tools": get_api_tools(get_visible_tools(State())),
+        "stream": False,
+        "temperature": 0.0,
+        "max_tokens": 512,
+    }
+    if no_think:
+        payload["reasoning_effort"] = "none"
+        payload["enable_thinking"] = False
+    elif think:
+        payload["enable_thinking"] = True
+
+    log(
+        f"Preflight: validating tool-agent contract on {endpoint.model_name} "
+        f"with {len(payload['tools'])} tools."
+    )
+    t0 = time.monotonic()
+    response = requests.post(
+        endpoint.url,
+        headers=headers,
+        json=payload,
+        verify=False,
+        timeout=(30, 45),
+    )
+    response.raise_for_status()
+    response_json = response.json()
+    chunk, tool_name, _, _ = extract_response_fields(response_json)
+    if not tool_name:
+        raise RuntimeError(
+            "Tool-agent preflight failed: backend returned no tool call for the "
+            f"actual agent payload. Assistant text was: {preview_text(chunk, 240)}"
+        )
+    log(
+        f"Preflight succeeded in {time.monotonic() - t0:.2f}s: "
+        f"first tool call was {tool_name}."
+    )
+
+
 def run_tool_agent(
     endpoint: Endpoint,
     prompt: str,
@@ -839,6 +1156,7 @@ def run_tool_agent(
     base64_image: str = None,
     think: bool = False,
     no_think: bool = False,
+    stream: bool = False,
 ) -> str:
     state = State()
     messages = [
@@ -856,10 +1174,8 @@ def run_tool_agent(
         payload = {
             "model": endpoint.model_name,
             "messages": messages,
-            "tools": get_visible_tools(state),
-            "tool_choice": "required",
-            "parallel_tool_calls": False,
-            "stream": False,
+            "tools": get_api_tools(get_visible_tools(state)),
+            "stream": stream,
             "temperature": 0.0,
         }
         if no_think:
@@ -873,10 +1189,23 @@ def run_tool_agent(
             f"{describe_next_agent_step(messages, vfs)}."
         )
         request_t0 = time.monotonic()
-        log(f"[{problem_number}] Turn {turn + 1}: waiting for model response from {endpoint.model_name}.")
-        response = requests.post(url, headers=headers, json=payload, verify=False, timeout=600)
+        log(
+            f"[{problem_number}] Turn {turn + 1}: waiting for model response from "
+            f"{endpoint.model_name} with {len(payload['tools'])} tools."
+        )
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            verify=False,
+            stream=stream,
+            timeout=(60, 180),
+        )
         response.raise_for_status()
-        response_json = response.json()
+        if stream:
+            response_json = consume_streaming_tool_response(response, problem_number, turn + 1)
+        else:
+            response_json = response.json()
         log(
             f"[{problem_number}] Turn {turn + 1}: model response received in "
             f"{time.monotonic() - request_t0:.2f}s; {summarize_response(response_json)}"
@@ -925,16 +1254,23 @@ def process_single_problem(
     output_path: str,
     expected: dict,
     max_problem_number: int,
+    problem_start: int,
+    problem_end: int,
     solutions_json_path: str,
     benchmark_lock: threading.Lock,
     base64_image: str = None,
     think: bool = False,
     no_think: bool = False,
+    stream: bool = False,
 ) -> Tuple[str, str, bool]:
     t0 = time.monotonic()
     previous_endpoint = getattr(LOG_CONTEXT, "endpoint", "")
     set_log_endpoint(endpoint.url)
     try:
+        log(
+            f"[{problem_number}] Starting generation on {endpoint.model_name}; "
+            f"output_path={output_path}"
+        )
         code = run_tool_agent(
             endpoint,
             prompt,
@@ -942,6 +1278,7 @@ def process_single_problem(
             base64_image=base64_image,
             think=think,
             no_think=no_think,
+            stream=stream,
         )
         with open(output_path, "w", encoding="utf-8") as file:
             file.write(code)
@@ -956,6 +1293,8 @@ def process_single_problem(
             output_path,
             expected,
             max_problem_number,
+            problem_start,
+            problem_end,
             solutions_json_path,
             benchmark_lock,
             reused_existing=False,
@@ -971,6 +1310,8 @@ def evaluate_existing_solution(
     output_path: str,
     expected: dict,
     max_problem_number: int,
+    problem_start: int,
+    problem_end: int,
     solutions_json_path: str,
     benchmark_lock: threading.Lock,
     reused_existing: bool = True,
@@ -983,9 +1324,7 @@ def evaluate_existing_solution(
     else:
         log(f"[{problem_number}] Evaluating generated solution from {output_path}")
     exec_t0 = time.monotonic()
-    captured_stdout = StringIO()
-    with redirect_stdout(captured_stdout):
-        output = execute_solution(output_path, expected)
+    output = execute_solution(output_path, expected)
     expected_solution = expected.get("solution", "") if expected else ""
     correct = output == expected_solution
     log(
@@ -1001,6 +1340,8 @@ def evaluate_existing_solution(
             output,
             correct,
             max_problem_number,
+            problem_start,
+            problem_end,
             solutions_json_path,
             benchmark_lock,
         )
@@ -1068,11 +1409,14 @@ def process_problem_files(
     endpoints: List[Endpoint],
     language,
     max_problem_number=9999,
+    problem_start=1,
+    problem_end=9999,
     overwrite_existing=False,
     overwrite_failed=False,
     expected_solutions={},
     think=False,
     no_think=False,
+    stream=False,
 ):
     log(f"Processing problems in {problems_dir} with language {language} and endpoint: {endpoints[0]}")
     store_name = endpoints[0].store_name
@@ -1090,6 +1434,11 @@ def process_problem_files(
     available_endpoints = prepare_endpoints(endpoints)
     if not available_endpoints:
         raise Exception("No usable endpoints are available.")
+    validate_tool_agent_contract(
+        available_endpoints[0],
+        think=think,
+        no_think=no_think,
+    )
 
     benchmark = read_benchmark()
     entry = benchmark.get(store_name, {})
@@ -1112,12 +1461,14 @@ def process_problem_files(
         if problem_file.startswith(".") or not problem_file.endswith(".txt"):
             continue
         problem_number = problem_file[:-4]
-        if int(problem_number) > max_problem_number:
+        if int(problem_number) < problem_start:
+            continue
+        if int(problem_number) > problem_end:
             break
 
         output_path = os.path.join(solutions_dir, f"tool-{problem_number}.{extension}")
         expected = expected_solutions.get(problem_number, {})
-        already_recorded = tooling_result_recorded(recorded_vector, problem_number)
+        already_recorded = tooling_result_recorded(recorded_vector, problem_number, problem_start, problem_end)
         if already_recorded and not overwrite_existing:
             log(f"[{problem_number}] Skipping because tooling result is already recorded.")
             continue
@@ -1153,61 +1504,150 @@ def process_problem_files(
         log("No problems queued.")
         return
 
-    with ThreadPoolExecutor(max_workers=len(available_endpoints)) as executor:
-        future_to_problem = {}
-        for problem_number, output_path, expected in execution_only_jobs:
-            future = executor.submit(
-                evaluate_existing_solution,
-                store_name,
-                language,
-                problem_number,
-                output_path,
-                expected,
-                max_problem_number,
-                solutions_json_path,
-                benchmark_lock,
-                True,
-            )
-            future_to_problem[future] = (problem_number, store_name, expected)
-            log(f"[{problem_number}] Queued existing tool solution for evaluation on {store_name}")
-        for index, (problem_number, prompt, output_path, base64_image, expected) in enumerate(problem_jobs):
-            endpoint = available_endpoints[index % len(available_endpoints)]
-            future = executor.submit(
-                process_single_problem,
-                endpoint,
-                store_name,
-                language,
-                problem_number,
-                prompt,
-                output_path,
-                expected,
-                max_problem_number,
-                solutions_json_path,
-                benchmark_lock,
-                base64_image,
-                think,
-                no_think,
-            )
-            future_to_problem[future] = (problem_number, endpoint.store_name, expected)
-            log(f"[{problem_number}] Queued generation on {endpoint.store_name}")
+    max_workers = len(available_endpoints)
+    if max_workers == 1:
+        log("Using serial execution because only one endpoint is available.")
 
-        for future in as_completed(future_to_problem):
-            problem_number, endpoint_name, expected = future_to_problem[future]
-            try:
-                future.result()
-            except Exception as e:
-                failure_output = f"Error: {e}"
-                record_tooling_result(
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_problem = {}
+        if max_workers == 1:
+            for problem_number, output_path, expected in execution_only_jobs:
+                future = executor.submit(
+                    evaluate_existing_solution,
                     store_name,
                     language,
                     problem_number,
-                    failure_output,
-                    False,
+                    output_path,
+                    expected,
                     max_problem_number,
+                    problem_start,
+                    problem_end,
                     solutions_json_path,
                     benchmark_lock,
+                    True,
                 )
-                log(f"[{problem_number}] Failed on {endpoint_name}: {e}")
+                future_to_problem[future] = (problem_number, store_name, expected)
+                log(f"[{problem_number}] Queued existing tool solution for evaluation on {store_name}")
+                problem_number_done, endpoint_name, expected_done = future_to_problem[future]
+                try:
+                    future.result()
+                except Exception as e:
+                    failure_output = f"Error: {e}"
+                    record_tooling_result(
+                        store_name,
+                        language,
+                        problem_number_done,
+                        failure_output,
+                        False,
+                        max_problem_number,
+                        problem_start,
+                        problem_end,
+                        solutions_json_path,
+                        benchmark_lock,
+                    )
+                    log(f"[{problem_number_done}] Failed on {endpoint_name}: {e}")
+            for problem_number, prompt, output_path, base64_image, expected in problem_jobs:
+                endpoint = available_endpoints[0]
+                future = executor.submit(
+                    process_single_problem,
+                    endpoint,
+                    store_name,
+                    language,
+                    problem_number,
+                    prompt,
+                    output_path,
+                    expected,
+                    max_problem_number,
+                    problem_start,
+                    problem_end,
+                    solutions_json_path,
+                    benchmark_lock,
+                    base64_image,
+                    think,
+                    no_think,
+                    stream,
+                )
+                future_to_problem[future] = (problem_number, endpoint.store_name, expected)
+                log(f"[{problem_number}] Queued generation on {endpoint.store_name}")
+                problem_number_done, endpoint_name, expected_done = future_to_problem[future]
+                try:
+                    future.result()
+                except Exception as e:
+                    failure_output = f"Error: {e}"
+                    record_tooling_result(
+                        store_name,
+                        language,
+                        problem_number_done,
+                        failure_output,
+                        False,
+                        max_problem_number,
+                        problem_start,
+                        problem_end,
+                        solutions_json_path,
+                        benchmark_lock,
+                    )
+                    log(f"[{problem_number_done}] Failed on {endpoint_name}: {e}")
+        else:
+            for problem_number, output_path, expected in execution_only_jobs:
+                future = executor.submit(
+                    evaluate_existing_solution,
+                    store_name,
+                    language,
+                    problem_number,
+                    output_path,
+                    expected,
+                    max_problem_number,
+                    problem_start,
+                    problem_end,
+                    solutions_json_path,
+                    benchmark_lock,
+                    True,
+                )
+                future_to_problem[future] = (problem_number, store_name, expected)
+                log(f"[{problem_number}] Queued existing tool solution for evaluation on {store_name}")
+            for index, (problem_number, prompt, output_path, base64_image, expected) in enumerate(problem_jobs):
+                endpoint = available_endpoints[index % len(available_endpoints)]
+                future = executor.submit(
+                    process_single_problem,
+                    endpoint,
+                    store_name,
+                    language,
+                    problem_number,
+                    prompt,
+                    output_path,
+                    expected,
+                    max_problem_number,
+                    problem_start,
+                    problem_end,
+                    solutions_json_path,
+                    benchmark_lock,
+                    base64_image,
+                    think,
+                    no_think,
+                    stream,
+                )
+                future_to_problem[future] = (problem_number, endpoint.store_name, expected)
+                log(f"[{problem_number}] Queued generation on {endpoint.store_name}")
+
+            for future in as_completed(future_to_problem):
+                problem_number, endpoint_name, expected = future_to_problem[future]
+                try:
+                    future.result()
+                except Exception as e:
+                    failure_output = f"Error: {e}"
+                    record_tooling_result(
+                        store_name,
+                        language,
+                        problem_number,
+                        failure_output,
+                        False,
+                        max_problem_number,
+                        problem_start,
+                        problem_end,
+                        solutions_json_path,
+                        benchmark_lock,
+                    )
+                    log(f"[{problem_number}] Failed on {endpoint_name}: {e}")
 
     log("All problems processed!")
 
@@ -1221,26 +1661,20 @@ def main():
     parser.add_argument("--model", required=False, default="llama3.2:latest", help="Name of the model to use, default is llama3.2:latest")
     parser.add_argument("--think", action="store_true", help="enable thinking mode via backend request parameters (when supported)")
     parser.add_argument("--no_think", action="store_true", help="disable thinking mode via backend request parameters (when supported)")
+    parser.add_argument("--stream", action="store_true", help="stream tool-agent model responses for transparency")
     parser.add_argument("--language", required=False, default="python,java,rust,clojure", help="Name of the languages to test, default is python,java,rust,clojure")
     parser.add_argument("--overwrite_existing", action="store_true", help="if set, re-calculate all problems that already have an answer")
     parser.add_argument("--overwrite_failed", action="store_true", help="if set, re-calculate those problems with wrong answers")
-    parser.add_argument("--n100", action="store_true", help="only 100 problems")
-    parser.add_argument("--n200", action="store_true", help="only 200 problems")
-    parser.add_argument("--n400", action="store_true", help="only 400 problems")
+    parser.add_argument("--n100", action="store_true", help="problems 1 to 100")
+    parser.add_argument("--n200", action="store_true", help="problems 1 to 200")
+    parser.add_argument("--n300", action="store_true", help="problems 201 to 300")
+    parser.add_argument("--n400", action="store_true", help="problems 301 to 400")
     parser.add_argument("--nall", action="store_true", help="all problems")
 
     args = parser.parse_args()
     api_base = args.api if args.api else args.api_base.split(",") if "," in args.api_base else [args.api_base]
     store_name = args.model
-    max_problem_number = 200
-    if args.n100:
-        max_problem_number = 100
-    if args.n200:
-        max_problem_number = 200
-    if args.n400:
-        max_problem_number = 400
-    if args.nall:
-        max_problem_number = 9999
+    max_problem_number, problem_start, problem_end = get_tooling_batch_bounds(args)
 
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
@@ -1249,7 +1683,6 @@ def main():
 
     languages = args.language.split(",")
     for language in languages:
-        bench_name = f"{language}-{max_problem_number}"
         endpoint_name = args.endpoint
         problems_dir = "problems"
         template_path = os.path.join("templates", "template_" + language + ".md")
@@ -1283,11 +1716,14 @@ def main():
                         endpoints,
                         language,
                         max_problem_number=max_problem_number,
+                        problem_start=problem_start,
+                        problem_end=problem_end,
                         overwrite_existing=args.overwrite_existing,
                         overwrite_failed=args.overwrite_failed,
                         expected_solutions=expected_solutions,
                         think=args.think,
                         no_think=args.no_think,
+                        stream=args.stream,
                     )
         else:
             endpoints = []
@@ -1312,11 +1748,14 @@ def main():
                 endpoints,
                 language,
                 max_problem_number=max_problem_number,
+                problem_start=problem_start,
+                problem_end=problem_end,
                 overwrite_existing=args.overwrite_existing,
                 overwrite_failed=args.overwrite_failed,
                 expected_solutions=expected_solutions,
                 think=args.think,
                 no_think=args.no_think,
+                stream=args.stream,
             )
 
 

@@ -26,11 +26,12 @@ from benchmark import read_benchmark, write_benchmark, sort_benchmark
 from execute import execute_solution
 from llm_client import (
     Endpoint,
+    ensure_model_available,
     ollama_pull,
     openai_api_check_exist,
     openai_api_list,
 )
-from llm_modal_test import ensure_model_capabilities
+from llm_model_test import complete_model_capabilities
 from execute_clojure import syntax_check_clojure
 from execute_java import syntax_check_java
 from execute_python import syntax_check_python
@@ -1012,14 +1013,11 @@ def evaluate_existing_solution(
 def prepare_endpoints(endpoints: List[Endpoint]) -> List[Endpoint]:
     available_endpoints = []
     for endpoint in endpoints:
-        for _ in range(0, 3):
-            try:
-                ollama_pull(endpoint)
-                if openai_api_check_exist(endpoint):
-                    available_endpoints.append(endpoint)
-                    break
-            except Exception as e:
-                log(f"Error loading endpoint {endpoint}: {e}")
+        try:
+            if ensure_model_available(endpoint, attempts=3, fail_if_unavailable=False):
+                available_endpoints.append(endpoint)
+        except Exception as e:
+            log(f"Error loading endpoint {endpoint}: {e}")
         if endpoint not in available_endpoints:
             log(f"Failed to load endpoint {endpoint} after 3 attempts.")
     return available_endpoints
@@ -1087,8 +1085,7 @@ def process_problem_files(
     solutions_json_path = os.path.join(solutions_dir, "solutions.json")
     extension = get_extension(language)
 
-    while not openai_api_check_exist(endpoints[0]):
-        ollama_pull(endpoints[0])
+    ensure_model_available(endpoints[0], attempts=3, fail_if_unavailable=True)
 
     available_endpoints = prepare_endpoints(endpoints)
     if not available_endpoints:
@@ -1096,7 +1093,7 @@ def process_problem_files(
 
     benchmark = read_benchmark()
     entry = benchmark.get(store_name, {})
-    entry, entry_changed = ensure_model_capabilities(entry, available_endpoints[0], think=think, no_think=no_think)
+    entry, entry_changed = complete_model_capabilities(entry, available_endpoints[0], think=think, no_think=no_think)
     if entry_changed:
         benchmark[store_name] = entry
         write_benchmark(benchmark)

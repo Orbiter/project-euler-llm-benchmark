@@ -1,13 +1,16 @@
-import base64
-import json
 import os
-
+import json
+import base64
 from llm_client import Endpoint, openai_api_chat
-
 
 TOOLING_EXPECTED_FUNCTION_NAME = "lightswitch"
 FORMAT_EXPECTED_MOODS = {"surprised", "angry", "happy"}
-
+REQUIRED_CAPABILITY_FIELDS = (
+    "has_vision",
+    "has_tooling",
+    "has_thinking",
+    "has_format",
+)
 
 def _normalize_message_text(message: dict) -> str:
     if not message:
@@ -31,15 +34,12 @@ def _normalize_message_text(message: dict) -> str:
             return text.strip()
     return ""
 
-
 def _normalize_mood(value) -> str:
     mood = value.strip().lower() if isinstance(value, str) else ""
     return mood if mood in FORMAT_EXPECTED_MOODS else ""
 
-
 def test_vision(endpoint: Endpoint) -> bool:
     return test_vision_with_flags(endpoint)
-
 
 def test_vision_with_flags(endpoint: Endpoint, think: bool = False, no_think: bool = False) -> bool:
     image_path = "llmtest/testimage.png"
@@ -50,7 +50,7 @@ def test_vision_with_flags(endpoint: Endpoint, think: bool = False, no_think: bo
         base64_image = base64.b64encode(image_file.read()).decode("utf-8")
 
     try:
-        print(f"Testing multimodal capabilities of model {endpoint.store_name}...")
+        print(f"Testing has_vision capabilities of model {endpoint.store_name}...")
         answer, total_tokens, token_per_second, usage_summary, duration_seconds = openai_api_chat(
             endpoint,
             prompt="what is in the image",
@@ -70,9 +70,8 @@ def test_vision_with_flags(endpoint: Endpoint, think: bool = False, no_think: bo
         print(f"Model {endpoint.store_name} is not multimodal; it created an error: {e}")
         return False
 
-
 def test_tooling(endpoint: Endpoint, think: bool = False, no_think: bool = False) -> bool:
-    print(f"Testing tool-calling capability for model {endpoint.store_name}...")
+    print(f"Testing has_tooling capability for model {endpoint.store_name}...")
     try:
         answer, total_tokens, token_per_second, usage_summary, duration_seconds, response_json = openai_api_chat(
             endpoint,
@@ -103,9 +102,7 @@ def test_tooling(endpoint: Endpoint, think: bool = False, no_think: bool = False
         )
         message = response_json.get("choices", [{}])[0].get("message", {})
         tool_calls = message.get("tool_calls") or []
-        if not tool_calls:
-            print(f"Tool-calling test returned no tool calls for {endpoint.store_name}.")
-            return False
+        if not tool_calls: return False
         function = tool_calls[0].get("function", {})
         tool_name = function.get("name") or tool_calls[0].get("name") or ""
         print(f"Tool-calling test requested tool: {tool_name}")
@@ -114,9 +111,8 @@ def test_tooling(endpoint: Endpoint, think: bool = False, no_think: bool = False
         print(f"Tool-calling test failed for {endpoint.store_name}: {e}")
         return False
 
-
 def test_thinking(endpoint: Endpoint, think: bool = False, no_think: bool = False) -> bool:
-    print(f"Testing thinking capability for model {endpoint.store_name}...")
+    print(f"Testing has_thinking capability for model {endpoint.store_name}...")
     try:
         answer, total_tokens, token_per_second, usage_summary, duration_seconds, response_json = openai_api_chat(
             endpoint,
@@ -144,9 +140,8 @@ def test_thinking(endpoint: Endpoint, think: bool = False, no_think: bool = Fals
         print(f"Thinking test failed for {endpoint.store_name}: {e}")
         return False
 
-
 def test_format(endpoint: Endpoint, think: bool = False, no_think: bool = False) -> bool:
-    print(f"Testing structured-format capability for model {endpoint.store_name}...")
+    print(f"Testing has_format capability for model {endpoint.store_name}...")
     test_cases = [
         ("I hate programming", "angry"),
         ("I love programming", "happy"),
@@ -199,8 +194,10 @@ def test_format(endpoint: Endpoint, think: bool = False, no_think: bool = False)
             return False
     return True
 
+def has_complete_model_capabilities(entry: dict) -> bool:
+    return all(capability_name in entry for capability_name in REQUIRED_CAPABILITY_FIELDS)
 
-def ensure_model_capabilities(
+def complete_model_capabilities(
     entry: dict,
     endpoint: Endpoint,
     think: bool = False,
@@ -220,7 +217,6 @@ def ensure_model_capabilities(
             print(f"{capability_name.capitalize()} capability cached for {endpoint.store_name}: {updated_entry[capability_name]}")
             continue
 
-        print(f"Testing {capability_name} capability for {endpoint.store_name}...")
         updated_entry[capability_name] = bool(capability_test())
         changed = True
         print(f"{capability_name.capitalize()} capability for {endpoint.store_name}: {updated_entry[capability_name]}")

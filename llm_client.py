@@ -101,6 +101,34 @@ def openai_api_check_exist(endpoint: Endpoint) -> bool:
 
     return False
 
+
+def ensure_model_available(endpoint: Endpoint, attempts: int = 3, fail_if_unavailable: bool = False) -> bool:
+    api_base = get_llm_url_stub(endpoint)
+    for attempt in range(1, attempts + 1):
+        if openai_api_check_exist(endpoint):
+            return True
+        print(f"Model availability check failed for {endpoint.model_name} on {api_base} (attempt {attempt}/{attempts}).")
+        if endpoint.key:
+            continue
+        ollama_pull(endpoint)
+        time.sleep(1)
+
+    if fail_if_unavailable:
+        raise RuntimeError(
+            f"Could not verify endpoint {endpoint.url} with model {endpoint.model_name}. "
+            "Check that /v1/models is reachable or that the model id is correct."
+        )
+
+    print(
+        f"Model {endpoint.model_name} is still not verified on {api_base} after {attempts} attempts. "
+        "Continuing and letting the chat request validate the model."
+    )
+    return False
+
+
+def ensure_model_listed(endpoint: Endpoint) -> None:
+    ensure_model_available(endpoint, attempts=3, fail_if_unavailable=False)
+
 def ollama_pull(endpoint: Endpoint) -> dict:
     # Try to pull the model from the endpoint. If that does not work, we simply return.
     # Failure can be due to the model already being present, network issues, etc.,
@@ -598,8 +626,7 @@ class LoadBalancer:
         print("All servers finished processing.")
 
 def main():
-    from llm_modal_test import test_vision
-
+    from llm_model_test import test_vision
     parser = ArgumentParser(description="Testing the LLM API.")
     parser.add_argument('--api_base', required=False, default='http://localhost:11434', help='API base URL for the LLM, default is http://localhost:11434')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')

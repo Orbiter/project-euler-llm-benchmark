@@ -233,11 +233,11 @@ class BenchmarkPublisher:
                 memory_amount = float("inf")
             else:
                 if quant_value == 4:
-                    memory_amount = size_value * 3.0 / 4.0
+                    memory_amount = size_value * 0.75
                 elif quant_value == 8:
-                    memory_amount = size_value
+                    memory_amount = size_value * 1.1
                 else:
-                    memory_amount = size_value * 2
+                    memory_amount = size_value * 2.0
  
             bench_score_value = self._entry_score(entry, tool_mode)
             memory_score = (

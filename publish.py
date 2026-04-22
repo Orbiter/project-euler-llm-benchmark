@@ -136,7 +136,7 @@ class BenchmarkPublisher:
 
     def _result_key(self, language: str, tool_mode: bool = False) -> str:
         if tool_mode:
-            return f"{language}-tool-{self.batch_size}"
+            return f"{language}-{self.batch_size}-tool"
         return score_key(language, self.batch_size)
 
     def _has_results(self, entry: dict, tool_mode: bool = False) -> bool:

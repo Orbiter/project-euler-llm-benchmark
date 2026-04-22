@@ -326,7 +326,6 @@ def openai_api_chat(
         payload["max_tokens"] = max_tokens
     modelname_lower = modelname.lower()
     if no_think:
-        payload["reasoning_effort"] = "none"
         payload["enable_thinking"] = False
 
     # use the endpoints array as failover mechanism

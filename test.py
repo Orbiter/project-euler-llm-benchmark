@@ -33,14 +33,14 @@ def test(api_base, endpoint_name, model_name, language, overwrite_existing, over
         print(f"Running command: {cmd}")
         os.system(cmd)
 
-    # call execute.py
-    cmd = f"python3.12 execute.py --language {language}"
-    cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
-    if think: cmd += " --think"
-    if no_think: cmd += " --no_think"
-    if tool_mode: cmd += " --tool"
-    print(f"Running command: {cmd}")
-    os.system(cmd)
+    if not tool_mode:
+        # call execute.py
+        cmd = f"python3.12 execute.py --language {language}"
+        cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
+        if think: cmd += " --think"
+        if no_think: cmd += " --no_think"
+        print(f"Running command: {cmd}")
+        os.system(cmd)
 
 def main():
     parser = ArgumentParser(description="Run the complete pipeline to execute solutions and store results in a JSON file.")

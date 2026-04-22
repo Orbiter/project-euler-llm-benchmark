@@ -59,12 +59,14 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | qwen3.5:27b-q8_0-no_think                                                                        |          |  35.77 |    120 |   27.0 |    8 |  256 | 40.4 | 40.97 | 35.03 | 3.14 |
 | hf.co/inclusionAI/Ling-flash-2.0-GGUF:Q4_K_M                                                     |          |  33.29 |     43 |    103 |    4 |  128 | 42.38 | 34.36 | 23.3 | 13.74 |
 | hf.co/mradermacher/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-i1-GGUF:Q4_K_M-no_think       |          |  27.86 |    133 |     28 |    4 |  256 | 28.18 | 32.16 | 30.87 | 7.68 |
+| qwen3.5:9b-mxfp8-no_think                                                                        |     9.90 |  25.90 |    262 |    9.0 |    8 |  256 | 30.42 | 30.57 | 21.49 | 2.63 |
 | frob/qwen3.5-instruct:9b                                                                         |     6.75 |  21.12 |    313 |      9 |    4 |  256 | 32.51 | 17.72 | 13.29 | 1.45 |
 | qwen3-vl:32b-instruct-q4_K_M                                                                     |          |  20.56 |     82 |   33.4 |    4 |  256 | 27.78 | 21.15 | 13.91 | 3.19 |
 | hf.co/cturan/IQuest-Coder-V1-40B-Instruct-GGUF:Q4_K_M                                            |          |  20.09 |     67 |   39.8 |    4 |  128 | 26.12 | 19.65 | 17.81 | 1.83 |
 | hf.co/mradermacher/Ling-mini-2.0-GGUF:Q4_K_M                                                     |          |  20.00 |    167 |     16 |    4 |  128 | 26.89 | 19.74 | 15.66 | 1.91 |
 | gemma4:e4b-nvfp4-no_think                                                                        |     6.00 |  19.67 |    328 |    8.0 |    4 |  256 | 19.7 | 27.1 | 17.96 | 0.72 |
 | hf.co/mradermacher/Ling-mini-2.0-i1-GGUF:Q4_K_M                                                  |          |  19.36 |    161 |     16 |    4 |  128 | 29.58 | 20.74 | 6.35 | 0.39 |
+| gemma4:e4b-mxfp8-no_think                                                                        |          |  18.95 |    215 |    8.0 |    8 |  256 | 23.16 | 20.54 | 17.31 | 0.64 |
 | hf.co/mradermacher/OmniCoder-9B-i1-GGUF:Q4_K_M                                                   |          |  18.90 |    280 |      9 |    4 |  256 | 25.28 | 21.23 | 11.73 | 0.71 |
 | qwen3.5:9b-q4_K_M-no_think                                                                       |          |  18.37 |    272 |    9.0 |    4 |  256 | 25.67 | 19.64 | 10.59 | 0.89 |
 | qwen3-vl:30b-a3b-instruct-q8_0                                                                   |          |  17.61 |     51 |   31.1 |    8 |  256 | 18.64 | 20.51 | 18.53 | 2.98 |
@@ -81,6 +83,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/mradermacher/Qwen3.5-35B-A3B-Claude-4.6-Opus-Reasoning-Distilled-i1-GGUF:Q4_K_M-no_think   |          |  12.42 |     46 |     36 |    4 |  256 | 14.22 | 13.16 | 13.15 | 1.57 |
 | devstral-2:123b-instruct-2512-q4_K_M                                                             |          |  11.84 |     13 |  125.0 |    4 |  256 | 13.9 | 13.36 | 9.61 | 3.49 |
 | olmo-3.1:32b-instruct-q4_K_M                                                                     |          |  10.25 |     42 |   32.2 |    4 |  128 | 17.37 | 6.19 | 6.68 | 1.11 |
+| qwen3.5:4b-mxfp8-no_think                                                                        |     4.40 |   9.47 |    215 |      4 |    8 |  256 | 14.85 | 8.26 | 5.26 |      |
 | qwen2.5-coder:32b-instruct-q4_K_M                                                                |          |   9.28 |     38 |   32.8 |    4 |   32 | 11.6 | 11.5 | 4.69 | 2.53 |
 | qwen2.5vl:72b-q4_K_M                                                                             |          |   9.03 |     16 |   73.4 |    4 |  128 | 10.11 | 10.98 | 7.64 | 1.67 |
 | hf.co/bartowski/Athene-V2-Agent-GGUF:Q4_K_M                                                      |          |   8.72 |     16 |   72.7 |    4 |  128 | 11.13 | 10.62 | 5.03 | 0.77 |
@@ -316,6 +319,10 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 ### Non-Thinking Tool Usage
 | Model                                                                                            | Best<br/>Model<br/>for<br/>Size (GB) | PE-200-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | Java | Rust | Clojure |
 | :----------------------------------------------------------------------------------------------- | -----------------------------------: | ----------------: | -------------: | --------------------: | ---: | ---------------------: | -----: | ---: | ---: | ------: |
+| qwen3:235b-a22b-instruct-2507-q4_K_M                                                             |      176 |  70.04 |     40 |  235.1 |    4 |  256 | 79.42 | 71.44 | 69.94 | 28.48 |
+| qwen3.5:35b-a3b-q4_K_M-no_think                                                                  |    26.25 |  19.78 |     75 |   35.0 |    4 |  256 | 26.29 | 30.89 |      |      |
+| qwen3.5:9b-q4_K_M-no_think                                                                       |     6.75 |   6.95 |    103 |    9.0 |    4 |  256 | 11.73 | 7.51 |      |      |
+| qwen3:4b-instruct-2507-q4_K_M                                                                    |     3.00 |   4.18 |    139 |    4.0 |    4 |  256 | 8.61 | 2.47 |  0.0 |  0.0 |
 
 ### Thinking Tool Usage
 | Model                                                                                            | Best<br/>Model<br/>for<br/>Size (GB) | PE-200-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | Java | Rust | Clojure |

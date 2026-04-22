@@ -52,7 +52,13 @@ SYSTEM_PROMPT = (
     "You can only act by calling the provided tools. "
     "Use this workflow: inspect the workspace, read files when needed, write or "
     "rewrite complete files, run syntax checks, and continue until the program is ready. "
-    "When the final program is ready, call deliver_code exactly once. "
+    "When the task has multiple steps or you need to keep track of progress, consider "
+    "using update_plan to record a short plan and keep it current. "
+    "If it helps, you may use workspace files as temporary notes or a scratchpad via "
+    "write_file and read_file. "
+    "The final program can only be checked for syntax, not executed inside the tool loop. "
+    "Delivery is a blind one-shot submission of the final workspace file. "
+    "When the final program is ready, call deliver_code with the final workspace file path. "
     "Do not end with plain text. Every assistant turn must contain a tool call. "
     "If you need to explain progress, put that explanation in the assistant message that accompanies the tool call. "
     "Return runnable source code with no markdown fences in delivered content."
@@ -178,8 +184,8 @@ TOOLS = [
         "function": {
             "name": "syntax_check",
             "description": (
-                "Check syntax for python, java, rust, or clojure. Provide exactly one of "
-                "`path` or `content`. Prefer `path` after writing a file."
+                "Check syntax for python, java, rust, or clojure using one virtual "
+                "workspace file path."
             ),
             "parameters": {
                 "type": "object",
@@ -191,20 +197,11 @@ TOOLS = [
                     },
                     "path": {
                         "type": "string",
-                        "description": "Optional virtual workspace-relative file path.",
-                        "minLength": 1,
-                    },
-                    "content": {
-                        "type": "string",
-                        "description": "Optional inline code content.",
+                        "description": "Virtual workspace-relative file path.",
                         "minLength": 1,
                     },
                 },
-                "required": ["language"],
-                "oneOf": [
-                    {"required": ["path"]},
-                    {"required": ["content"]},
-                ],
+                "required": ["language", "path"],
                 "additionalProperties": False,
             },
             "strict": True,
@@ -236,29 +233,67 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "update_plan",
+            "description": (
+                "Update the current task plan with a short explanation and a list of "
+                "steps. Keep the explanation and steps concise. Use this to track "
+                "progress across multiple tool calls."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "explanation": {
+                        "type": "string",
+                        "description": "Optional short explanation of the current phase.",
+                    },
+                    "plan": {
+                        "type": "array",
+                        "description": "Ordered list of plan steps and their statuses.",
+                        "minItems": 1,
+                        "maxItems": 8,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "step": {
+                                    "type": "string",
+                                    "description": "Human-readable description of the step.",
+                                    "minLength": 1,
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Current state of the step.",
+                                    "enum": ["pending", "in_progress", "completed"],
+                                },
+                            },
+                            "required": ["step", "status"],
+                            "additionalProperties": False,
+                        },
+                    },
+                },
+                "required": ["plan"],
+                "additionalProperties": False,
+            },
+            "strict": True,
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "deliver_code",
             "description": (
-                "Finish the task and deliver the final runnable program. Provide exactly "
-                "one of `path` or `content`. Call this only when the code is complete."
+                "Finish the task and deliver the final runnable program using one virtual "
+                "workspace file path. Call this only when the code is complete."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "path": {
                         "type": "string",
-                        "description": "Optional virtual workspace-relative file path to deliver.",
-                        "minLength": 1,
-                    },
-                    "content": {
-                        "type": "string",
-                        "description": "Optional full code content to deliver directly.",
+                        "description": "Virtual workspace-relative file path to deliver.",
                         "minLength": 1,
                     },
                 },
-                "oneOf": [
-                    {"required": ["path"]},
-                    {"required": ["content"]},
-                ],
+                "required": ["path"],
                 "additionalProperties": False,
             },
             "strict": True,
@@ -293,6 +328,8 @@ def get_api_tools(tools: List[dict]) -> List[dict]:
 class State:
     max_tool_calls: int = MAX_TOOL_CALLS
     tool_call_counts: Dict[str, int] = field(default_factory=dict)
+    plan: List[Dict[str, str]] = field(default_factory=list)
+    plan_explanation: str = ""
 
 
 @dataclass
@@ -347,23 +384,25 @@ def get_extension(language):
 
 
 def get_tooling_series_name(language: str, max_problem_number: int) -> str:
-    return f"{language}-{max_problem_number}-tool"
+    return f"{language}-{max_problem_number}-tool-test"
 
 
 def get_tooling_score_name(language: str, max_problem_number: int) -> str:
-    return f"{language}-{max_problem_number}"
+    return f"{language}-{max_problem_number}-tool"
 
 
 def get_tooling_batch_bounds(args) -> Tuple[int, int, int]:
     if args.n100:
         return 100, 1, 100
     if args.n200:
-        return 200, 1, 200
+        return 200, 101, 200
+    if args.n300:
+        return 300, 201, 300
     if args.n400:
         return 400, 301, 400
     if args.nall:
         return 9999, 1, 9999
-    return 300, 201, 300
+    return 200, 101, 200
 
 
 def get_recorded_tooling_vector(store_name: str, language: str, max_problem_number: int) -> str:
@@ -391,40 +430,36 @@ def update_tooling_score(
     benchmark_lock: threading.Lock,
 ) -> None:
     with benchmark_lock:
-        solutions_json_path = os.path.join("solutions", store_name, language, "solutions.json")
-        if not os.path.exists(solutions_json_path) or not os.path.exists("solutions.json"):
+        benchmark = read_benchmark()
+        entry = benchmark.get(store_name, {})
+        tooling_series_name = get_tooling_series_name(language, max_problem_number)
+        vector_length = problem_end - problem_start + 1
+        test_vector = entry.get(tooling_series_name, "")
+        if len(test_vector) < vector_length:
+            test_vector = test_vector + ("?" * (vector_length - len(test_vector)))
+        current_vector = test_vector[:vector_length]
+        if not os.path.exists("solutions.json"):
             return
-
-        with open(solutions_json_path, "r", encoding="utf-8") as json_file:
-            try:
-                outputs = json.load(json_file)
-            except json.JSONDecodeError:
-                return
 
         with open("solutions.json", "r", encoding="utf-8") as json_file:
             expected_solutions = json.load(json_file)
 
-        problem_numbers = [
-            f"{problem_number:04d}"
-            for problem_number in range(problem_start, problem_end + 1)
-        ]
-        if any(problem_number not in outputs for problem_number in problem_numbers):
-            return
-
         candidate_points = 0.0
         total_count = 0
-        for problem_number in problem_numbers:
+        for offset, problem_number_int in enumerate(range(problem_start, problem_end + 1)):
+            marker = current_vector[offset]
+            if marker not in {"0", "1"}:
+                continue
+            problem_number = f"{problem_number_int:04d}"
             expected = expected_solutions.get(problem_number)
             if not expected:
                 continue
             total_count += 1
-            if outputs.get(problem_number) == expected.get("solution", ""):
+            if marker == "1":
                 candidate_points += expected.get("points", 0.0)
         if total_count == 0:
             return
 
-        benchmark = read_benchmark()
-        entry = benchmark.get(store_name, {})
         entry[get_tooling_score_name(language, max_problem_number)] = round(candidate_points / total_count, 2)
         benchmark[store_name] = entry
         write_benchmark(sort_benchmark(benchmark))
@@ -519,9 +554,7 @@ def summarize_tool_args(tool_name: str, parsed_args: dict) -> str:
     if tool_name == "syntax_check":
         language = parsed_args.get("language", "?")
         path = parsed_args.get("path")
-        if path:
-            return f"language={language} path={path}"
-        return f"language={language} inline-content"
+        return f"language={language} path={path}" if path else f"language={language}"
     if tool_name == "calculator":
         expr = parsed_args.get("expression", "")
         return f"expression={preview_text(expr, 80)}"
@@ -569,13 +602,6 @@ def summarize_response(response_json: dict) -> str:
     return f"{usage_text}model returned neither tool call nor text"
 
 
-def describe_next_agent_step(messages: List[dict], vfs: VirtualFileSystem) -> str:
-    last_message = messages[-1] if messages else {}
-    if last_message.get("role") == "tool":
-        return "starting the next agent turn using the latest tool result"
-    return "starting the next agent turn"
-
-
 def normalize_virtual_path(path: str) -> str:
     if not path:
         raise ValueError("Path must not be empty.")
@@ -585,22 +611,6 @@ def normalize_virtual_path(path: str) -> str:
     if normalized.startswith("../") or normalized == ".." or normalized.startswith("/"):
         raise ValueError("Path must be workspace-relative.")
     return normalized
-
-
-def resolve_code_input(vfs: VirtualFileSystem, parsed_args: dict) -> Tuple[str, str]:
-    raw_path = parsed_args.get("path", "")
-    raw_content = parsed_args.get("content", "")
-
-    if raw_path:
-        path = normalize_virtual_path(raw_path)
-        if path not in vfs.files:
-            raise ValueError(f"File not found: {path}")
-        return path, vfs.read_file(path)
-
-    if raw_content:
-        return "", raw_content
-
-    raise ValueError("Either path or content is required.")
 
 
 def run_calculator(expression: str) -> ToolResult:
@@ -676,9 +686,12 @@ def run_syntax_check(vfs: VirtualFileSystem, parsed_args: dict) -> ToolResult:
         )
 
     try:
-        filename, code = resolve_code_input(vfs, parsed_args)
+        filename = normalize_virtual_path(parsed_args.get("path", ""))
     except ValueError as exc:
         return ToolResult(exit_code=1, stdout="", stderr=str(exc))
+    if filename not in vfs.files:
+        return ToolResult(exit_code=1, stdout="", stderr=f"File not found: {filename}")
+    code = vfs.read_file(filename)
 
     if language == "python":
         exit_code, stdout, stderr = syntax_check_python(code, filename)
@@ -718,6 +731,23 @@ def extract_response_fields(response_json: dict) -> Tuple[str, str, str, str]:
     tool_id = first_call.get("id", "")
     raw_args = function.get("arguments", "")
     return chunk, tool_name, tool_id, raw_args
+
+
+def raise_for_status_with_body(response, context: str) -> None:
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        body = ""
+        try:
+            body = response.text or ""
+        except Exception:
+            body = ""
+        body_preview = preview_text(body, 800) if body else "<empty body>"
+        log(
+            f"{context}: HTTP {response.status_code} from backend; "
+            f"response_body={body_preview}"
+        )
+        raise exc
 
 
 def _extract_delta_text(delta_value) -> str:
@@ -893,6 +923,24 @@ def tool_result_json(tool_name: str, result: ToolResult) -> str:
     )
 
 
+def log_plan_update(problem_number: str, parsed_args: dict, label: str = "Plan updated") -> None:
+    plan = parsed_args.get("plan") or []
+    explanation = parsed_args.get("explanation", "")
+    lines = [f"[{problem_number}] {label}:"]
+    if explanation:
+        lines.append(f"[{problem_number}]   explanation: {preview_text(explanation, 200)}")
+    for index, item in enumerate(plan, start=1):
+        if not isinstance(item, dict):
+            continue
+        step = item.get("step", "")
+        status = item.get("status", "?")
+        lines.append(f"[{problem_number}]   {index}. [{status}] {preview_text(step, 200)}")
+    if len(lines) == 1:
+        lines.append(f"[{problem_number}]   empty plan")
+    for line in lines:
+        log(line)
+
+
 def get_visible_tools(state: State) -> List[dict]:
     visible_tools = []
     for tool in TOOLS:
@@ -902,7 +950,94 @@ def get_visible_tools(state: State) -> List[dict]:
     return visible_tools
 
 
-def run_virtual_tool(vfs: VirtualFileSystem, tool_name: str, parsed_args: dict) -> ToolResult:
+def run_update_plan(state: State, parsed_args: dict) -> ToolResult:
+    plan = parsed_args.get("plan")
+    if not isinstance(plan, list):
+        return ToolResult(exit_code=1, stdout="", stderr="plan must be an array.")
+    if not plan:
+        return ToolResult(exit_code=1, stdout="", stderr="plan must contain at least one step.")
+    if len(plan) > 8:
+        return ToolResult(exit_code=1, stdout="", stderr="plan must contain at most 8 steps.")
+
+    normalized_plan: List[Dict[str, str]] = []
+    in_progress_count = 0
+    completed_count = 0
+    warnings: List[str] = []
+    seen_steps = set()
+    for index, item in enumerate(plan):
+        if not isinstance(item, dict):
+            return ToolResult(
+                exit_code=1,
+                stdout="",
+                stderr=f"plan[{index}] must be an object.",
+            )
+        step = item.get("step")
+        status = item.get("status")
+        if not isinstance(step, str) or not step.strip():
+            return ToolResult(
+                exit_code=1,
+                stdout="",
+                stderr=f"plan[{index}].step must be a non-empty string.",
+            )
+        if status not in {"pending", "in_progress", "completed"}:
+            return ToolResult(
+                exit_code=1,
+                stdout="",
+                stderr=(
+                    f"plan[{index}].status must be one of: pending, in_progress, completed."
+                ),
+            )
+        if status == "in_progress":
+            in_progress_count += 1
+        if status == "completed":
+            completed_count += 1
+        normalized_step = step.strip()
+        if normalized_step.lower() in seen_steps:
+            warnings.append(f"Duplicate step text: {normalized_step}")
+        seen_steps.add(normalized_step.lower())
+        normalized_plan.append({"step": normalized_step, "status": status})
+
+    if in_progress_count > 1:
+        return ToolResult(
+            exit_code=1,
+            stdout="",
+            stderr="At most one plan step can be in_progress.",
+        )
+
+    explanation = parsed_args.get("explanation", "")
+    if explanation is None:
+        explanation = ""
+    if not isinstance(explanation, str):
+        return ToolResult(exit_code=1, stdout="", stderr="explanation must be a string.")
+
+    state.plan = normalized_plan
+    state.plan_explanation = explanation
+    in_progress_step = next(
+        (item["step"] for item in normalized_plan if item["status"] == "in_progress"),
+        "",
+    )
+    if not in_progress_step and completed_count < len(normalized_plan):
+        warnings.append("No step is currently marked in_progress.")
+    return ToolResult(
+        exit_code=0,
+        stdout=json.dumps(
+            {
+                "ok": True,
+                "explanation": explanation,
+                "plan": normalized_plan,
+                "summary": {
+                    "step_count": len(normalized_plan),
+                    "completed_count": completed_count,
+                    "in_progress_step": in_progress_step,
+                },
+                "warnings": warnings,
+            }
+        ),
+        stderr="",
+    )
+
+
+def run_virtual_tool(state: State, vfs: VirtualFileSystem, tool_name: str, parsed_args: dict) -> ToolResult:
     if tool_name == "list_files":
         return ToolResult(exit_code=0, stdout="\n".join(vfs.list_files()), stderr="")
 
@@ -960,37 +1095,26 @@ def run_virtual_tool(vfs: VirtualFileSystem, tool_name: str, parsed_args: dict) 
     if tool_name == "calculator":
         return run_calculator(parsed_args.get("expression", ""))
 
+    if tool_name == "update_plan":
+        return run_update_plan(state, parsed_args)
+
     return ToolResult(exit_code=1, stdout="", stderr=f"Unsupported tool: {tool_name}")
 
 
 def handle_deliver_code(vfs: VirtualFileSystem, parsed_args: dict) -> Tuple[ToolResult, DeliveryResult]:
     raw_path = parsed_args.get("path", "")
-    raw_content = parsed_args.get("content", "")
-
-    if raw_path:
-        try:
-            path = normalize_virtual_path(raw_path)
-        except ValueError as exc:
-            return ToolResult(exit_code=1, stdout="", stderr=str(exc)), DeliveryResult(delivered=False)
-        if path not in vfs.files:
-            return (
-                ToolResult(exit_code=1, stdout="", stderr=f"File not found: {path}"),
-                DeliveryResult(delivered=False),
-            )
+    try:
+        path = normalize_virtual_path(raw_path)
+    except ValueError as exc:
+        return ToolResult(exit_code=1, stdout="", stderr=str(exc)), DeliveryResult(delivered=False)
+    if path not in vfs.files:
         return (
-            ToolResult(exit_code=0, stdout=f"Delivered {path}", stderr=""),
-            DeliveryResult(delivered=True, content=vfs.read_file(path), path=path),
+            ToolResult(exit_code=1, stdout="", stderr=f"File not found: {path}"),
+            DeliveryResult(delivered=False),
         )
-
-    if raw_content:
-        return (
-            ToolResult(exit_code=0, stdout="Delivered inline content", stderr=""),
-            DeliveryResult(delivered=True, content=raw_content, path=""),
-        )
-
     return (
-        ToolResult(exit_code=1, stdout="", stderr="deliver_code requires either path or content."),
-        DeliveryResult(delivered=False),
+        ToolResult(exit_code=0, stdout=f"Delivered {path}", stderr=""),
+        DeliveryResult(delivered=True, content=vfs.read_file(path), path=path),
     )
 
 
@@ -1017,7 +1141,9 @@ def handle_tool_call(
         log(f"[{problem_number}] Executing {tool_name}: invalid JSON arguments.")
     else:
         summary = summarize_tool_args(tool_name, parsed_args)
-        if summary:
+        if tool_name == "update_plan":
+            log_plan_update(problem_number, parsed_args, label="Executing update_plan")
+        elif summary:
             log(f"[{problem_number}] Executing {tool_name}: {summary}")
         else:
             log(f"[{problem_number}] Executing {tool_name}.")
@@ -1033,7 +1159,7 @@ def handle_tool_call(
             if tool_name == "deliver_code":
                 result, delivery = handle_deliver_code(vfs, parsed_args)
             else:
-                result = run_virtual_tool(vfs, tool_name, parsed_args)
+                result = run_virtual_tool(state, vfs, tool_name, parsed_args)
                 delivery = DeliveryResult(delivered=False)
 
     call_id = tool_id or "call_1"
@@ -1060,13 +1186,21 @@ def handle_tool_call(
             "content": tool_result_json(tool_name, result),
         }
     )
-    log(
-        f"[{problem_number}] Tool finished: {tool_name} exit={result.exit_code} "
-        f"result_bytes={byte_size(result.stdout) + byte_size(result.stderr)} "
-        f"stdout={preview_text(result.stdout, 120) if result.stdout else ''} "
-        f"stderr={preview_text(result.stderr, 120) if result.stderr else ''} "
-        f"duration={time.monotonic() - t0:.2f}s"
-    )
+    if tool_name == "update_plan":
+        log(
+            f"[{problem_number}] Tool finished: {tool_name} exit={result.exit_code} "
+            f"result_bytes={byte_size(result.stdout) + byte_size(result.stderr)} "
+            f"stderr={preview_text(result.stderr, 120) if result.stderr else ''} "
+            f"duration={time.monotonic() - t0:.2f}s"
+        )
+    else:
+        log(
+            f"[{problem_number}] Tool finished: {tool_name} exit={result.exit_code} "
+            f"result_bytes={byte_size(result.stdout) + byte_size(result.stderr)} "
+            f"stdout={preview_text(result.stdout, 120) if result.stdout else ''} "
+            f"stderr={preview_text(result.stderr, 120) if result.stderr else ''} "
+            f"duration={time.monotonic() - t0:.2f}s"
+        )
     return delivery
 
 
@@ -1118,7 +1252,6 @@ def validate_tool_agent_contract(
         "max_tokens": 512,
     }
     if no_think:
-        payload["reasoning_effort"] = "none"
         payload["enable_thinking"] = False
     elif think:
         payload["enable_thinking"] = True
@@ -1133,9 +1266,9 @@ def validate_tool_agent_contract(
         headers=headers,
         json=payload,
         verify=False,
-        timeout=(30, 45),
+        timeout=(60, 600),
     )
-    response.raise_for_status()
+    raise_for_status_with_body(response, "Preflight request failed")
     response_json = response.json()
     chunk, tool_name, _, _ = extract_response_fields(response_json)
     if not tool_name:
@@ -1179,15 +1312,10 @@ def run_tool_agent(
             "temperature": 0.0,
         }
         if no_think:
-            payload["reasoning_effort"] = "none"
             payload["enable_thinking"] = False
         elif think:
             payload["enable_thinking"] = True
 
-        log(
-            f"[{problem_number}] Turn {turn + 1}: "
-            f"{describe_next_agent_step(messages, vfs)}."
-        )
         request_t0 = time.monotonic()
         log(
             f"[{problem_number}] Turn {turn + 1}: waiting for model response from "
@@ -1199,9 +1327,12 @@ def run_tool_agent(
             json=payload,
             verify=False,
             stream=stream,
-            timeout=(60, 180),
+            timeout=(60, 600),
         )
-        response.raise_for_status()
+        raise_for_status_with_body(
+            response,
+            f"[{problem_number}] Turn {turn + 1} request failed",
+        )
         if stream:
             response_json = consume_streaming_tool_response(response, problem_number, turn + 1)
         else:
@@ -1372,7 +1503,7 @@ def build_tool_prompt(template_content: str, problem_content: str, language: str
         "Additional instructions:\n"
         f"- Produce only runnable {language} source code.\n"
         "- Use the tools to draft files, inspect them, and check syntax before delivery.\n"
-        "- Finish by calling deliver_code with the final full source code.\n"
+        "- Finish by calling deliver_code with the final workspace file path.\n"
         "- Do not return markdown fences or explanations in the delivered code.\n"
     )
 
@@ -1443,6 +1574,13 @@ def process_problem_files(
     benchmark = read_benchmark()
     entry = benchmark.get(store_name, {})
     entry, entry_changed = complete_model_capabilities(entry, available_endpoints[0], think=think, no_think=no_think)
+    if not entry.get("has_tooling", False):
+        entry["has_tooling"] = True
+        entry_changed = True
+        log(
+            f"Overriding cached has_tooling=False for {store_name} because "
+            f"tool-agent preflight succeeded on {available_endpoints[0].url}."
+        )
     if entry_changed:
         benchmark[store_name] = entry
         write_benchmark(benchmark)

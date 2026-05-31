@@ -48,23 +48,17 @@ def ollama_api_delete(endpoint: dict) -> bool:
     return response.status_code == 200
 
 def openai_api_list(endpoint) -> dict:
-    """
-    Try to read models from an openai-api-compatible endpoint (/api/tags).
-    If that fails (e.g., it's actually an OpenAI-compatible server),
-    fall back to /v1/models and map IDs to 'unknown' details.
-    """
-    # Build base URL (e.g. http://host:port)
-    api_base = get_llm_url_stub(endpoint)
+    # Read model list from an openai-api-compatible endpoint (/v1/models).
 
     # We intentionally allow self-signed dev servers
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    # ---- OpenAI-compatible /v1/models ----
     try:
         headers = {}
         if getattr(endpoint, "key", None):
             headers["Authorization"] = f"Bearer {endpoint.key}"
 
+        api_base = get_llm_url_stub(endpoint)
         resp = requests.get(
             f"{api_base}/v1/models", headers=headers, verify=False, timeout=5
         )

@@ -101,6 +101,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | ministral-3:14b-instruct-2512-q4_K_M                                                             |          |   8.55 |     82 |   13.9 |    4 |  256 | 11.11 | 8.43 | 7.35 | 1.09 |
 | frob/qwen3.5-instruct:4b                                                                         |     3.00 |   8.52 |    284 |      4 |    4 |  256 | 11.23 | 6.84 | 9.14 | 1.52 |
 | qwen2.5:72b-instruct-q4_K_M                                                                      |          |   8.47 |     16 |   72.7 |    4 |  128 | 11.5 | 8.83 | 5.27 | 1.69 |
+| hf.co/LiquidAI/LFM2.5-8B-A1B-GGUF:q4_K_M-no_think                                                |          |   8.30 |    131 |   8.47 |    4 |      | 11.92 |  7.1 | 3.97 | 6.06 |
 | gemma4:31b-coding-mtp-bf16-no_think                                                              |          |   8.28 |        |        |      |      | 20.69 |      |      |      |
 | qwen3.5:4b-q4_K_M-no_think                                                                       |     3.00 |   8.25 |    275 |      4 |    4 |  256 | 10.54 | 9.12 | 6.11 | 0.76 |
 | hf.co/janhq/Jan-v3-4B-base-instruct-gguf:Q4_K_M                                                  |     3.00 |   8.19 |    273 |      4 |    4 |  256 | 13.51 | 5.06 | 6.05 | 0.56 |
@@ -108,7 +109,6 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/vanta-research/apollo-astralis-8b:Q4_K_M                                                   |          |   8.00 |    130 |   8.19 |    4 |   32 | 8.36 | 12.08 | 4.45 | 1.38 |
 | hf.co/tiiuae/Falcon-H1-34B-Instruct-GGUF:Q4_K_M                                                  |          |   7.89 |     31 |   33.6 |    4 |  256 | 7.87 | 9.73 | 8.81 | 0.57 |
 | qwen3:4b-instruct-2507-q4_K_M                                                                    |     3.00 |   7.70 |    257 |    4.0 |    4 |  256 | 10.14 | 6.54 | 7.88 |  1.1 |
-| hf.co/LiquidAI/LFM2.5-8B-A1B-GGUF:q4_K_M-no_think                                                |          |   7.69 |    121 |   8.47 |    4 |      | 11.92 |  7.1 | 3.97 |      |
 | qwen3-vl:8b-instruct-q4_K_M                                                                      |          |   7.38 |    112 |    8.8 |    4 |  256 | 8.39 | 7.02 | 9.34 | 0.46 |
 | hf.co/bartowski/ibm-granite_granite-4.1-30b-GGUF:q4_K_M                                          |          |   7.31 |        |        |    4 |      | 9.78 | 8.13 | 4.45 | 0.74 |
 | qwen3:14b-q4_K_M-no_think                                                                        |          |   7.31 |     66 |   14.8 |    4 |   40 | 8.19 | 10.15 | 4.16 |  1.6 |
@@ -219,6 +219,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | yi-coder:1.5b-chat-q4_K_M                                                                        |          |   0.84 |     75 |    1.5 |    4 |  128 | 1.53 | 0.66 | 0.08 | 0.13 |
 | hf.co/mradermacher/Qwen2.5-Coder-1.5B-Instruct-abliterated-GGUF:Q4_K_M                           |          |   0.81 |     61 |   1.78 |    4 |  128 | 1.06 | 1.17 | 0.14 | 0.09 |
 | granite4:1b-h-q8_0                                                                               |          |   0.80 |     48 |    1.5 |    8 |  128 | 1.53 | 0.35 | 0.38 | 0.06 |
+| openbmb/minicpm5:q8_0-no_think                                                                   |          |   0.79 |        |        |      |      | 1.71 | 0.36 | 0.01 |  0.0 |
 | hf.co/mradermacher/Lucy-128k-GGUF:Q4_K_M                                                         |          |   0.73 |     57 |   1.72 |    4 |      | 0.76 | 1.23 | 0.05 | 0.47 |
 | hf.co/allenai/OLMo-2-0325-32B-Instruct-GGUF:Q4_0                                                 |          |   0.72 |      3 |   32.2 |    4 |    4 | 1.68 | 0.06 | 0.11 | 0.09 |
 | hf.co/bartowski/ai21labs_AI21-Jamba2-3B-GGUF:Q4_K_M                                              |          |   0.71 |     31 |    3.0 |    4 |  256 | 1.35 | 0.21 | 0.28 | 0.48 |
@@ -244,6 +245,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/mradermacher/UserLM-8b-GGUF:Q4_K_M                                                         |          |   0.34 |      6 |      8 |    4 |      | 0.73 | 0.05 | 0.12 |  0.1 |
 | hf.co/allenai/OLMo-2-1124-7B-Instruct-GGUF:Q4_K_M                                                |          |   0.33 |      6 |    7.3 |    4 |    2 | 0.69 |  0.1 | 0.08 | 0.09 |
 | hf.co/mradermacher/scout-4b-GGUF:Q4_K_M                                                          |          |   0.33 |     11 |   3.88 |    4 |      | 0.77 | 0.04 | 0.03 |  0.0 |
+| openbmb/minicpm5:q4_K_M-no_think                                                                 |          |   0.25 |        |        |    4 |      | 0.47 | 0.19 | 0.01 |  0.0 |
 | hf.co/allenai/OLMoE-1B-7B-0125-Instruct-GGUF:Q4_K_M                                              |          |   0.22 |      4 |   6.92 |    4 |    2 | 0.53 | 0.03 | 0.01 |  0.0 |
 | hf.co/mradermacher/Qwen2.5-Coder-0.5B-Instruct-abliterated-GGUF:Q4_K_M                           |     0.37 |   0.22 |     58 |  0.494 |    4 |  128 | 0.05 | 0.02 | 0.95 |  0.0 |
 | hf.co/mradermacher/Qwen2.5-VL-3B-Instruct-abliterated-GGUF:Q4_K_M                                |          |   0.21 |      9 |   3.09 |    4 |   64 | 0.48 | 0.07 | 0.01 |  0.0 |
@@ -805,15 +807,16 @@ vllm or any other engine that supports the openai api
 ### llama.cpp
 
 Llama.cpp has lots of tools, one of them is a openai-api compatible server, simply called "server".
-You can build from source with:
+You can install it with:
 ```
-cmake --build build --config Release -t llama-server
+curl -LsSf https://llama.app/install.sh | sh
 ```
-The server application then can be started with
+Follow the instructions given by the installer to make llama-server available in the future sessions.
+The server application then can be started with i.e.
 ```
-build/bin/llama-server -c 32768
+llama-server -hf Jackrong/Qwopus3.6-27B-v2-GGUF:Q4_K_M
 ```
-As default setting for the context length, we use 32k. This also starts a chat interface at http://localhost:8080
+This starts a chat interface at http://localhost:8080
 This server has Model Management, that means you can dynamically
 load more models into its own model store, like
 ```
@@ -823,11 +826,8 @@ or delete a model with
 ```
 curl -X POST http://localhost:8080/models/unload -H "Content-Type: application/json" -d '{"model": "my-model.gguf"}'
 ```
-The model storage location is system-specific, on a mac you find it at `~/Library/Cache/llama.cpp/`.
-If you want to start the server with a pre-loaded model, run
-```
-build/bin/llama-server -c 32768
-```
+The model storage location is system-specific, you probably find it in `~/.cache/huggingface/`.
+
 
 ### Ollama
 

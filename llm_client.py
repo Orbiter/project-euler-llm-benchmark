@@ -1,4 +1,5 @@
 import os
+import errno
 import json
 import time
 import queue
@@ -266,6 +267,7 @@ def _normalize_usage(usage: dict, fallback_total_tokens: int = 0) -> dict:
 
 RATE_LIMIT_RETRY_SECONDS = 10
 DEFAULT_RATE_LIMIT_RETRIES = 5
+NETWORK_UNREACHABLE_COOLDOWN_SECONDS = 30
 
 
 class LLMRequestTimeout(RuntimeError):
@@ -276,8 +278,28 @@ class LLMIncompleteResponse(RuntimeError):
     """Raised when a stream ends before a completion marker is received."""
 
 
+class LLMEmptyCompletion(RuntimeError):
+    """Raised when the model stops without returning an answer."""
+
+
 class RateLimitRetryError(RuntimeError):
     """Raised when an endpoint remains rate limited after bounded retries."""
+
+
+class LLMNetworkUnreachable(RuntimeError):
+    """Raised when the OS reports that the endpoint's network is unreachable."""
+
+
+def _is_network_unreachable(error: requests.exceptions.RequestException) -> bool:
+    if not isinstance(error, requests.exceptions.ConnectionError):
+        return False
+    # Requests and urllib3 wrap the original socket error.
+    cause = error
+    while cause is not None:
+        if isinstance(cause, OSError) and cause.errno == errno.ENETUNREACH:
+            return True
+        cause = cause.__cause__ or cause.__context__
+    return False
 
 
 # Terminal event names used by the OpenAI Responses API, Anthropic, Cohere, and
@@ -553,6 +575,7 @@ def openai_api_chat(
     response = None
     text_chunks = []
     usage = None
+    finish_reason = None
     thinking_not_suppressed = False
     token_count = 0
     parsed_url = urlparse(endpoint.url)
@@ -618,7 +641,7 @@ def openai_api_chat(
                             usage = evt_usage
                         choices = evt.get("choices", [])
                         if choices:
-                            delta = choices[0].get("delta", {})
+                            delta = choices[0].get("delta") or {}
                             reasoning_token = delta.get("reasoning")
                             if no_think and not thinking_not_suppressed and isinstance(reasoning_token, str) and reasoning_token.strip():
                                 thinking_not_suppressed = True
@@ -634,6 +657,9 @@ def openai_api_chat(
                                     if token_count % 100 == 0:
                                         print(c0, end="", flush=True) # print a dot for each 10 tokens to show progress
                         if _is_stream_end_event(evt):
+                            finish_reason = choices[0].get("finish_reason") if choices else None
+                            if finish_reason is None:
+                                finish_reason = evt.get("finish_reason")
                             stream_completed = True
                             print() # end progress line
                             break
@@ -656,7 +682,8 @@ def openai_api_chat(
                 body = (e.response.text or "")[:800].replace("\n", " ")
             except Exception:
                 body = ""
-        raise Exception(f"API request failed to {endpoint.url}: {e} | Body: {body}") from e
+        error_type = LLMNetworkUnreachable if _is_network_unreachable(e) else Exception
+        raise error_type(f"API request failed to {endpoint.url}: {e} | Body: {body}") from e
     finally:
         if response is not None:
             response.close()
@@ -666,6 +693,8 @@ def openai_api_chat(
         if stream:
             answer = "".join(text_chunks).strip()
             usage_summary = _normalize_usage(usage, fallback_total_tokens=len(text_chunks))
+            if finish_reason is not None:
+                usage_summary["finish_reason"] = finish_reason
             total_tokens = usage_summary["total_tokens"]
             token_per_second = 0.0 if (t1 - t0) <= 0 else total_tokens / (t1 - t0)
             if not answer: print(f"Empty streamed response from the API at {endpoint.url}")
@@ -781,10 +810,15 @@ class LoadBalancer:
             print("Task queue full - applying backpressure")
             return False
     
-    def mark_server_available(self, server: Server):
-        """Mark a server as available for new tasks"""
+    def mark_server_available(self, server: Server, cooldown_seconds: float = 0):
+        """Release a server and return it to the queue after any cooldown."""
         with self.lock:
             server.current_task = None
+        if cooldown_seconds:
+            timer = threading.Timer(cooldown_seconds, self.available_servers.put, args=(server,))
+            timer.daemon = True
+            timer.start()
+        else:
             self.available_servers.put(server)
     
     def get_available_server(self, timeout: float = 10.0) -> Optional[Server]:
@@ -813,6 +847,7 @@ class LoadBalancer:
         task = server.current_task
         endpoint = server.endpoint
         task.attempts += 1
+        cooldown_seconds = 0
         try:
             #print(f"Processing task ID {task.id} on server {server.endpoint} with model {task.model}")
             answer, total_tokens, token_per_second, usage_summary, duration_seconds = openai_api_chat(
@@ -823,6 +858,8 @@ class LoadBalancer:
                 no_think = task.no_think
             )
             if not isinstance(answer, str) or not answer.strip():
+                if isinstance(answer, str) and usage_summary.get("finish_reason") == "stop":
+                    raise LLMEmptyCompletion("Model returned an empty answer (finish_reason=stop)")
                 raise LLMIncompleteResponse("Model returned an empty or invalid answer")
             # Call the response processing function
             response = Response(
@@ -839,16 +876,26 @@ class LoadBalancer:
             print(f"Processed {task.description}, on {server.endpoint.url} with model {endpoint.model_name} in {duration_seconds:.2f} seconds with {total_tokens} tokens ({token_per_second:.2f} tokens/sec)")
             
         except Exception as e:
-            if task.attempts <= self.task_retries:
+            if isinstance(e, LLMNetworkUnreachable):
+                cooldown_seconds = NETWORK_UNREACHABLE_COOLDOWN_SECONDS
+                print(
+                    f"Pausing dispatch to {endpoint.url} for {cooldown_seconds}s "
+                    f"after task ID {task.id} hit Network is unreachable.",
+                    flush=True,
+                )
+            completed_empty = isinstance(e, LLMEmptyCompletion)
+            if not completed_empty and task.attempts <= self.task_retries:
                 print(
                     f"Retrying task ID {task.id} after attempt {task.attempts} "
                     f"failed on {server.endpoint.url}: {e}"
                 )
                 self.task_queue.put(task)
             else:
+                retry_note = ". Skipping retry." if completed_empty else ""
                 print(
                     f"Failed to process task ID {task.id} on {server.endpoint.url} "
-                    f"after {task.attempts} attempts: {e}"
+                    f"after {task.attempts} attempts: {e}{retry_note}",
+                    flush=completed_empty,
                 )
                 # Persist terminal failures through the same writer as answers so
                 # every attempted problem can be included in the benchmark.
@@ -862,7 +909,7 @@ class LoadBalancer:
                     token_per_second=0.0,
                 ))
         finally:
-            self.mark_server_available(server)
+            self.mark_server_available(server, cooldown_seconds)
             self.task_queue.task_done()
     
     def start_distribution(self):

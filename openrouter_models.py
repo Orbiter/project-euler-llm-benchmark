@@ -10,7 +10,7 @@ from collections import defaultdict
 from benchmark import read_benchmark, write_benchmark
 from typing import Dict, Iterable, List, Optional, Sequence, Set
 
-MODEL_SOURCE_URL = "https://openrouter.ai/api/frontend/models"
+MODEL_SOURCE_URL = "https://openrouter.ai/api/frontend/v1/catalog/models"
 MODEL_CACHE_FILE = "openrouter_models.json"
 
 _STOP_TOKENS = {

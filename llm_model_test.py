@@ -3,6 +3,8 @@ import json
 import base64
 from llm_client import Endpoint, openai_api_chat
 
+_base_dir = os.path.dirname(os.path.abspath(__file__))
+    
 TOOLING_EXPECTED_FUNCTION_NAME = "lightswitch"
 FORMAT_EXPECTED_MOODS = {"surprised", "angry", "happy"}
 REQUIRED_CAPABILITY_FIELDS = (
@@ -42,7 +44,7 @@ def test_vision(endpoint: Endpoint) -> bool:
     return test_vision_with_flags(endpoint)
 
 def test_vision_with_flags(endpoint: Endpoint, think: bool = False, no_think: bool = False) -> bool:
-    image_path = "llmtest/testimage.png"
+    image_path = os.path.join(_base_dir, "llmtest", "testimage.png")
     if not os.path.exists(image_path):
         raise Exception(f"Test image not found: {image_path}")
 

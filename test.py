@@ -5,13 +5,16 @@ from argparse import ArgumentParser
 from benchmark import read_benchmark, write_benchmark
 from llm_client import openai_api_list, Endpoint
 
+_base_dir = os.path.dirname(os.path.abspath(__file__))
+
 def get_bench_name(language, max_problem_number, tool_mode=False):
     if tool_mode:
         return f"{language}-tool-{max_problem_number}"
     return f"{language}-{max_problem_number}"
 
 def test(api_base, endpoint_name, model_name, language, overwrite_existing, overwrite_failed, max_problem_number=100, think=False, no_think=False, tool_mode=False):
-    inference_script = "inference-with-tools.py" if tool_mode else "inference.py"
+    script_name = "inference-with-tools.py" if tool_mode else "inference.py"
+    inference_script = os.path.join(_base_dir, script_name)
 
     # call inference script
     cmd = f"python3.12 {inference_script} --language {language} --api_base {api_base}"
@@ -26,7 +29,8 @@ def test(api_base, endpoint_name, model_name, language, overwrite_existing, over
 
     if not tool_mode:
         # call codeextraction.py
-        cmd = f"python3.12 codeextraction.py --language {language}"
+        codeextraction_script = os.path.join(_base_dir, "codeextraction.py")
+        cmd = f"python3.12 {codeextraction_script} --language {language}"
         cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
         if think: cmd += " --think"
         if no_think: cmd += " --no_think"
@@ -35,7 +39,8 @@ def test(api_base, endpoint_name, model_name, language, overwrite_existing, over
 
     if not tool_mode:
         # call execute.py
-        cmd = f"python3.12 execute.py --language {language}"
+        execute_script = os.path.join(_base_dir, "execute.py")
+        cmd = f"python3.12 {execute_script} --language {language}"
         cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
         if think: cmd += " --think"
         if no_think: cmd += " --no_think"
@@ -76,6 +81,7 @@ def main():
     models = []
     local_endpoint = Endpoint(store_name=store_name, model_name=store_name, key="", url=f"{api_base[0]}/v1/chat/completions")
     model_dict = openai_api_list(local_endpoint)
+    model_dict = {k.lower(): v for k, v in model_dict.items()}
     if args.allmodels:
         if endpoint_name:
             raise Exception("The --allmodels option cannot be used in combination with --endpoint.")
@@ -136,7 +142,7 @@ def main():
                 entry = benchmark.get(model_benchmark_name, {})
                 
             # check if attributes parameter_size and quantization_level are present in benchmark.json
-            parameter_size = model_dict.get(model,{}).get('parameter_size', None)
+            parameter_size = model_dict.get(model.lower(), {}).get('parameter_size', None)
             if parameter_size:
                 if parameter_size.endswith("B"):
                     parameter_size = parameter_size[:-1]
@@ -145,7 +151,7 @@ def main():
                 except ValueError:
                     print(f"Warning: Could not convert parameter_size '{parameter_size}' to float for model {model}")
                     parameter_size = None 
-            quantization_level = model_dict.get(model,{}).get('quantization_level', None)
+            quantization_level = model_dict.get(model.lower(), {}).get('quantization_level', None)
             if quantization_level:
                 try:
                     quantization_level = int(quantization_level)

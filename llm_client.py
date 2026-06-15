@@ -49,6 +49,8 @@ def ollama_api_delete(endpoint: dict) -> bool:
 
 def openai_api_list(endpoint) -> dict:
     # Read model list from an openai-api-compatible endpoint (/v1/models).
+    # The ollama endpoint now returns names different from the model list on the console (only lowercase match):
+    # to check existence of a model, compare only lowercase. Do not call this method directly, use ensure_model_available instead.
 
     # We intentionally allow self-signed dev servers
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -77,33 +79,15 @@ def openai_api_list(endpoint) -> dict:
         # Both strategies failed; return empty so caller can handle it
         return {}
 
-def openai_api_check_exist(endpoint: Endpoint) -> bool:
-    models = openai_api_list(endpoint)
-    if endpoint.model_name in models:
-        return True
-
-    # Remote OpenAI-compatible providers do not always expose every usable chat
-    # model through /v1/models. Treat a missing listing as non-fatal so the real
-    # chat request can return a concrete API error instead of the caller hanging
-    # forever while waiting for discovery to succeed.
-    if endpoint.key and not models:
-        print(
-            f"Could not verify model {endpoint.model_name} via {get_llm_url_stub(endpoint)}/v1/models; "
-            "continuing and letting the chat request validate the model."
-        )
-        return True
-
-    return False
-
 
 def ensure_model_available(endpoint: Endpoint, attempts: int = 3, fail_if_unavailable: bool = False) -> bool:
     api_base = get_llm_url_stub(endpoint)
     for attempt in range(1, attempts + 1):
-        if openai_api_check_exist(endpoint):
-            return True
+        models = openai_api_list(endpoint)
+        # the endpoint now returns names different from the model listing on console; we must make a case insensitive match:
+        models = {k.lower(): v for k, v in models.items()}
+        if endpoint.model_name.lower() in models: return True
         print(f"Model availability check failed for {endpoint.model_name} on {api_base} (attempt {attempt}/{attempts}).")
-        if endpoint.key:
-            continue
         ollama_pull(endpoint)
         time.sleep(1)
 
@@ -127,11 +111,6 @@ def ollama_pull(endpoint: Endpoint) -> dict:
     # Try to pull the model from the endpoint. If that does not work, we simply return.
     # Failure can be due to the model already being present, network issues, etc.,
     # we try to move on anyway.
-    if endpoint.key: return endpoint # endpoints with a key are not an ollama server
-    
-    # don't load the model if it is already present
-    if openai_api_check_exist(endpoint):
-        return endpoint
 
     # pull the model if it is not available
     api_base = get_llm_url_stub(endpoint)

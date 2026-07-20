@@ -300,6 +300,7 @@ def openai_api_chat(
     modelname_lower = modelname.lower()
     if no_think:
         payload["enable_thinking"] = False
+        payload["reasoning_effort"] = "none"
 
     # use the endpoints array as failover mechanism
     response = None

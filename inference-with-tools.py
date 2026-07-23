@@ -22,7 +22,7 @@ from typing import Dict, List, Tuple
 import requests
 from PIL import Image
 
-from benchmark import read_benchmark, write_benchmark, sort_benchmark
+from benchmark import current_timestamp_utc, read_benchmark, write_benchmark, sort_benchmark
 from execute import execute_solution
 from llm_client import (
     Endpoint,
@@ -461,6 +461,7 @@ def update_tooling_score(
             return
 
         entry[get_tooling_score_name(language, max_problem_number)] = round(candidate_points / total_count, 2)
+        entry["timestamp"] = current_timestamp_utc()
         benchmark[store_name] = entry
         write_benchmark(sort_benchmark(benchmark))
 
@@ -501,6 +502,7 @@ def record_tooling_result(
         if 0 <= index < vector_length:
             test_vector[index] = "1" if correct else "0"
         entry[tooling_series_name] = "".join(test_vector)
+        entry["timestamp"] = current_timestamp_utc()
         benchmark[store_name] = entry
         write_benchmark(sort_benchmark(benchmark))
     update_tooling_score(

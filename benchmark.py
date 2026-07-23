@@ -2,6 +2,7 @@ import os
 import time
 import json
 import logging
+from datetime import datetime, timezone
 from typing import Dict
 
 # Constants
@@ -41,6 +42,14 @@ def read_benchmark() -> dict:
     except json.JSONDecodeError:
         logging.error(f"Error decoding JSON in {BENCHMARK_FILE}.")
         return {}
+
+def current_timestamp_utc() -> str:
+    """Return the current time in the benchmark's ISO 8601 UTC format."""
+    return (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )
 
 def write_benchmark(benchmark: dict):
     """Write the benchmark data to the JSON file."""

@@ -5,7 +5,7 @@ import multiprocessing
 from concurrent.futures import ThreadPoolExecutor
 from llm_client import Endpoint
 from argparse import ArgumentParser
-from benchmark import read_benchmark, write_benchmark, sort_benchmark
+from benchmark import current_timestamp_utc, read_benchmark, write_benchmark, sort_benchmark
 from execute_clojure import execute_clojure_code
 from execute_java import execute_java_code
 from execute_python import execute_python_code
@@ -209,6 +209,7 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
         series_name_test = f"{series_name}-test"
         entry[series_name] = candidate_point_average
         entry[series_name_test] = ''.join(test_results)
+        entry["timestamp"] = current_timestamp_utc()
         benchmark[model_name] = entry
 
         # sort the benchmark with the highest points first, average over all batch sizes

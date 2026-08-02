@@ -27,6 +27,7 @@ from execute import execute_solution
 from llm_client import (
     Endpoint,
     ensure_model_available,
+    load_endpoint_file,
     ollama_pull,
     openai_api_check_exist,
     openai_api_list,
@@ -1797,6 +1798,8 @@ def main():
     parser.add_argument("--api", action="append", help="Specify (multiple) backend OpenAI API endpoints (i.e. ollama); can be used multiple times")
     parser.add_argument("--api_base", required=False, default="http://localhost:11434", help="API base URL for the LLM or a list of such urls (comma-separated), default is http://localhost:11434")
     parser.add_argument("--endpoint", required=False, default="", help="Name of an <endpoint>.json file in the endpoints directory")
+    parser.add_argument("--store_name", help="Storage name when the endpoint file omits store_name")
+    parser.add_argument("--model_name", help="API model name when the endpoint file omits model_name")
     parser.add_argument("--allmodels", action="store_true", help="loop over all models provided by ollama and run those which are missing in benchmark.json")
     parser.add_argument("--model", required=False, default="llama3.2:latest", help="Name of the model to use, default is llama3.2:latest")
     parser.add_argument("--think", action="store_true", help="enable thinking mode via backend request parameters (when supported)")
@@ -1873,8 +1876,13 @@ def main():
                 log(f"Using endpoint file {endpoint_path}")
                 if not os.path.exists(endpoint_path):
                     raise Exception(f"Endpoint file {endpoint_path} does not exist.")
-                with open(endpoint_path, "r", encoding="utf-8") as file:
-                    endpoints = [Endpoint(**json.load(file))]
+                endpoints = [
+                    load_endpoint_file(
+                        endpoint_path,
+                        store_name=args.store_name,
+                        model_name=args.model_name,
+                    )
+                ]
             else:
                 log(f"Inference with tools: Using model {store_name} and language {language}")
                 endpoints = [

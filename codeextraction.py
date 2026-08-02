@@ -2,7 +2,7 @@ import os
 import re
 import json
 from argparse import ArgumentParser
-from llm_client import Endpoint
+from llm_client import Endpoint, load_endpoint_file
 
 # make a function which returns the extension of the language files for each language
 def get_extension(language):
@@ -118,6 +118,8 @@ def main():
     parser.add_argument('--no_think', action='store_true', help='if set, the prompt will get an additional "/no_think" appended at the end')
     parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the languages to test, default is python,java,rust,clojure')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
+    parser.add_argument('--store_name', help='Storage name when the endpoint file omits store_name')
+    parser.add_argument('--model_name', help='API model name when the endpoint file omits model_name')
     
     args = parser.parse_args()
     store_name = args.model
@@ -130,9 +132,12 @@ def main():
         print(f"Using endpoint file {endpoint_path}")
         if not os.path.exists(endpoint_path):
             raise Exception(f"Endpoint file {endpoint_path} does not exist.")
-        with open(endpoint_path, 'r', encoding='utf-8') as file:
-            endpoint = Endpoint(**json.load(file))
-            store_name = endpoint.store_name
+        endpoint = load_endpoint_file(
+            endpoint_path,
+            store_name=args.store_name,
+            model_name=args.model_name,
+        )
+        store_name = endpoint.store_name
 
     # modify the model name in case soft thinking switches are given
     if args.think: store_name += "-think"

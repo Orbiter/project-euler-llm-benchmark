@@ -10,7 +10,7 @@ from PIL import Image
 from io import BytesIO
 from enum import Enum, auto
 from urllib.parse import urlparse
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from argparse import ArgumentParser
 from typing import Callable, List, Optional
 
@@ -18,7 +18,7 @@ from typing import Callable, List, Optional
 class Endpoint:
     store_name: str                             # Name of the endpoint, used to store the model in the solutions
     model_name: str                             # Model name that is used in the api request
-    key: str                                    # API key (if required)
+    key: str = field(repr=False)                # API key (if required); never include it in logs/repr
     url: str                                    # URL of the endpoint
     _context_size: Optional[float] = None       # kilo-number of tokens
     _publication_date: Optional[str] = None     # ISO-short date, like 2025-09-19
@@ -35,17 +35,85 @@ class Endpoint:
             "_quantization_level": self._quantization_level
         }
 
+
+def load_endpoint_file(
+    path: str,
+    store_name: Optional[str] = None,
+    model_name: Optional[str] = None,
+) -> Endpoint:
+    """Load an endpoint file, filling omitted names from command-line values."""
+    with open(path, "r", encoding="utf-8") as file:
+        endpoint_data = json.load(file)
+
+    endpoint_data = dict(endpoint_data)
+    if store_name is not None:
+        endpoint_data.setdefault("store_name", store_name)
+    if model_name is not None:
+        endpoint_data.setdefault("model_name", model_name)
+
+    missing = [
+        name
+        for name in ("key", "url", "store_name", "model_name")
+        if name not in endpoint_data
+        or (name != "key" and not endpoint_data.get(name))
+    ]
+    if missing:
+        missing_options = [
+            f"--{name}" for name in missing if name in ("store_name", "model_name")
+        ]
+        hint = (
+            f"; provide {' and '.join(missing_options)} on the command line"
+            if missing_options
+            else ""
+        )
+        raise ValueError(
+            f"Endpoint file {path} is missing required "
+            f"{', '.join(missing)}{hint}."
+        )
+
+    allowed_fields = {
+        "store_name",
+        "model_name",
+        "key",
+        "url",
+        "_context_size",
+        "_publication_date",
+        "_quantization_level",
+    }
+    return Endpoint(
+        **{key: value for key, value in endpoint_data.items() if key in allowed_fields}
+    )
+
+
 def get_llm_url_stub(endpoint: Endpoint) -> str:
     """Get the base URL for the LLM API"""
     return urllib3.util.url.parse_url(endpoint.url)._replace(path='').url
 
+def get_openai_models_url(endpoint: Endpoint) -> str:
+    """Derive the models URL without discarding a provider-specific API prefix."""
+    parsed = urlparse(endpoint.url)
+    path = parsed.path.rstrip("/")
+    chat_suffix = "/chat/completions"
+    if path.endswith(chat_suffix):
+        path = path[:-len(chat_suffix)] + "/models"
+    else:
+        path = path + "/models"
+    return parsed._replace(path=path, params="", query="", fragment="").geturl()
+
 def ollama_api_delete(endpoint: dict) -> bool:
     api_base = get_llm_url_stub(endpoint)
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    response = requests.request("DELETE", f"{api_base}/api/delete", verify=False,
-                                headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-                                json={"model": endpoint.model_name})
-    return response.status_code == 200
+    try:
+        # first unload the model
+        response = requests.post(f"{api_base}/api/generate", verify=False,
+                                 json={"model": endpoint.model_name, "keep_alive": 0})
+        # then delete the model
+        response = requests.request("DELETE", f"{api_base}/api/delete", verify=False,
+                                    headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
+                                    json={"model": endpoint.model_name})
+        return response.status_code == 200
+    except requests.RequestException:
+        return False
 
 def openai_api_list(endpoint) -> dict:
     # Read model list from an openai-api-compatible endpoint (/v1/models).
@@ -60,9 +128,11 @@ def openai_api_list(endpoint) -> dict:
         if getattr(endpoint, "key", None):
             headers["Authorization"] = f"Bearer {endpoint.key}"
 
-        api_base = get_llm_url_stub(endpoint)
         resp = requests.get(
-            f"{api_base}/v1/models", headers=headers, verify=False, timeout=5
+            get_openai_models_url(endpoint),
+            headers=headers,
+            verify=False,
+            timeout=5,
         )
         resp.raise_for_status()
         data = resp.json()
@@ -80,14 +150,33 @@ def openai_api_list(endpoint) -> dict:
         return {}
 
 
+def is_ollama_endpoint(endpoint: Endpoint) -> bool:
+    """Return whether the server exposes Ollama's native API."""
+    api_base = get_llm_url_stub(endpoint)
+    try:
+        response = requests.get(f"{api_base}/api/version", verify=False, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        return isinstance(data, dict) and isinstance(data.get("version"), str)
+    except (requests.RequestException, ValueError, TypeError):
+        return False
+
+
 def ensure_model_available(endpoint: Endpoint, attempts: int = 3, fail_if_unavailable: bool = False) -> bool:
     api_base = get_llm_url_stub(endpoint)
+    ollama_endpoint = is_ollama_endpoint(endpoint)
     for attempt in range(1, attempts + 1):
         models = openai_api_list(endpoint)
         # the endpoint now returns names different from the model listing on console; we must make a case insensitive match:
         models = {k.lower(): v for k, v in models.items()}
         if endpoint.model_name.lower() in models: return True
         print(f"Model availability check failed for {endpoint.model_name} on {api_base} (attempt {attempt}/{attempts}).")
+        if not ollama_endpoint:
+            print(
+                f"{api_base} is not an Ollama server; skipping model pull and "
+                "letting the chat request validate the model."
+            )
+            return True
         ollama_pull(endpoint)
         time.sleep(1)
 
@@ -191,6 +280,25 @@ def _normalize_usage(usage: dict, fallback_total_tokens: int = 0) -> dict:
         "reasoning_tokens": reasoning_tokens,
         "total_tokens": total_tokens,
     }
+
+
+RATE_LIMIT_RETRY_SECONDS = 10
+
+
+def _post_with_rate_limit_retry(endpoint: Endpoint, **request_kwargs):
+    """Retry chat requests after a fixed cooldown when the provider returns 429."""
+    while True:
+        response = requests.post(endpoint.url, **request_kwargs)
+        if response.status_code != 429:
+            return response
+
+        print(
+            f"Rate limited by {get_llm_url_stub(endpoint)} (HTTP 429). "
+            f"Waiting {RATE_LIMIT_RETRY_SECONDS} seconds before retrying..."
+        )
+        response.close()
+        time.sleep(RATE_LIMIT_RETRY_SECONDS)
+
 
 def openai_api_chat(
     endpoint: Endpoint,
@@ -306,6 +414,7 @@ def openai_api_chat(
     response = None
     text_chunks = []
     usage = None
+    thinking_not_suppressed = False
     read_timeout = 600 # seconds
     token_count = 0
     parsed_url = urlparse(endpoint.url)
@@ -314,8 +423,8 @@ def openai_api_chat(
     #print(f"Calling model in strem mode: {stream}, payload: {json.dumps(payload)}")
     try:
         t0 = time.time()
-        response = requests.post(
-            endpoint.url,
+        response = _post_with_rate_limit_retry(
+            endpoint,
             headers=headers,
             json=payload,
             verify=False,
@@ -345,10 +454,14 @@ def openai_api_chat(
                         choices = evt.get("choices", [])
                         if choices:
                             delta = choices[0].get("delta", {})
+                            reasoning_token = delta.get("reasoning")
+                            if no_think and not thinking_not_suppressed and isinstance(reasoning_token, str) and reasoning_token.strip():
+                                thinking_not_suppressed = True
+                                print(f"WARNING - THINKING NOT SUPPRESSED on {endpoint.url}")
                             #print(delta)
                             if "content" in delta:
                                 # delta may have attributes content or reasoning. Take whatever is non-empty
-                                token = delta.get("content") or delta.get("reasoning")
+                                token = delta.get("content") or reasoning_token
                                 if token:
                                     text_chunks.append(token)
                                     token_count += 1
@@ -401,6 +514,10 @@ def openai_api_chat(
             if len(choices) == 0:
                 raise Exception("No response from the API: " + str(data))
             message = choices[0].get('message', {})
+            reasoning_token = message.get("reasoning")
+            if no_think and isinstance(reasoning_token, str) and reasoning_token.strip():
+                thinking_not_suppressed = True
+                print(f"WARNING - THINKING NOT SUPPRESSED on {endpoint.url}")
             answer = message.get('content', '')
             response_json = data
         if return_response_json:
@@ -600,6 +717,8 @@ def main():
     parser = ArgumentParser(description="Testing the LLM API.")
     parser.add_argument('--api_base', required=False, default='http://localhost:11434', help='API base URL for the LLM, default is http://localhost:11434')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
+    parser.add_argument('--store_name', help='Storage name when the endpoint file omits store_name')
+    parser.add_argument('--model_name', help='API model name when the endpoint file omits model_name')
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
     parser.add_argument('--image', required=False, default=None, help='path to an image that shall be processed')
     parser.add_argument('--think', action='store_true', help='forward a "think" flag to compatible backends')
@@ -622,16 +741,13 @@ def main():
         print(f"Using endpoint file {endpoint_path}")
         if not os.path.exists(endpoint_path):
             raise Exception(f"Endpoint file {endpoint_path} does not exist.")
-        with open(endpoint_path, 'r', encoding='utf-8') as file:
-            endpoint_dict = json.load(file)
-            endpoints = [
-                Endpoint(
-                    store_name=endpoint_dict["name"],
-                    model_name=endpoint_dict["model"],
-                    key=endpoint_dict["key"],
-                    url=endpoint_dict["endpoint"]
-                )
-            ]
+        endpoints = [
+            load_endpoint_file(
+                endpoint_path,
+                store_name=args.store_name,
+                model_name=args.model_name,
+            )
+        ]
     else:
         endpoints = [
             Endpoint(store_name=model_name, model_name=model_name, key="",

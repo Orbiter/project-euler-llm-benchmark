@@ -3,7 +3,7 @@ import re
 import json
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor
-from llm_client import Endpoint
+from llm_client import Endpoint, load_endpoint_file
 from argparse import ArgumentParser
 from benchmark import current_timestamp_utc, read_benchmark, write_benchmark, sort_benchmark
 from execute_clojure import execute_clojure_code
@@ -228,6 +228,8 @@ def main():
     parser.add_argument('--no_think', action='store_true', help='if set, the prompt will get an additional "/no_think" appended at the end')
     parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the programming language to use, default is python')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
+    parser.add_argument('--store_name', help='Storage name when the endpoint file omits store_name')
+    parser.add_argument('--model_name', help='API model name when the endpoint file omits model_name')
     parser.add_argument('--tool', action='store_true', help='execute tool-generated source files with the tool- prefix and store separate benchmark keys')
     parser.add_argument('--n100', action='store_true', help='only 100 problems') # this is the default
     parser.add_argument('--n200', action='store_true', help='only 200 problems')
@@ -248,9 +250,12 @@ def main():
         print(f"Using endpoint file {endpoint_path}")
         if not os.path.exists(endpoint_path):
             raise Exception(f"Endpoint file {endpoint_path} does not exist.")
-        with open(endpoint_path, 'r', encoding='utf-8') as file:
-            endpoint = Endpoint(**json.load(file))
-            store_name = endpoint.store_name
+        endpoint = load_endpoint_file(
+            endpoint_path,
+            store_name=args.store_name,
+            model_name=args.model_name,
+        )
+        store_name = endpoint.store_name
 
     # modify the model name in case soft thinking switches are given
     if args.think: store_name += "-think"

@@ -7,7 +7,7 @@ from typing import List
 from argparse import ArgumentParser
 from llm_model_test import complete_model_capabilities, has_complete_model_capabilities
 from benchmark import read_benchmark, write_benchmark
-from llm_client import openai_api_list, ensure_model_available, Endpoint, LoadBalancer, Server, Task, Response
+from llm_client import openai_api_list, ensure_model_available, load_endpoint_file, Endpoint, LoadBalancer, Server, Task, Response
 
 def read_template(template_path):
     with open(template_path, 'r', encoding='utf-8') as file:
@@ -130,22 +130,24 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
     print("All problems processed!")
 
 
-def build_endpoints(api_base: List[str], endpoint_name: str, store_name: str, model_name: str) -> List[Endpoint]:
+def build_endpoints(api_base: List[str], endpoint_name: str, store_name: str, model_name: str,
+                    endpoint_store_name: str = None, endpoint_model_name: str = None) -> List[Endpoint]:
     if endpoint_name:
         endpoint_path = os.path.join('endpoints', f"{endpoint_name}.json")
         print(f"Using endpoint file {endpoint_path}")
         if not os.path.exists(endpoint_path):
             raise Exception(f"Endpoint file {endpoint_path} does not exist.")
-        with open(endpoint_path, 'r', encoding='utf-8') as file:
-            endpoint_dict = json.load(file)
-            return [
-                Endpoint(
-                    store_name=store_name,
-                    model_name=endpoint_dict["model"],
-                    key=endpoint_dict["key"],
-                    url=endpoint_dict["endpoint"],
-                )
-            ]
+        endpoint = load_endpoint_file(
+            endpoint_path,
+            store_name=endpoint_store_name,
+            model_name=endpoint_model_name,
+        )
+        endpoint.store_name = resolve_store_name(
+            endpoint.store_name,
+            think=store_name.endswith("-think"),
+            no_think=store_name.endswith("-no_think"),
+        )
+        return [endpoint]
 
     return [
         Endpoint(store_name=store_name, model_name=model_name, key="",
@@ -157,6 +159,8 @@ def main():
     parser.add_argument('--api', action='append', help="Specify (multiple) backend OpenAI API endpoints (i.e. ollama); can be used multiple times")
     parser.add_argument('--api_base', required=False, default='http://localhost:11434', help='API base URL for the LLM or a list of such urls (comma-separated), default is http://localhost:11434')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
+    parser.add_argument('--store_name', help='Storage name when the endpoint file omits store_name')
+    parser.add_argument('--model_name', help='API model name when the endpoint file omits model_name')
     parser.add_argument('--allmodels', action='store_true', help='loop over all models provided by ollama and run those which are missing in benchmark.json')
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
     parser.add_argument('--think', action='store_true', help='enable thinking mode via backend request parameters (when supported)')
@@ -183,7 +187,12 @@ def main():
     if args.n400: max_problem_number = 400
     if args.nall: max_problem_number = 9999
 
-    endpoints = build_endpoints(api_base, endpoint_name, store_name, model_name)
+    endpoints = build_endpoints(
+        api_base, endpoint_name, store_name, model_name,
+        endpoint_store_name=args.store_name,
+        endpoint_model_name=args.model_name,
+    )
+    store_name = endpoints[0].store_name
     # determine model capabilities; cache them in benchmark.json
     benchmark = read_benchmark()
     entry = benchmark.get(store_name, {})
@@ -253,7 +262,11 @@ def main():
                 print(f"Inference: Using endpoint {endpoint_name} and language {language}")
             else:
                 print(f"Inference: Using model {store_name} and language {language}")
-            endpoints = build_endpoints(api_base, endpoint_name, store_name, model_name)
+            endpoints = build_endpoints(
+                api_base, endpoint_name, store_name, model_name,
+                endpoint_store_name=args.store_name,
+                endpoint_model_name=args.model_name,
+            )
             
             # run the inference
             process_problem_files(problems_dir, template_content, endpoints, language, max_problem_number = max_problem_number,

@@ -3,7 +3,7 @@ import json
 import shutil
 from argparse import ArgumentParser
 from benchmark import read_benchmark, write_benchmark
-from llm_client import openai_api_list, Endpoint
+from llm_client import openai_api_list, load_endpoint_file, Endpoint
 
 _base_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -12,13 +12,15 @@ def get_bench_name(language, max_problem_number, tool_mode=False):
         return f"{language}-tool-{max_problem_number}"
     return f"{language}-{max_problem_number}"
 
-def test(api_base, endpoint_name, model_name, language, overwrite_existing, overwrite_failed, max_problem_number=100, think=False, no_think=False, tool_mode=False):
+def test(api_base, endpoint_name, model_name, language, overwrite_existing, overwrite_failed, max_problem_number=100, think=False, no_think=False, tool_mode=False, endpoint_store_name=None, endpoint_model_name=None):
     script_name = "inference-with-tools.py" if tool_mode else "inference.py"
     inference_script = os.path.join(_base_dir, script_name)
 
     # call inference script
     cmd = f"python3.12 {inference_script} --language {language} --api_base {api_base}"
     cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
+    if endpoint_store_name: cmd += f" --store_name {endpoint_store_name}"
+    if endpoint_model_name: cmd += f" --model_name {endpoint_model_name}"
     if max_problem_number == 200: cmd += " --n200"
     if overwrite_existing: cmd += " --overwrite_existing"
     if overwrite_failed: cmd += " --overwrite_failed"
@@ -32,6 +34,8 @@ def test(api_base, endpoint_name, model_name, language, overwrite_existing, over
         codeextraction_script = os.path.join(_base_dir, "codeextraction.py")
         cmd = f"python3.12 {codeextraction_script} --language {language}"
         cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
+        if endpoint_store_name: cmd += f" --store_name {endpoint_store_name}"
+        if endpoint_model_name: cmd += f" --model_name {endpoint_model_name}"
         if think: cmd += " --think"
         if no_think: cmd += " --no_think"
         print(f"Running command: {cmd}")
@@ -42,6 +46,8 @@ def test(api_base, endpoint_name, model_name, language, overwrite_existing, over
         execute_script = os.path.join(_base_dir, "execute.py")
         cmd = f"python3.12 {execute_script} --language {language}"
         cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
+        if endpoint_store_name: cmd += f" --store_name {endpoint_store_name}"
+        if endpoint_model_name: cmd += f" --model_name {endpoint_model_name}"
         if think: cmd += " --think"
         if no_think: cmd += " --no_think"
         print(f"Running command: {cmd}")
@@ -59,6 +65,8 @@ def main():
     parser.add_argument('--overwrite_existing', action='store_true', help='if set, re-calculate all problems that already have an answer')
     parser.add_argument('--overwrite_failed', action='store_true', help='if set, re-calculate those problems with wrong answers')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
+    parser.add_argument('--store_name', help='Storage name when the endpoint file omits store_name')
+    parser.add_argument('--model_name', help='API model name when the endpoint file omits model_name')
     parser.add_argument('--tool', action='store_true', help='use inference-with-tools.py and execute tool-prefixed source files')
     parser.add_argument('--n100', action='store_true', help='only 100 problems') # this is the default
     parser.add_argument('--n200', action='store_true', help='only 200 problems')
@@ -96,7 +104,11 @@ def main():
             if not os.path.exists(endpoint_path):
                 raise Exception(f"Endpoint file {endpoint_path} does not exist.")
             with open(endpoint_path, 'r', encoding='utf-8') as file:
-                endpoint = Endpoint(**json.load(file))
+                endpoint = load_endpoint_file(
+                    endpoint_path,
+                    store_name=args.store_name,
+                    model_name=args.model_name,
+                )
                 store_name = endpoint.store_name
         models = [store_name]
 
@@ -135,7 +147,7 @@ def main():
             # add metadata to benchmark.json
             if not model_benchmark_name in benchmark or not bench_name in benchmark[model_benchmark_name] or overwrite_existing or overwrite_failed:
                 # run the model; this writes a news entry to benchmark.json
-                test(",".join(api_base), endpoint_name, model, language, overwrite_existing, overwrite_failed, max_problem_number, think = args.think, no_think = args.no_think, tool_mode = args.tool)
+                test(",".join(api_base), endpoint_name, model, language, overwrite_existing, overwrite_failed, max_problem_number, think = args.think, no_think = args.no_think, tool_mode = args.tool, endpoint_store_name=args.store_name, endpoint_model_name=args.model_name)
                 # load benchmark.json again because the test has updated it
                 benchmark = read_benchmark()
                 # because testing can be interrupted, there is no guarantee that the entry is present

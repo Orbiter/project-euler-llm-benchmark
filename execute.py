@@ -61,6 +61,16 @@ def get_series_name(language, max_problem_number, tool_mode=False):
         return f"{language}-tool-{max_problem_number}"
     return f"{language}-{max_problem_number}"
 
+def get_missing_solution_files(solutions, language, max_problem_number, tool_mode=False):
+    extension = get_extension(language)
+    executed_problem_numbers = {int(problem_number) for problem_number in solutions}
+    prefix = 'tool-' if tool_mode else ''
+    return [
+        f"{prefix}{problem_number:04d}.{extension}"
+        for problem_number in range(1, max_problem_number + 1)
+        if problem_number not in executed_problem_numbers
+    ]
+
 def process_solutions(model_name, language, max_problem_number, expected_solutions, tool_mode=False):
     results_dir = os.path.join('solutions', model_name, language)
     solutions_json_path = os.path.join('solutions', model_name, language, 'solutions.json')
@@ -155,8 +165,14 @@ def _execute_solution_task(args):
     return problem_number, output
 
 def evaluate_solutions(solutions, model_name, language, max_problem_number, expected_solutions, tool_mode=False):
+    missing_files = get_missing_solution_files(
+        solutions,
+        language,
+        max_problem_number,
+        tool_mode=tool_mode,
+    )
 
-    if len(solutions) == max_problem_number:
+    if not missing_files:
         # evaluate the solutions by comparing with the expected results
         human_points = 0.0
         candidate_points = 0.0
@@ -218,7 +234,10 @@ def evaluate_solutions(solutions, model_name, language, max_problem_number, expe
         # write the updated benchmark file
         write_benchmark(sorted_benchmark)
     else:
-        print("Not all solutions were executed, so the benchmark was not updated.")
+        print(
+            "Not all solutions were executed, so the benchmark was not updated. "
+            f"Missing expected files: {', '.join(missing_files)}"
+        )
 
 def main():
     parser = ArgumentParser(description="Execute solutions and store results in a JSON file.")

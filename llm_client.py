@@ -390,7 +390,7 @@ def openai_api_chat(
         "top_k": 20,    # reduces the probability of generating nonsense: high = more diverse, low = more focused; ollama default: 40
         "top_p": 0.8,  # works together with top_k: high = more diverse, low = more focused; ollama default: 0.9
         "min_p": 0,     # alternative to top_p: p is minimum probability for a token to be considered; ollama default: 0.0
-        "presence_penalty": 1.5,
+        "presence_penalty": 0.5,
         "stream": stream
     }
     if tools:
@@ -415,7 +415,7 @@ def openai_api_chat(
     text_chunks = []
     usage = None
     thinking_not_suppressed = False
-    read_timeout = 600 # seconds
+    read_timeout = 1200 # seconds
     token_count = 0
     parsed_url = urlparse(endpoint.url)
     host = parsed_url.hostname or ""
@@ -472,7 +472,7 @@ def openai_api_chat(
                         pass # robust against json parse errors
         t1 = time.time()
     except requests.exceptions.ReadTimeout as e:
-        raise Exception(f"Read timeout while calling {endpoint.url} (timeout=600s). "
+        raise Exception(f"Read timeout while calling {endpoint.url} (timeout=1200s). "
                         f"The model may be slow or the server overloaded.") from e
     except requests.exceptions.RequestException as e:
         # print(f"Failed to access api: {e}")

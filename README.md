@@ -34,6 +34,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | ling-3.0-flash-no_think                                                                          |          |  48.14 |     19 |  124.0 |   16 |  256 | 56.97 | 54.42 | 44.1 | 2.08 |
 | muse-glimmer:30b-q8_0-dflash-no_think                                                            |          |  47.47 |    144 |     30 |    8 |  128 | 56.75 | 82.56 |      |      |
 | qwen3.6:35b-a3b-q4_K_M-no_think                                                                  |          |  46.39 |    177 |   35.0 |    4 |  256 | 50.6 | 57.61 | 43.65 | 1.32 |
+| qwen3.8:27b-mtp-q4_K_M-no_think                                                                  |    20.25 |  46.36 |    229 |   27.0 |    4 |  256 | 62.04 | 49.23 | 33.46 | 0.87 |
 | qwen3.6:35b-a3b-mtp-q8_0-no_think                                                                |          |  45.91 |    119 |     35 |    8 |  256 | 57.11 | 53.55 | 34.55 | 0.94 |
 | qwen3.7-flash-no_think                                                                           |          |  45.26 |        |        |   16 | 1000 | 55.33 | 54.29 | 33.93 | 0.56 |
 | qwen3-coder-next:Q4_K_M                                                                          |          |  44.95 |     75 |   79.7 |    4 |  256 | 54.49 | 42.84 | 47.33 | 8.38 |
@@ -57,6 +58,7 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/cturan/IQuest-Coder-V1-40B-Instruct-GGUF:Q4_K_M                                            |          |  20.09 |     67 |   39.8 |    4 |  128 | 26.12 | 19.65 | 17.81 | 1.83 |
 | hf.co/mradermacher/Ling-mini-2.0-GGUF:Q4_K_M                                                     |          |  20.00 |    167 |     16 |    4 |  128 | 26.89 | 19.74 | 15.66 | 1.91 |
 | hf.co/mradermacher/Ling-mini-2.0-i1-GGUF:Q4_K_M                                                  |          |  19.36 |    161 |     16 |    4 |  128 | 29.58 | 20.74 | 6.35 | 0.39 |
+| hf.co/unsloth/Qwen3.8-27B-GGUF:UD-Q8_K_XL-no_think                                               |          |  18.99 |     64 |   27.0 |    8 |  256 | 47.48 |      |      |      |
 | hf.co/mradermacher/OmniCoder-9B-i1-GGUF:Q4_K_M                                                   |          |  18.90 |    280 |      9 |    4 |  256 | 25.28 | 21.23 | 11.73 | 0.71 |
 | nemotron-3.5-lightning-no_think                                                                  |          |  18.72 |     31 |     30 |   16 | 1024 | 23.62 | 21.6 | 13.53 | 0.81 |
 | qwen3-vl:30b-a3b-instruct-q8_0                                                                   |          |  17.61 |     51 |   31.1 |    8 |  256 | 18.64 | 20.51 | 18.53 | 2.98 |

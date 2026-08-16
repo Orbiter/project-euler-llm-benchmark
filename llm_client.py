@@ -3,6 +3,7 @@ import json
 import time
 import queue
 import base64
+import codecs
 import urllib3
 import requests
 import threading
@@ -285,6 +286,129 @@ def _normalize_usage(usage: dict, fallback_total_tokens: int = 0) -> dict:
 RATE_LIMIT_RETRY_SECONDS = 10
 
 
+# Terminal event names used by the OpenAI Responses API, Anthropic, Cohere, and
+# a few OpenAI-compatible SSE implementations.  Hyphens are normalized to
+# underscores before comparison.
+_STREAM_END_EVENT_TYPES = frozenset({
+    "done",
+    "message.end",
+    "message_end",
+    "message.stop",
+    "message_stop",
+    "response.cancelled",
+    "response.completed",
+    "response.done",
+    "response.failed",
+    "response.incomplete",
+    "response_cancelled",
+    "response_completed",
+    "response_done",
+    "response_failed",
+    "response_incomplete",
+    "stream.end",
+    "stream_end",
+})
+
+
+def _is_stream_end_event(event) -> bool:
+    """Return whether a decoded streaming payload terminates the response."""
+    if not isinstance(event, dict):
+        return False
+
+    if event.get("done") is True:
+        return True
+
+    # Some compatible APIs put the finish reason at the top level, while
+    # OpenAI-compatible chat completions put it on a choice.
+    finish_reason_keys = ("finish_reason", "finishReason", "stop_reason", "stopReason")
+    if any(key in event and event[key] is not None for key in finish_reason_keys):
+        return True
+
+    choices = event.get("choices")
+    if isinstance(choices, list):
+        for choice in choices:
+            if isinstance(choice, dict) and any(
+                key in choice and choice[key] is not None
+                for key in finish_reason_keys
+            ):
+                return True
+
+    for key in ("type", "event"):
+        event_type = event.get(key)
+        if isinstance(event_type, str):
+            normalized_type = event_type.strip().lower().replace("-", "_")
+            if normalized_type in _STREAM_END_EVENT_TYPES:
+                return True
+
+    return False
+
+
+def _is_stream_end_event_name(event_name: str) -> bool:
+    """Return whether an SSE ``event:`` field names a terminal event."""
+    return (
+        isinstance(event_name, str)
+        and event_name.strip().lower().replace("-", "_")
+        in _STREAM_END_EVENT_TYPES
+    )
+
+
+def _split_sse_field(line: str):
+    """Split one SSE line into its normalized field name and value."""
+    line = line.lstrip("\ufeff")
+    field, separator, value = line.partition(":")
+    if not separator:
+        return None, None
+    return field.strip().lower(), value.lstrip()
+
+
+def _unterminated_sse_line_ends_stream(line: str) -> bool:
+    """Check a buffered final SSE line without waiting for a line ending."""
+    field, value = _split_sse_field(line)
+    if field == "event":
+        return _is_stream_end_event_name(value)
+    if field != "data":
+        return False
+    if value.strip() == "[DONE]":
+        return True
+    try:
+        return _is_stream_end_event(json.loads(value))
+    except (json.JSONDecodeError, TypeError):
+        return False
+
+
+def _iter_sse_lines(response):
+    """Yield SSE lines, including terminal lines that have no trailing newline.
+
+    ``requests.Response.iter_lines`` holds an unterminated line until the next
+    chunk or EOF.  A few streaming servers send their terminal event without a
+    newline and keep the HTTP connection alive, so inspect the pending bytes
+    after every chunk and release them as soon as they form a terminal event.
+    """
+    decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+    pending = ""
+
+    for chunk in response.iter_content(chunk_size=1024):
+        if not chunk:
+            continue
+        if isinstance(chunk, str):
+            decoded_chunk = chunk
+        else:
+            decoded_chunk = decoder.decode(chunk)
+        pending += decoded_chunk
+
+        while "\n" in pending:
+            line, pending = pending.split("\n", 1)
+            yield line.rstrip("\r")
+
+        if pending and _unterminated_sse_line_ends_stream(pending):
+            yield pending.rstrip("\r")
+            return
+
+    pending += decoder.decode(b"", final=True)
+    if pending:
+        yield pending.rstrip("\r")
+
+
 def _post_with_rate_limit_retry(endpoint: Endpoint, **request_kwargs):
     """Retry chat requests after a fixed cooldown when the provider returns 429."""
     while True:
@@ -390,7 +514,8 @@ def openai_api_chat(
         "top_k": 20,    # reduces the probability of generating nonsense: high = more diverse, low = more focused; ollama default: 40
         "top_p": 0.8,  # works together with top_k: high = more diverse, low = more focused; ollama default: 0.9
         "min_p": 0,     # alternative to top_p: p is minimum probability for a token to be considered; ollama default: 0.0
-        "presence_penalty": 0.5,
+        "presence_penalty": 1.5,
+        "repetition_penalty": 1.0,
         "stream": stream
     }
     if tools:
@@ -437,17 +562,27 @@ def openai_api_chat(
         if stream:
             #print("Response (stream): ", end="", flush=True)
             timeouttime = t0 + read_timeout
-            for line in response.iter_lines(decode_unicode=True):
+            for line in _iter_sse_lines(response):
                 if time.time() > timeouttime: break # we simply silently terminate the stream after the timeout
                 if not line: continue
                 #print(line)
-                if line.startswith("data: "):
-                    payload_line = line[len("data: "):].strip()
-                    if payload_line == "[DONE]":
+                field, value = _split_sse_field(line)
+                if field == "event":
+                    if _is_stream_end_event_name(value):
+                        print() # end progress line
+                        break
+                    continue
+                if field == "data":
+                    # SSE permits zero or one space after the colon.  lstrip()
+                    # also makes compatible servers with extra whitespace work.
+                    payload_line = value
+                    if payload_line.strip() == "[DONE]":
                         print() # end progress line
                         break
                     try:
                         evt = json.loads(payload_line)
+                        if not isinstance(evt, dict):
+                            continue
                         evt_usage = evt.get("usage")
                         if isinstance(evt_usage, dict):
                             usage = evt_usage
@@ -468,6 +603,9 @@ def openai_api_chat(
                                     #print(token, end="", flush=True)
                                     if token_count % 100 == 0:
                                         print(c0, end="", flush=True) # print a dot for each 10 tokens to show progress
+                        if _is_stream_end_event(evt):
+                            print() # end progress line
+                            break
                     except Exception:
                         pass # robust against json parse errors
         t1 = time.time()

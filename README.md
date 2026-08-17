@@ -24,7 +24,8 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | Model                                                                                            | Best<br/>Model<br/>for<br/>Size (GB) | PE-200-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | Java | Rust | Clojure |
 | :----------------------------------------------------------------------------------------------- | -----------------------------------: | ----------------: | -------------: | --------------------: | ---: | ---------------------: | -----: | ---: | ---: | ------: |
 | gpt-5.6-sol-no_think                                                                             |          |  67.31 |        |        |   16 | 1050 | 64.33 | 87.54 | 75.46 | 2.23 |
-| nemotron-3-ultra-550b-a55b-no_think                                                              |     1100 |  56.53 |      5 |  550.0 |   16 | 1000 | 72.52 | 49.42 | 60.05 | 6.89 |
+| muse-glimmer:30b-q8_0-dflash-no_think                                                            |    33.00 |  62.91 |    191 |     30 |    8 |  128 | 56.75 | 82.56 | 76.23 |  2.0 |
+| nemotron-3-ultra-550b-a55b-no_think                                                              |          |  56.53 |      5 |  550.0 |   16 | 1000 | 72.52 | 49.42 | 60.05 | 6.89 |
 | muse-glimmer:30b-nvfp4-dflash-no_think                                                           |    22.50 |  55.55 |    247 |     30 |    4 |  128 | 50.31 | 70.15 | 69.59 | 4.67 |
 | hf.co/InternScience/Agents-A1-Q8_0-GGUF:Q8_0-no_think                                            |          |  54.12 |    141 |   35.0 |    8 |  256 | 59.61 | 76.03 | 35.04 | 4.57 |
 | gpt-5.6-terra-no_think                                                                           |          |  51.87 |        |        |   16 | 1050 | 54.22 | 56.9 | 64.97 | 1.14 |
@@ -32,7 +33,6 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | qwen3.6:27b-mtp-q8_0-no_think                                                                    |          |  49.22 |    166 |     27 |    8 |  256 | 58.75 | 53.9 | 47.48 | 0.56 |
 | hf.co/SC117/Agents-A1-MTP-APEX-GGUF:latest-no_think                                              |          |  48.75 |    186 |     35 |    4 |  256 | 64.73 | 57.04 | 27.87 | 1.75 |
 | ling-3.0-flash-no_think                                                                          |          |  48.14 |     19 |  124.0 |   16 |  256 | 56.97 | 54.42 | 44.1 | 2.08 |
-| muse-glimmer:30b-q8_0-dflash-no_think                                                            |          |  47.47 |    144 |     30 |    8 |  128 | 56.75 | 82.56 |      |      |
 | qwen3.6:35b-a3b-q4_K_M-no_think                                                                  |          |  46.39 |    177 |   35.0 |    4 |  256 | 50.6 | 57.61 | 43.65 | 1.32 |
 | qwen3.8:27b-mtp-q4_K_M-no_think                                                                  |    20.25 |  46.36 |    229 |   27.0 |    4 |  256 | 62.04 | 49.23 | 33.46 | 0.87 |
 | qwen3.6:35b-a3b-mtp-q8_0-no_think                                                                |          |  45.91 |    119 |     35 |    8 |  256 | 57.11 | 53.55 | 34.55 | 0.94 |
@@ -44,7 +44,9 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | qwen3-next:80b-a3b-instruct-q4_K_M                                                               |          |  42.71 |     71 |   79.7 |    4 |  256 | 48.41 | 50.71 | 32.66 | 16.0 |
 | qwen3.6:27b-q8_0-no_think                                                                        |          |  42.62 |    144 |   27.0 |    8 |  256 | 52.3 | 45.14 | 40.3 | 1.02 |
 | qwen3.6:27b-q4_K_M-no_think                                                                      |    20.25 |  42.44 |    210 |   27.0 |    4 |  256 | 56.21 | 46.65 | 29.68 | 0.28 |
+| qwen3.8:27b-mtp-q8_0-no_think                                                                    |          |  41.24 |    139 |   27.0 |    8 |  256 | 46.53 | 50.48 | 37.13 | 0.56 |
 | qwen3.6:35b-a3b-q8_0-no_think                                                                    |          |  41.08 |    107 |   35.0 |    8 |  256 | 44.64 | 49.94 | 40.93 | 0.56 |
+| hf.co/unsloth/Qwen3.8-27B-GGUF:UD-Q8_K_XL-no_think                                               |          |  38.86 |    131 |   27.0 |    8 |  256 | 47.48 | 44.39 | 32.49 | 0.56 |
 | qwen3-vl:235b-a22b-instruct-q4_K_M                                                               |          |  37.08 |     21 |  235.7 |    4 |  256 | 36.44 | 47.94 | 34.77 | 11.66 |
 | frob/qwen3.5-instruct:27b                                                                        |    20.25 |  36.63 |    181 |   27.0 |    4 |  256 | 48.5 | 38.95 | 26.39 | 2.69 |
 | qwen3:235b-a22b-instruct-2507-q4_K_M                                                             |          |  36.33 |     21 |  235.1 |    4 |  256 | 43.09 | 41.18 | 28.46 | 10.53 |
@@ -58,7 +60,6 @@ The "Economic Score" is the average performance per bytes of model size (times 1
 | hf.co/cturan/IQuest-Coder-V1-40B-Instruct-GGUF:Q4_K_M                                            |          |  20.09 |     67 |   39.8 |    4 |  128 | 26.12 | 19.65 | 17.81 | 1.83 |
 | hf.co/mradermacher/Ling-mini-2.0-GGUF:Q4_K_M                                                     |          |  20.00 |    167 |     16 |    4 |  128 | 26.89 | 19.74 | 15.66 | 1.91 |
 | hf.co/mradermacher/Ling-mini-2.0-i1-GGUF:Q4_K_M                                                  |          |  19.36 |    161 |     16 |    4 |  128 | 29.58 | 20.74 | 6.35 | 0.39 |
-| hf.co/unsloth/Qwen3.8-27B-GGUF:UD-Q8_K_XL-no_think                                               |          |  18.99 |     64 |   27.0 |    8 |  256 | 47.48 |      |      |      |
 | hf.co/mradermacher/OmniCoder-9B-i1-GGUF:Q4_K_M                                                   |          |  18.90 |    280 |      9 |    4 |  256 | 25.28 | 21.23 | 11.73 | 0.71 |
 | nemotron-3.5-lightning-no_think                                                                  |          |  18.72 |     31 |     30 |   16 | 1024 | 23.62 | 21.6 | 13.53 | 0.81 |
 | qwen3-vl:30b-a3b-instruct-q8_0                                                                   |          |  17.61 |     51 |   31.1 |    8 |  256 | 18.64 | 20.51 | 18.53 | 2.98 |

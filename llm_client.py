@@ -151,33 +151,14 @@ def openai_api_list(endpoint) -> dict:
         return {}
 
 
-def is_ollama_endpoint(endpoint: Endpoint) -> bool:
-    """Return whether the server exposes Ollama's native API."""
-    api_base = get_llm_url_stub(endpoint)
-    try:
-        response = requests.get(f"{api_base}/api/version", verify=False, timeout=5)
-        response.raise_for_status()
-        data = response.json()
-        return isinstance(data, dict) and isinstance(data.get("version"), str)
-    except (requests.RequestException, ValueError, TypeError):
-        return False
-
-
 def ensure_model_available(endpoint: Endpoint, attempts: int = 3, fail_if_unavailable: bool = False) -> bool:
     api_base = get_llm_url_stub(endpoint)
-    ollama_endpoint = is_ollama_endpoint(endpoint)
     for attempt in range(1, attempts + 1):
         models = openai_api_list(endpoint)
         # the endpoint now returns names different from the model listing on console; we must make a case insensitive match:
         models = {k.lower(): v for k, v in models.items()}
         if endpoint.model_name.lower() in models: return True
         print(f"Model availability check failed for {endpoint.model_name} on {api_base} (attempt {attempt}/{attempts}).")
-        if not ollama_endpoint:
-            print(
-                f"{api_base} is not an Ollama server; skipping model pull and "
-                "letting the chat request validate the model."
-            )
-            return True
         ollama_pull(endpoint)
         time.sleep(1)
 

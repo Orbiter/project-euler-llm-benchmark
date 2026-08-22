@@ -1,57 +1,49 @@
 import os
 import json
+import shlex
 import shutil
+import subprocess
+import sys
 from argparse import ArgumentParser
-from benchmark import read_benchmark, write_benchmark
+from benchmark import read_benchmark, score_key, write_benchmark
+from language_config import DEFAULT_LANGUAGES
 from llm_client import openai_api_list, load_endpoint_file, Endpoint
 
 _base_dir = os.path.dirname(os.path.abspath(__file__))
 
 def get_bench_name(language, max_problem_number, tool_mode=False):
-    if tool_mode:
-        return f"{language}-tool-{max_problem_number}"
-    return f"{language}-{max_problem_number}"
+    return score_key(language, max_problem_number, tool_mode)
+
+def run_pipeline_step(script_name, arguments):
+    command = [sys.executable, os.path.join(_base_dir, script_name), *arguments]
+    print(f"Running command: {shlex.join(command)}")
+    subprocess.run(command, check=True)
 
 def test(api_base, endpoint_name, model_name, language, overwrite_existing, overwrite_failed, max_problem_number=100, think=False, no_think=False, tool_mode=False, endpoint_store_name=None, endpoint_model_name=None):
     script_name = "inference-with-tools.py" if tool_mode else "inference.py"
-    inference_script = os.path.join(_base_dir, script_name)
+    target_args = ["--endpoint", endpoint_name] if endpoint_name else ["--model", model_name]
+    optional_args = []
+    if endpoint_store_name: optional_args.extend(["--store_name", endpoint_store_name])
+    if endpoint_model_name: optional_args.extend(["--model_name", endpoint_model_name])
+    if think: optional_args.append("--think")
+    if no_think: optional_args.append("--no_think")
 
     # call inference script
-    cmd = f"python3.12 {inference_script} --language {language} --api_base {api_base}"
-    cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
-    if endpoint_store_name: cmd += f" --store_name {endpoint_store_name}"
-    if endpoint_model_name: cmd += f" --model_name {endpoint_model_name}"
-    if max_problem_number == 200: cmd += " --n200"
-    if overwrite_existing: cmd += " --overwrite_existing"
-    if overwrite_failed: cmd += " --overwrite_failed"
-    if think: cmd += " --think"
-    if no_think: cmd += " --no_think"
-    print(f"Running command: {cmd}")
-    os.system(cmd)
+    inference_args = ["--language", language, "--api_base", api_base, *target_args, *optional_args]
+    if max_problem_number == 200: inference_args.append("--n200")
+    if overwrite_existing: inference_args.append("--overwrite_existing")
+    if overwrite_failed: inference_args.append("--overwrite_failed")
+    run_pipeline_step(script_name, inference_args)
 
     if not tool_mode:
         # call codeextraction.py
-        codeextraction_script = os.path.join(_base_dir, "codeextraction.py")
-        cmd = f"python3.12 {codeextraction_script} --language {language}"
-        cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
-        if endpoint_store_name: cmd += f" --store_name {endpoint_store_name}"
-        if endpoint_model_name: cmd += f" --model_name {endpoint_model_name}"
-        if think: cmd += " --think"
-        if no_think: cmd += " --no_think"
-        print(f"Running command: {cmd}")
-        os.system(cmd)
+        extraction_args = ["--language", language, *target_args, *optional_args]
+        run_pipeline_step("codeextraction.py", extraction_args)
 
     if not tool_mode:
         # call execute.py
-        execute_script = os.path.join(_base_dir, "execute.py")
-        cmd = f"python3.12 {execute_script} --language {language}"
-        cmd += f" --endpoint {endpoint_name}" if endpoint_name else f" --model {model_name}"
-        if endpoint_store_name: cmd += f" --store_name {endpoint_store_name}"
-        if endpoint_model_name: cmd += f" --model_name {endpoint_model_name}"
-        if think: cmd += " --think"
-        if no_think: cmd += " --no_think"
-        print(f"Running command: {cmd}")
-        os.system(cmd)
+        execution_args = ["--language", language, *target_args, *optional_args]
+        run_pipeline_step("execute.py", execution_args)
 
 def main():
     parser = ArgumentParser(description="Run the complete pipeline to execute solutions and store results in a JSON file.")
@@ -61,7 +53,7 @@ def main():
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
     parser.add_argument('--think', action='store_true', help='if set, the prompt will get an additional "/think" appended at the end')
     parser.add_argument('--no_think', action='store_true', help='if set, the prompt will get an additional "/no_think" appended at the end')
-    parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the languages to test, default is python,java,rust,clojure')
+    parser.add_argument('--language', required=False, default=DEFAULT_LANGUAGES, help=f'Name of the languages to test, default is {DEFAULT_LANGUAGES}')
     parser.add_argument('--overwrite_existing', action='store_true', help='if set, re-calculate all problems that already have an answer')
     parser.add_argument('--overwrite_failed', action='store_true', help='if set, re-calculate those problems with wrong answers')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')

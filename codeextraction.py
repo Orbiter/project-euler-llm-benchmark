@@ -2,29 +2,8 @@ import os
 import re
 import json
 from argparse import ArgumentParser
+from language_config import DEFAULT_LANGUAGES, get_extension
 from llm_client import Endpoint, load_endpoint_file
-
-# make a function which returns the extension of the language files for each language
-def get_extension(language):
-    if language == 'c': return 'c'
-    elif language == 'r': return 'r'
-    elif language == 'go': return 'go'
-    elif language == 'c++': return 'cpp'
-    elif language == 'lua': return 'lua'
-    elif language == 'java': return 'java'
-    elif language == 'lisp': return 'lisp'
-    elif language == 'rust': return 'rs'
-    elif language == 'ruby': return 'rb'
-    elif language == 'perl': return 'pl'
-    elif language == 'python': return 'py'
-    elif language == 'prolog': return 'pl'
-    elif language == 'matlab': return 'matlab'
-    elif language == 'kotlin': return 'kt'
-    elif language == 'clojure': return 'clj'
-    elif language == 'fortran': return 'f'
-    elif language == 'javascript': return 'js'
-    else:
-        raise Exception(f"Unsupported language: {language}")
 
 thinking_remove_tags = [
     ["<|begin_of_thought|>", "<|end_of_thought|>"],
@@ -116,7 +95,7 @@ def main():
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
     parser.add_argument('--think', action='store_true', help='if set, the prompt will get an additional "/think" appended at the end')
     parser.add_argument('--no_think', action='store_true', help='if set, the prompt will get an additional "/no_think" appended at the end')
-    parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the languages to test, default is python,java,rust,clojure')
+    parser.add_argument('--language', required=False, default=DEFAULT_LANGUAGES, help=f'Name of the languages to test, default is {DEFAULT_LANGUAGES}')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     parser.add_argument('--store_name', help='Storage name when the endpoint file omits store_name')
     parser.add_argument('--model_name', help='API model name when the endpoint file omits model_name')

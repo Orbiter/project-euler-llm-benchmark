@@ -7,6 +7,8 @@ from typing import List
 from argparse import ArgumentParser
 from llm_model_test import complete_model_capabilities, has_complete_model_capabilities
 from benchmark import read_benchmark, write_benchmark
+from execute_js import ensure_javascript_runtime
+from language_config import DEFAULT_LANGUAGES
 from llm_client import openai_api_list, ensure_model_available, load_endpoint_file, Endpoint, LoadBalancer, Server, Task, Response
 
 def read_template(template_path):
@@ -165,7 +167,7 @@ def main():
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
     parser.add_argument('--think', action='store_true', help='enable thinking mode via backend request parameters (when supported)')
     parser.add_argument('--no_think', action='store_true', help='disable thinking mode via backend request parameters (when supported)')
-    parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the languages to test, default is python,java,rust,clojure')
+    parser.add_argument('--language', required=False, default=DEFAULT_LANGUAGES, help=f'Name of the languages to test, default is {DEFAULT_LANGUAGES}')
     parser.add_argument('--overwrite_existing', action='store_true', help='if set, re-calculate all problems that already have an answer')
     parser.add_argument('--overwrite_failed', action='store_true', help='if set, re-calculate those problems with wrong answers')
     parser.add_argument('--only_capabilities', action='store_true', help='if set, only the model capabilities (thinking, vision, tools, forms) are tested')
@@ -175,7 +177,11 @@ def main():
     parser.add_argument('--nall', action='store_true', help='all problems')
 
     args = parser.parse_args()
-    
+
+    languages = [language.strip() for language in args.language.split(',')]
+    if not args.only_capabilities and "javascript" in languages:
+        ensure_javascript_runtime()
+
     api_base = args.api if args.api else args.api_base.split(",") if "," in args.api_base else [args.api_base]
     model_name = args.model
     language = args.language
@@ -217,7 +223,6 @@ def main():
         expected_solutions = json.load(json_file)
         
     # iterate over all languages
-    languages = args.language.split(',')
     for language in languages:
         bench_name = f"{language}-{max_problem_number}"
         

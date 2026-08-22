@@ -265,6 +265,19 @@ def _normalize_usage(usage: dict, fallback_total_tokens: int = 0) -> dict:
 
 
 RATE_LIMIT_RETRY_SECONDS = 10
+DEFAULT_RATE_LIMIT_RETRIES = 5
+
+
+class LLMRequestTimeout(RuntimeError):
+    """Raised when an LLM request exceeds its configured time budget."""
+
+
+class LLMIncompleteResponse(RuntimeError):
+    """Raised when a stream ends before a completion marker is received."""
+
+
+class RateLimitRetryError(RuntimeError):
+    """Raised when an endpoint remains rate limited after bounded retries."""
 
 
 # Terminal event names used by the OpenAI Responses API, Anthropic, Cohere, and
@@ -390,18 +403,36 @@ def _iter_sse_lines(response):
         yield pending.rstrip("\r")
 
 
-def _post_with_rate_limit_retry(endpoint: Endpoint, **request_kwargs):
+def _post_with_rate_limit_retry(
+    endpoint: Endpoint,
+    max_retries: int = DEFAULT_RATE_LIMIT_RETRIES,
+    deadline: float | None = None,
+    **request_kwargs,
+):
     """Retry chat requests after a fixed cooldown when the provider returns 429."""
+    retries = 0
     while True:
+        if deadline is not None and time.monotonic() >= deadline:
+            raise LLMRequestTimeout(f"Overall timeout while calling {endpoint.url}.")
         response = requests.post(endpoint.url, **request_kwargs)
         if response.status_code != 429:
             return response
 
+        response.close()
+        if retries >= max_retries:
+            raise RateLimitRetryError(
+                f"Endpoint {endpoint.url} remained rate limited after "
+                f"{max_retries} retries."
+            )
+        retries += 1
         print(
             f"Rate limited by {get_llm_url_stub(endpoint)} (HTTP 429). "
             f"Waiting {RATE_LIMIT_RETRY_SECONDS} seconds before retrying..."
         )
-        response.close()
+        if deadline is not None and time.monotonic() + RATE_LIMIT_RETRY_SECONDS >= deadline:
+            raise LLMRequestTimeout(
+                f"Overall timeout while waiting to retry {endpoint.url}."
+            )
         time.sleep(RATE_LIMIT_RETRY_SECONDS)
 
 
@@ -417,7 +448,9 @@ def openai_api_chat(
     response_format: dict = None,
     return_response_json: bool = False,
     think = False,
-    no_think = False
+    no_think = False,
+    overall_timeout: float = 1200,
+    idle_timeout: float = 1200,
 ) -> tuple:
     """
     Function to interact with the LLM API for chat completions.
@@ -521,35 +554,50 @@ def openai_api_chat(
     text_chunks = []
     usage = None
     thinking_not_suppressed = False
-    read_timeout = 1200 # seconds
     token_count = 0
     parsed_url = urlparse(endpoint.url)
     host = parsed_url.hostname or ""
     c0 = host[0] if host else "."
     #print(f"Calling model in strem mode: {stream}, payload: {json.dumps(payload)}")
     try:
-        t0 = time.time()
+        t0 = time.monotonic()
+        deadline = t0 + overall_timeout
+        request_timeout = max(0.001, min(idle_timeout, overall_timeout))
         response = _post_with_rate_limit_retry(
             endpoint,
             headers=headers,
             json=payload,
             verify=False,
             stream=stream,
-            timeout=(60, read_timeout) # (connect_timeout, read_timeout))
+            timeout=(min(60, request_timeout), request_timeout),
+            deadline=deadline,
         )
+        if time.monotonic() >= deadline:
+            raise LLMRequestTimeout(f"Overall timeout while calling {endpoint.url}.")
         #print(f"Response status: {response.status_code}")
         response.raise_for_status()
         #print(f"Response headers: {response.headers}")
         if stream:
             #print("Response (stream): ", end="", flush=True)
-            timeouttime = t0 + read_timeout
+            stream_completed = False
+            last_activity = time.monotonic()
             for line in _iter_sse_lines(response):
-                if time.time() > timeouttime: break # we simply silently terminate the stream after the timeout
+                now = time.monotonic()
+                if now >= deadline:
+                    raise LLMRequestTimeout(
+                        f"Overall timeout while streaming from {endpoint.url}."
+                    )
+                if now - last_activity >= idle_timeout:
+                    raise LLMRequestTimeout(
+                        f"Idle timeout while streaming from {endpoint.url}."
+                    )
+                last_activity = now
                 if not line: continue
                 #print(line)
                 field, value = _split_sse_field(line)
                 if field == "event":
                     if _is_stream_end_event_name(value):
+                        stream_completed = True
                         print() # end progress line
                         break
                     continue
@@ -558,6 +606,7 @@ def openai_api_chat(
                     # also makes compatible servers with extra whitespace work.
                     payload_line = value
                     if payload_line.strip() == "[DONE]":
+                        stream_completed = True
                         print() # end progress line
                         break
                     try:
@@ -585,13 +634,18 @@ def openai_api_chat(
                                     if token_count % 100 == 0:
                                         print(c0, end="", flush=True) # print a dot for each 10 tokens to show progress
                         if _is_stream_end_event(evt):
+                            stream_completed = True
                             print() # end progress line
                             break
                     except Exception:
                         pass # robust against json parse errors
-        t1 = time.time()
+            if not stream_completed:
+                raise LLMIncompleteResponse(
+                    "Stream ended without a completion marker; partial output was discarded."
+                )
+        t1 = time.monotonic()
     except requests.exceptions.ReadTimeout as e:
-        raise Exception(f"Read timeout while calling {endpoint.url} (timeout=1200s). "
+        raise LLMRequestTimeout(f"Read timeout while calling {endpoint.url} (timeout={idle_timeout}s). "
                         f"The model may be slow or the server overloaded.") from e
     except requests.exceptions.RequestException as e:
         # print(f"Failed to access api: {e}")
@@ -603,6 +657,9 @@ def openai_api_chat(
             except Exception:
                 body = ""
         raise Exception(f"API request failed to {endpoint.url}: {e} | Body: {body}") from e
+    finally:
+        if response is not None:
+            response.close()
 
     # Parse the response
     try:
@@ -624,7 +681,7 @@ def openai_api_chat(
                 snippet = text[:800].replace('\n',' ')
                 raise Exception(f"Non-JSON response (status {response.status_code}, Content-Type {ctype}): {snippet}")
 
-            data = response.json()
+            data = json.loads(text)
             usage_summary = _normalize_usage(data.get('usage', {}))
             total_tokens = usage_summary["total_tokens"]
             token_per_second = total_tokens / (t1 - t0)
@@ -662,6 +719,7 @@ class Task:
     response_processing: Callable[['Response'], None] # a function to process the result
     think: bool = False         # use thinking settings
     no_think: bool = False      # use non-thinking settings
+    attempts: int = 0           # number of processing attempts
 
 @dataclass
 class Response:
@@ -701,11 +759,12 @@ class LoadBalancer:
     - It will also retry failed tasks after a short delay.
     - The status of each server is updated as tasks are assigned and completed.
     """
-    def __init__(self, max_queue_size: int = 1000):
+    def __init__(self, max_queue_size: int = 1000, task_retries: int = 1):
         self.servers = []
         self.task_queue = queue.Queue[Task](maxsize=max_queue_size)
         self.available_servers = queue.Queue[Server]()
         self.lock = threading.Lock()
+        self.task_retries = max(0, task_retries)
         
     def add_server(self, server: Server):
         """Add a server to the load balancer"""
@@ -753,6 +812,7 @@ class LoadBalancer:
         """Process task on remote server"""
         task = server.current_task
         endpoint = server.endpoint
+        task.attempts += 1
         try:
             #print(f"Processing task ID {task.id} on server {server.endpoint} with model {task.model}")
             answer, total_tokens, token_per_second, usage_summary, duration_seconds = openai_api_chat(
@@ -776,24 +836,21 @@ class LoadBalancer:
             task.response_processing(response)
             print(f"Processed {task.description}, on {server.endpoint.url} with model {endpoint.model_name} in {duration_seconds:.2f} seconds with {total_tokens} tokens ({token_per_second:.2f} tokens/sec)")
             
-            # mark server available
-            self.mark_server_available(server)
-                
         except Exception as e:
-            # write a stack trace to std out
-            import traceback
-            traceback.print_exc()
-            # Log the error and mark server available
-            error_msg = f"Failed to process task ID {task.id} on {server.endpoint}: {str(e)}"
-            if hasattr(e, 'response'):
-                try:
-                    error_details = e.response.json()
-                    error_msg += f" | API Response: {error_details}"
-                except:
-                    error_msg += f" | Raw Response: {e.response.text}"
-            print(error_msg)
-            # make server available again
+            if task.attempts <= self.task_retries:
+                print(
+                    f"Retrying task ID {task.id} after attempt {task.attempts} "
+                    f"failed on {server.endpoint.url}: {e}"
+                )
+                self.task_queue.put(task)
+            else:
+                print(
+                    f"Failed to process task ID {task.id} on {server.endpoint.url} "
+                    f"after {task.attempts} attempts: {e}"
+                )
+        finally:
             self.mark_server_available(server)
+            self.task_queue.task_done()
     
     def start_distribution(self):
         """Start the task distribution process"""
@@ -811,8 +868,7 @@ class LoadBalancer:
                         # All servers busy, wait and try again
                         time.sleep(busy_waiting_time)
                 
-                self.task_queue.task_done()
-        
+
         # Start distributor thread
         threading.Thread(target=distributor, daemon=True).start()
     

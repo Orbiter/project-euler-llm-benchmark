@@ -1,20 +1,23 @@
 from typing import Dict
 from pathlib import Path
 from argparse import ArgumentParser
-from benchmark import read_benchmark, score_key, sort_benchmark
+from benchmark import (
+    bench_score,
+    language_coefficient_summary,
+    read_benchmark,
+    score_key,
+    sort_benchmark,
+)
+from language_config import (
+    BENCHMARK_LANGUAGES,
+    LANGUAGE_DISPLAY_NAMES,
+    REFERENCE_LANGUAGE,
+)
 
 SECTION_HEADERS: Dict[int, str] = {
     200: "## Results for PE-Bench-200",
     100: "## Archived Outdated PE-Bench-100",
 }
-
-LANGUAGE_WEIGHTS: Dict[str, float] = {
-    "python": 4.0,
-    "java": 3.0,
-    "rust": 2.0,
-    "clojure": 1.0,
-}
-TOTAL_WEIGHT = sum(LANGUAGE_WEIGHTS.values())
 
 class BenchmarkPublisher:
     """Generate the README table from the benchmark results."""
@@ -26,6 +29,16 @@ class BenchmarkPublisher:
         self.sorted_benchmark: dict = {}
 
     def publish(self) -> None:
+        status = language_coefficient_summary(
+            self.benchmark, self.batch_size, tool_mode=False
+        )["javascript"]
+        if not status["ready"]:
+            raise RuntimeError(
+                f"Cannot publish PE-{self.batch_size}: JavaScript/Python "
+                f"calibration data is missing for standard "
+                f"({status['samples']}/{status['required_samples']}) results."
+            )
+
         self.sorted_benchmark = sort_benchmark(self.benchmark, self.batch_size)
         readme_text = self.readme_path.read_text(encoding="utf-8")
         new_table = self._build_table()
@@ -135,25 +148,36 @@ class BenchmarkPublisher:
         return non_thinking, thinking
 
     def _result_key(self, language: str, tool_mode: bool = False) -> str:
-        if tool_mode:
-            return f"{language}-{self.batch_size}-tool"
-        return score_key(language, self.batch_size)
+        return score_key(language, self.batch_size, tool_mode)
 
     def _has_results(self, entry: dict, tool_mode: bool = False) -> bool:
-        return entry.get(self._result_key("python", tool_mode), "") not in (None, "")
+        return entry.get(self._result_key(REFERENCE_LANGUAGE, tool_mode), "") not in (
+            None,
+            "",
+        )
 
     def _entry_score(self, entry: dict, tool_mode: bool = False) -> float:
-        python_score = self._safe_float(entry.get(self._result_key("python", tool_mode)))
-        if python_score is None:
-            return 0.0
+        return bench_score(
+            self.benchmark, entry, self.batch_size, tool_mode=tool_mode
+        )
 
-        combined_score = 0.0
-        for language, weight in LANGUAGE_WEIGHTS.items():
-            language_score = self._safe_float(entry.get(self._result_key(language, tool_mode)))
-            if language_score is None:
-                language_score = 0.0
-            combined_score += weight * language_score
-        return combined_score / TOTAL_WEIGHT
+    def _performance_score(self, entry: dict, pe_score: float) -> float | None:
+        """Combine PE-200 quality with measured Ollama throughput."""
+        if self.batch_size != 200:
+            return None
+
+        output_tokens_per_second = self._safe_float(
+            entry.get("_output_tokens_per_second")
+        )
+        prompt_tokens_per_second = self._safe_float(
+            entry.get("_prompt_tokens_per_second")
+        )
+        if output_tokens_per_second is None or prompt_tokens_per_second is None:
+            return None
+
+        return pe_score * (
+            output_tokens_per_second + (prompt_tokens_per_second / 100.0)
+        ) / 100.0
 
     def _sorted_entries(self, entries: dict, tool_mode: bool = False) -> dict:
         filtered_entries = {
@@ -176,8 +200,6 @@ class BenchmarkPublisher:
             groups = [
                 ("### Non-Thinking", self._sorted_entries(non_thinking, tool_mode=False), False),
                 ("### Thinking", self._sorted_entries(thinking, tool_mode=False), False),
-                ("### Non-Thinking Tool Usage", self._sorted_entries(non_thinking, tool_mode=True), True),
-                ("### Thinking Tool Usage", self._sorted_entries(thinking, tool_mode=True), True),
             ]
         else:
             groups = [(None, self._sorted_entries(self.sorted_benchmark, tool_mode=False), False)]
@@ -195,30 +217,42 @@ class BenchmarkPublisher:
     def _build_table_for_entries(self, entries: dict, max_model_name: int, tool_mode: bool = False) -> str:
         col_best = "Best<br/>Model<br/>for<br/>Size (GB)"
         col_bench_score = f"PE-{self.batch_size}-<br/>Score"
+        col_performance_score = "Performance-<br/>Score"
         col_memory_score = "Mem-<br/>Score"
         col_size = "Size<br/>*10^9 Params"
         col_quant = "Bits"
         col_context = "Context Length<br/>(K)"
-        col_python = "Python"
-        col_java = "Java"
-        col_rust = "Rust"
-        col_clojure = "Clojure"
+        language_columns = [
+            LANGUAGE_DISPLAY_NAMES[language] for language in BENCHMARK_LANGUAGES
+        ]
+
+        columns = [col_best, col_bench_score]
+        if self.batch_size == 200:
+            columns.append(col_performance_score)
+        columns.extend((
+            col_memory_score,
+            col_size,
+            col_quant,
+            col_context,
+            *language_columns,
+        ))
 
         header = (
-            f"| {'Model'.ljust(max_model_name)} | {col_best} | {col_bench_score} | {col_memory_score} | "
-            f"{col_size} | {col_quant} | {col_context} | {col_python} | {col_java} | {col_rust} | {col_clojure} |"
+            f"| {'Model'.ljust(max_model_name)} | "
+            + " | ".join(columns)
+            + " |"
         )
+        alignments = [f"{'-' * (len(column) - 1)}:" for column in columns]
         alignment = (
-            f"| :{'-' * (max_model_name - 1)} | {'-' * (len(col_best) - 1)}: | {'-' * (len(col_bench_score) - 1)}: | "
-            f"{'-' * (len(col_memory_score) - 1)}: | {'-' * (len(col_size) - 1)}: | {'-' * (len(col_quant) - 1)}: | "
-            f"{'-' * (len(col_context) - 1)}: | {'-' * (len(col_python) - 1)}: | {'-' * (len(col_java) - 1)}: | "
-            f"{'-' * (len(col_rust) - 1)}: | {'-' * (len(col_clojure) - 1)}: |"
+            f"| :{'-' * (max_model_name - 1)} | "
+            + " | ".join(alignments)
+            + " |"
         )
 
         lines = [header, alignment]
         lowest_memory_amount = float("inf")
 
-        python_key = self._result_key("python", tool_mode)
+        python_key = self._result_key(REFERENCE_LANGUAGE, tool_mode)
         for model_name, entry in entries.items():
             python_value = entry.get(python_key, "")
             if python_value in (None, ""): continue
@@ -240,6 +274,7 @@ class BenchmarkPublisher:
                     memory_amount = size_value * 2.0
  
             bench_score_value = self._entry_score(entry, tool_mode)
+            performance_score = self._performance_score(entry, bench_score_value)
             memory_score = (
                 (100.0 * bench_score_value / memory_amount) if memory_amount not in (0.0, float("inf")) else None
             )
@@ -249,10 +284,12 @@ class BenchmarkPublisher:
                 lowest_memory_amount = memory_amount
                 best_model = True
 
-            bench_python = self._stringify(python_value)
-            bench_java = self._stringify(entry.get(self._result_key("java", tool_mode), ""))
-            bench_rust = self._stringify(entry.get(self._result_key("rust", tool_mode), ""))
-            bench_clojure = self._stringify(entry.get(self._result_key("clojure", tool_mode), ""))
+            language_values = [
+                self._stringify(
+                    entry.get(self._result_key(language, tool_mode), "")
+                )
+                for language in BENCHMARK_LANGUAGES
+            ]
 
             best_value = ""
             if best_model and memory_amount not in (float("inf"), 0.0):
@@ -262,6 +299,9 @@ class BenchmarkPublisher:
                     best_value = f"{memory_amount:.2f}"
 
             bench_score_str = f"{bench_score_value:.2f}"
+            performance_score_str = (
+                f"{performance_score:.2f}" if performance_score is not None else ""
+            )
             memory_score_str = f"{memory_score:.0f}" if memory_score is not None else ""
             size_str = self._stringify(size_raw)
             quant_str = self._stringify(quant_raw)
@@ -270,14 +310,14 @@ class BenchmarkPublisher:
             line = "| " + model_name.ljust(max_model_name)
             line += " | " + f"{best_value:>8}"
             line += " | " + f"{bench_score_str:>6}"
+            if self.batch_size == 200:
+                line += " | " + f"{performance_score_str:>6}"
             line += " | " + f"{memory_score_str:>6}"
             line += " | " + f"{size_str:>6}"
             line += " | " + f"{quant_str:>4}"
             line += " | " + f"{context_str:>4}"
-            line += " | " + f"{bench_python:>4}"
-            line += " | " + f"{bench_java:>4}"
-            line += " | " + f"{bench_rust:>4}"
-            line += " | " + f"{bench_clojure:>4}"
+            for language_value in language_values:
+                line += " | " + f"{language_value:>4}"
             line += " |"
 
             lines.append(line)
@@ -297,8 +337,8 @@ def build_parser() -> ArgumentParser:
         "--batch-size",
         type=int,
         nargs="*",
-        default=[200, 100],
-        help="Problem batch sizes to publish (e.g., 200 100). Defaults to updating both tables.",
+        default=[200],
+        help="Problem batch sizes to publish (e.g., 200 100). Defaults to PE-200 only.",
     )
     parser.add_argument(
         "--readme",
@@ -313,7 +353,7 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
     readme_path = args.readme
-    batch_sizes = args.batch_size or [200, 100]
+    batch_sizes = args.batch_size or [200]
 
     for batch_size in batch_sizes:
         publisher = BenchmarkPublisher(batch_size, readme_path)

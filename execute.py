@@ -5,40 +5,15 @@ import multiprocessing
 from concurrent.futures import ThreadPoolExecutor
 from llm_client import Endpoint, load_endpoint_file
 from argparse import ArgumentParser
-from benchmark import current_timestamp_utc, read_benchmark, write_benchmark, sort_benchmark
+from benchmark import current_timestamp_utc, read_benchmark, score_key, write_benchmark, sort_benchmark
 from execute_clojure import execute_clojure_code
+from execute_js import execute_javascript_code
 from execute_java import execute_java_code
 from execute_python import execute_python_code
 from execute_rust import execute_rust_code
+from language_config import DEFAULT_LANGUAGES, get_extension, get_language_from_extension
 
-def get_extension(language):
-    if language == 'c': return 'c'
-    elif language == 'r': return 'r'
-    elif language == 'go': return 'go'
-    elif language == 'c++': return 'cpp'
-    elif language == 'lua': return 'lua'
-    elif language == 'java': return 'java'
-    elif language == 'lisp': return 'lisp'
-    elif language == 'rust': return 'rs'
-    elif language == 'ruby': return 'rb'
-    elif language == 'perl': return 'pl'
-    elif language == 'python': return 'py'
-    elif language == 'prolog': return 'pl'
-    elif language == 'matlab': return 'matlab'
-    elif language == 'kotlin': return 'kt'
-    elif language == 'clojure': return 'clj'
-    elif language == 'fortran': return 'f'
-    elif language == 'javascript': return 'js'
-    else:
-        raise Exception(f"Unsupported language: {language}")
-
-def get_language_from_extension(extension):
-    if extension == 'java': return 'java'
-    elif extension == 'rs': return 'rust'
-    elif extension == 'py': return 'python'
-    elif extension == 'clj': return 'clojure'
-    else:
-        raise Exception(f"Unsupported extension: {extension}")
+JAVASCRIPT_MAX_WORKERS = 4
 
 def get_problem_number_from_stem(stem):
     match = re.fullmatch(r'(?:tool-)?(\d+)', stem)
@@ -57,9 +32,7 @@ def is_standard_solution_file(filename, extension):
     )
 
 def get_series_name(language, max_problem_number, tool_mode=False):
-    if tool_mode:
-        return f"{language}-tool-{max_problem_number}"
-    return f"{language}-{max_problem_number}"
+    return score_key(language, max_problem_number, tool_mode)
 
 def get_missing_solution_files(solutions, language, max_problem_number, tool_mode=False):
     extension = get_extension(language)
@@ -96,7 +69,10 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
         tasks.append((program_file_path, expected))
 
     if tasks:
-        max_workers = min(len(tasks), multiprocessing.cpu_count() or 1)
+        worker_limit = multiprocessing.cpu_count() or 1
+        if language == 'javascript':
+            worker_limit = min(worker_limit, JAVASCRIPT_MAX_WORKERS)
+        max_workers = min(len(tasks), worker_limit)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             results = list(executor.map(_execute_solution_task, tasks))
 
@@ -148,6 +124,8 @@ def execute_solution(program_file_path, expected):
             output = execute_clojure_code(code)
         if language == 'java':
             output = execute_java_code(code)
+        if language == 'javascript':
+            output = execute_javascript_code(code)
         if language == 'rust':
             output = execute_rust_code(code)
     
@@ -245,7 +223,7 @@ def main():
     parser.add_argument('--model', required=False, default='llama3.2:latest', help='Name of the model to use, default is llama3.2:latest')
     parser.add_argument('--think', action='store_true', help='if set, the prompt will get an additional "/think" appended at the end')
     parser.add_argument('--no_think', action='store_true', help='if set, the prompt will get an additional "/no_think" appended at the end')
-    parser.add_argument('--language', required=False, default='python,java,rust,clojure', help='Name of the programming language to use, default is python')
+    parser.add_argument('--language', required=False, default=DEFAULT_LANGUAGES, help=f'Comma-separated programming languages to execute (default: {DEFAULT_LANGUAGES})')
     parser.add_argument('--endpoint', required=False, default='', help='Name of an <endpoint>.json file in the endpoints directory')
     parser.add_argument('--store_name', help='Storage name when the endpoint file omits store_name')
     parser.add_argument('--model_name', help='API model name when the endpoint file omits model_name')

@@ -8,8 +8,11 @@ from typing import Dict, List, Sequence, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
+from language_config import BENCHMARK_LANGUAGES
+
 
 COLUMNS = 200
+MAX_LANGUAGE_COUNT = len(BENCHMARK_LANGUAGES)
 CELL_WIDTH = 4  # inner fill width
 CELL_HEIGHT = 8  # inner fill height
 BORDER = 1  # divider thickness between cells
@@ -35,15 +38,13 @@ COLORS = {
     2: (0, 128, 0),  # green
     3: (65, 105, 225),  # blue
     4: (160, 32, 240),  # purple
+    5: (220, 20, 60),  # crimson
 }
 BORDER_COLOR = (180, 180, 180)
 TEXT_COLOR = (0, 0, 0)
-COLOR_KEY_ITEMS = [
-    (0, "0 languages (unsolved)"),
-    (1, "solved in 1 language"),
-    (2, "2 languages"),
-    (3, "3 languages"),
-    (4, "4 languages"),
+COLOR_KEY_ITEMS = [(0, "0 languages (unsolved)")] + [
+    (count, "solved in 1 language" if count == 1 else f"{count} languages")
+    for count in range(1, MAX_LANGUAGE_COUNT + 1)
 ]
 
 
@@ -59,7 +60,10 @@ def collect_models_with_tests(
     data: Dict[str, Dict[str, object]]
 ) -> List[Tuple[str, List[str], bool]]:
     models: List[Tuple[str, List[str], bool]] = []
-    required_keys = [f"{lang}-200-test" for lang in ("python", "java", "rust", "clojure")]
+    required_keys = [
+        f"{lang}-200-test"
+        for lang in BENCHMARK_LANGUAGES
+    ]
 
     for name, metrics in data.items():
         if not isinstance(metrics, dict):
@@ -90,8 +94,8 @@ def count_solutions(values: List[str]) -> List[int]:
 
 
 def color_for_count(count: int) -> Tuple[int, int, int]:
-    if count >= 4:
-        return COLORS[4]
+    if count >= MAX_LANGUAGE_COUNT:
+        return COLORS[MAX_LANGUAGE_COUNT]
     return COLORS[count]
 
 

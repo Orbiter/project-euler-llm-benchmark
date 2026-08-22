@@ -22,21 +22,22 @@ from typing import Dict, List, Tuple
 import requests
 from PIL import Image
 
-from benchmark import current_timestamp_utc, read_benchmark, write_benchmark, sort_benchmark
+from benchmark import current_timestamp_utc, read_benchmark, score_key, write_benchmark, sort_benchmark
 from execute import execute_solution
 from llm_client import (
     Endpoint,
     ensure_model_available,
     load_endpoint_file,
     ollama_pull,
-    openai_api_check_exist,
     openai_api_list,
 )
 from llm_model_test import complete_model_capabilities
 from execute_clojure import syntax_check_clojure
+from execute_js import ensure_javascript_runtime, syntax_check_javascript
 from execute_java import syntax_check_java
 from execute_python import syntax_check_python
 from execute_rust import syntax_check_rust
+from language_config import BENCHMARK_LANGUAGES, DEFAULT_LANGUAGES, get_extension
 
 
 faulthandler.enable(file=sys.stderr, all_threads=True)
@@ -185,7 +186,7 @@ TOOLS = [
         "function": {
             "name": "syntax_check",
             "description": (
-                "Check syntax for python, java, rust, or clojure using one virtual "
+                f"Check syntax for {', '.join(BENCHMARK_LANGUAGES)} using one virtual "
                 "workspace file path."
             ),
             "parameters": {
@@ -194,7 +195,7 @@ TOOLS = [
                     "language": {
                         "type": "string",
                         "description": "Language to check.",
-                        "enum": ["python", "java", "rust", "clojure"],
+                        "enum": list(BENCHMARK_LANGUAGES),
                     },
                     "path": {
                         "type": "string",
@@ -372,24 +373,12 @@ def read_template(template_path):
         return file.read()
 
 
-def get_extension(language):
-    if language == "java":
-        return "java"
-    if language == "rust":
-        return "rs"
-    if language == "python":
-        return "py"
-    if language == "clojure":
-        return "clj"
-    raise Exception(f"Unsupported language: {language}")
-
-
 def get_tooling_series_name(language: str, max_problem_number: int) -> str:
-    return f"{language}-{max_problem_number}-tool-test"
+    return f"{score_key(language, max_problem_number, tool_mode=True)}-test"
 
 
 def get_tooling_score_name(language: str, max_problem_number: int) -> str:
-    return f"{language}-{max_problem_number}-tool"
+    return score_key(language, max_problem_number, tool_mode=True)
 
 
 def get_tooling_batch_bounds(args) -> Tuple[int, int, int]:
@@ -681,11 +670,11 @@ def run_calculator(expression: str) -> ToolResult:
 
 def run_syntax_check(vfs: VirtualFileSystem, parsed_args: dict) -> ToolResult:
     language = (parsed_args.get("language") or "").strip().lower()
-    if language not in {"python", "java", "rust", "clojure"}:
+    if language not in BENCHMARK_LANGUAGES:
         return ToolResult(
             exit_code=1,
             stdout="",
-            stderr="language must be one of: python, java, rust, clojure.",
+            stderr=f"language must be one of: {', '.join(BENCHMARK_LANGUAGES)}.",
         )
 
     try:
@@ -698,6 +687,9 @@ def run_syntax_check(vfs: VirtualFileSystem, parsed_args: dict) -> ToolResult:
 
     if language == "python":
         exit_code, stdout, stderr = syntax_check_python(code, filename)
+        return ToolResult(exit_code=exit_code, stdout=stdout, stderr=stderr)
+    if language == "javascript":
+        exit_code, stdout, stderr = syntax_check_javascript(code)
         return ToolResult(exit_code=exit_code, stdout=stdout, stderr=stderr)
     if language == "java":
         exit_code, stdout, stderr = syntax_check_java(code)
@@ -1515,21 +1507,21 @@ def remove_code_block_instructions(prompt: str, language: str) -> str:
     lines = prompt.splitlines()
     filtered_lines: List[str] = []
     skip_example_block = False
+    wrap_instruction = (
+        f"- Wrap your code in a {language} code block using triple backticks"
+    )
 
     for line in lines:
         stripped = line.strip()
-        if stripped == f"- Wrap your code in a {language} code block using triple backticks":
+        if stripped.casefold() == wrap_instruction.casefold():
             continue
         if stripped == "EXAMPLE FORMAT:":
             skip_example_block = True
             continue
         if skip_example_block:
-            if stripped.startswith("This would output ") or stripped == "":
-                if stripped.startswith("This would output "):
-                    skip_example_block = False
-                continue
-            if stripped.startswith("```") or stripped.startswith("print("):
-                continue
+            if stripped.startswith("This would output "):
+                skip_example_block = False
+            continue
         filtered_lines.append(line)
 
     cleaned = "\n".join(filtered_lines)
@@ -1805,7 +1797,7 @@ def main():
     parser.add_argument("--think", action="store_true", help="enable thinking mode via backend request parameters (when supported)")
     parser.add_argument("--no_think", action="store_true", help="disable thinking mode via backend request parameters (when supported)")
     parser.add_argument("--stream", action="store_true", help="stream tool-agent model responses for transparency")
-    parser.add_argument("--language", required=False, default="python,java,rust,clojure", help="Name of the languages to test, default is python,java,rust,clojure")
+    parser.add_argument("--language", required=False, default=DEFAULT_LANGUAGES, help=f"Name of the languages to test, default is {DEFAULT_LANGUAGES}")
     parser.add_argument("--overwrite_existing", action="store_true", help="if set, re-calculate all problems that already have an answer")
     parser.add_argument("--overwrite_failed", action="store_true", help="if set, re-calculate those problems with wrong answers")
     parser.add_argument("--n100", action="store_true", help="problems 1 to 100")
@@ -1815,6 +1807,10 @@ def main():
     parser.add_argument("--nall", action="store_true", help="all problems")
 
     args = parser.parse_args()
+    languages = [language.strip() for language in args.language.split(",")]
+    if "javascript" in languages:
+        ensure_javascript_runtime()
+
     api_base = args.api if args.api else args.api_base.split(",") if "," in args.api_base else [args.api_base]
     store_name = args.model
     max_problem_number, problem_start, problem_end = get_tooling_batch_bounds(args)
@@ -1824,7 +1820,6 @@ def main():
     with open("solutions.json", "r", encoding="utf-8") as json_file:
         expected_solutions = json.load(json_file)
 
-    languages = args.language.split(",")
     for language in languages:
         endpoint_name = args.endpoint
         problems_dir = "problems"

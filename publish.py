@@ -298,9 +298,13 @@ class BenchmarkPublisher:
                 else:
                     best_value = f"{memory_amount:.2f}"
 
-            bench_score_str = f"{bench_score_value:.2f}"
+            bench_score_str = (
+                f"{bench_score_value:.1f}"
+                if bench_score_value >= 10.0
+                else f"{bench_score_value:.2f}"
+            )
             performance_score_str = (
-                f"{performance_score:.2f}" if performance_score is not None else ""
+                f"{performance_score:.0f}" if performance_score is not None else ""
             )
             memory_score_str = f"{memory_score:.0f}" if memory_score is not None else ""
             size_str = self._stringify(size_raw)

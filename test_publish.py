@@ -109,8 +109,8 @@ class PerformanceScoreTests(unittest.TestCase):
         pe_index = header_cells.index("PE-200-<br/>Score")
         javascript_index = header_cells.index("JavaScript")
         self.assertEqual(header_cells[pe_index + 1], "Performance-<br/>Score")
-        self.assertEqual(row_cells[pe_index], "100.00")
-        self.assertEqual(row_cells[pe_index + 1], "116.65")
+        self.assertEqual(row_cells[pe_index], "100.0")
+        self.assertEqual(row_cells[pe_index + 1], "117")
         self.assertEqual(row_cells[javascript_index], "100")
 
     def test_missing_performance_measurement_produces_empty_cell(self):
@@ -156,7 +156,31 @@ class PerformanceScoreTests(unittest.TestCase):
         javascript_index = header_cells.index("JavaScript")
 
         self.assertEqual(row_cells[javascript_index], "25")
-        self.assertEqual(row_cells[header_cells.index("PE-200-<br/>Score")], "25.00")
+        self.assertEqual(row_cells[header_cells.index("PE-200-<br/>Score")], "25.0")
+
+    def test_pe_score_decimal_places_change_at_ten(self):
+        publisher = make_publisher(200)
+
+        for score, expected in ((9.99, "9.99"), (10.0, "10.0")):
+            with self.subTest(score=score):
+                entry = {
+                    "python-200": score,
+                    "javascript-200": score,
+                    "java-200": score,
+                    "rust-200": score,
+                    "clojure-200": score,
+                }
+                table = publisher._build_table_for_entries(
+                    {"model-a": entry},
+                    max_model_name=len("model-a"),
+                )
+                header, _alignment, row = table.splitlines()
+                header_cells = table_cells(header)
+                row_cells = table_cells(row)
+
+                self.assertEqual(
+                    row_cells[header_cells.index("PE-200-<br/>Score")], expected
+                )
 
     def test_archived_pe_100_table_has_no_performance_column(self):
         publisher = make_publisher(100)

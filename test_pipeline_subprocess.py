@@ -1,7 +1,8 @@
+import os
 import subprocess
 import sys
 import unittest
-from unittest.mock import call, patch
+from unittest.mock import ANY, call, patch
 
 import test as pipeline
 
@@ -38,6 +39,7 @@ class PipelineSubprocessTests(unittest.TestCase):
                         "--overwrite_failed",
                     ],
                     check=True,
+                    env=ANY,
                 ),
                 call(
                     [
@@ -48,6 +50,7 @@ class PipelineSubprocessTests(unittest.TestCase):
                         *common,
                     ],
                     check=True,
+                    env=ANY,
                 ),
                 call(
                     [
@@ -58,9 +61,13 @@ class PipelineSubprocessTests(unittest.TestCase):
                         *common,
                     ],
                     check=True,
+                    env=ANY,
                 ),
             ],
         )
+
+        for invocation in run.call_args_list:
+            self.assertEqual(invocation.kwargs["env"][pipeline.PARENT_PID_ENV], str(os.getpid()))
 
     @patch(
         "test.subprocess.run",

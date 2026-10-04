@@ -8,6 +8,7 @@ from argparse import ArgumentParser
 from benchmark import read_benchmark, score_key, write_benchmark
 from language_config import DEFAULT_LANGUAGES
 from llm_client import openai_api_list, load_endpoint_file, Endpoint
+from run_control import PARENT_PID_ENV, run_main
 
 _base_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -17,7 +18,7 @@ def get_bench_name(language, max_problem_number, tool_mode=False):
 def run_pipeline_step(script_name, arguments):
     command = [sys.executable, os.path.join(_base_dir, script_name), *arguments]
     print(f"Running command: {shlex.join(command)}")
-    subprocess.run(command, check=True)
+    subprocess.run(command, check=True, env={**os.environ, PARENT_PID_ENV: str(os.getpid())})
 
 def test(api_base, endpoint_name, model_name, language, overwrite_existing, overwrite_failed, max_problem_number=100, think=False, no_think=False, tool_mode=False, endpoint_store_name=None, endpoint_model_name=None):
     script_name = "inference-with-tools.py" if tool_mode else "inference.py"
@@ -172,4 +173,4 @@ def main():
             write_benchmark(benchmark)
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

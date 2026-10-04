@@ -822,6 +822,8 @@ class LoadBalancer:
                 think = task.think,
                 no_think = task.no_think
             )
+            if not isinstance(answer, str) or not answer.strip():
+                raise LLMIncompleteResponse("Model returned an empty or invalid answer")
             # Call the response processing function
             response = Response(
                 task,
@@ -848,6 +850,17 @@ class LoadBalancer:
                     f"Failed to process task ID {task.id} on {server.endpoint.url} "
                     f"after {task.attempts} attempts: {e}"
                 )
+                # Persist terminal failures through the same writer as answers so
+                # every attempted problem can be included in the benchmark.
+                # Keep this under Exception: KeyboardInterrupt and SystemExit
+                # are cancellations, not failed model answers.
+                error_message = str(e).strip() or type(e).__name__
+                task.response_processing(Response(
+                    task,
+                    f"# error\n{error_message}\n",
+                    total_tokens=0,
+                    token_per_second=0.0,
+                ))
         finally:
             self.mark_server_available(server)
             self.task_queue.task_done()

@@ -4,6 +4,7 @@ import json
 from argparse import ArgumentParser
 from language_config import DEFAULT_LANGUAGES, get_extension
 from llm_client import Endpoint, load_endpoint_file
+from run_control import atomic_write_text, run_main
 
 thinking_remove_tags = [
     ["<|begin_of_thought|>", "<|end_of_thought|>"],
@@ -21,6 +22,8 @@ thinking_keep_tags = [
 ]
 
 def extract_code_block(markdown_content, language, extension):
+    if markdown_content.splitlines()[:1] == ["# error"]:
+        return markdown_content
     # remove thinking parts from the markdown content
     for tag_pair in thinking_remove_tags:
         start_tag, end_tag = tag_pair
@@ -85,8 +88,7 @@ def process_markdown_files(store_name, language):
             problem_number = os.path.splitext(markdown_file)[0]
             language_dir_file_path = os.path.join(language_dir, f"{problem_number}.{extension}")
 
-            with open(language_dir_file_path, 'w', encoding='utf-8') as language_file:
-                language_file.write(code_block)
+            atomic_write_text(language_dir_file_path, code_block)
 
             print(f"Processed {markdown_file} and saved code to {language_dir_file_path}")
 
@@ -128,4 +130,4 @@ def main():
         process_markdown_files(store_name, language)
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

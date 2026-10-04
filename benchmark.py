@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Dict
 
 from language_config import BENCHMARK_LANGUAGES, LANGUAGE_WEIGHTS, REFERENCE_LANGUAGE
+from run_control import atomic_write_text
 
 # Constants
 BENCHMARK_FILE = 'benchmark.json'
@@ -65,8 +66,7 @@ def write_benchmark(benchmark: dict):
     try:
         with open(BENCHMARK_FILE_STOP, 'w', encoding='utf-8') as stop_file:
             stop_file.write("stop")
-        with open(BENCHMARK_FILE, 'w', encoding='utf-8') as json_file:
-            json.dump(benchmark, json_file, indent=4)
+        atomic_write_text(BENCHMARK_FILE, json.dumps(benchmark, indent=4))
     except Exception as e:
         logging.error(f"Error writing to {BENCHMARK_FILE}: {e}")
     finally:

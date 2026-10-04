@@ -152,6 +152,25 @@ class LLMRequestResilienceTests(unittest.TestCase):
 
 class LoadBalancerRetryTests(unittest.TestCase):
     @patch("llm_client.openai_api_chat")
+    def test_interruption_does_not_retry_or_save_an_error(self, chat):
+        for interruption in (KeyboardInterrupt(), SystemExit(1)):
+            with self.subTest(interruption=type(interruption).__name__):
+                chat.side_effect = interruption
+                task = Task("1", "problem 1", "prompt", None, Mock())
+                balancer = LoadBalancer(task_retries=0)
+                server = Server(make_endpoint(), current_task=task)
+                balancer.add_task(task)
+                balancer.task_queue.get_nowait()
+
+                with self.assertRaises(type(interruption)):
+                    balancer.process_task_remote(server)
+
+                task.response_processing.assert_not_called()
+                self.assertTrue(balancer.task_queue.empty())
+                self.assertEqual(balancer.task_queue.unfinished_tasks, 0)
+                self.assertIsNone(server.current_task)
+
+    @patch("llm_client.openai_api_chat")
     def test_failed_task_is_requeued_and_then_saved(self, chat):
         chat.side_effect = [
             LLMRequestTimeout("timed out"),
@@ -189,8 +208,30 @@ class LoadBalancerRetryTests(unittest.TestCase):
 
         self.assertEqual(chat.call_count, 2)
         self.assertEqual(task.attempts, 2)
-        task.response_processing.assert_not_called()
+        task.response_processing.assert_called_once()
+        response = task.response_processing.call_args.args[0]
+        self.assertIs(response.task, task)
+        self.assertEqual(response.result, "# error\ntimed out\n")
         self.assertEqual(balancer.task_queue.unfinished_tasks, 0)
+        self.assertIsNone(balancer.servers[0].current_task)
+
+    @patch("llm_client.openai_api_chat")
+    def test_empty_or_invalid_answers_are_saved_as_errors(self, chat):
+        for answer in ("", " \n", None, {"unexpected": "response"}):
+            with self.subTest(answer=answer):
+                chat.return_value = (answer, 0, 0.0, {}, 1.0)
+                task = Task("1", "problem 1", "prompt", None, Mock())
+                balancer = LoadBalancer(task_retries=0)
+                balancer.add_server(Server(make_endpoint()))
+                balancer.start_distribution()
+                balancer.add_task(task)
+                balancer.wait_completion()
+
+                task.response_processing.assert_called_once()
+                self.assertEqual(
+                    task.response_processing.call_args.args[0].result,
+                    "# error\nModel returned an empty or invalid answer\n",
+                )
 
 
 if __name__ == "__main__":

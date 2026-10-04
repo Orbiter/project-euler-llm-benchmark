@@ -12,6 +12,7 @@ from execute_java import execute_java_code
 from execute_python import execute_python_code
 from execute_rust import execute_rust_code
 from language_config import DEFAULT_LANGUAGES, get_extension, get_language_from_extension
+from run_control import atomic_write_text, run_main
 
 JAVASCRIPT_MAX_WORKERS = 4
 
@@ -80,8 +81,7 @@ def process_solutions(model_name, language, max_problem_number, expected_solutio
             solutions[problem_number] = output
 
             # Write the solutions to a JSON file. We write this after each solution to avoid losing progress.
-            with open(solutions_json_path, 'w', encoding='utf-8') as json_file:
-                json.dump(solutions, json_file, indent=4)
+            atomic_write_text(solutions_json_path, json.dumps(solutions, indent=4))
 
     print(f"Executed all {language} files and saved results to {solutions_json_path}")
     return solutions
@@ -98,6 +98,8 @@ def execute_solution(program_file_path, expected):
     # Here it might be that the LLM did actually solve the problem by itself using reasoning.
     # If that happens, the answer might be anywhere in the content.
     code = code.strip() # in case there are empty lines at the end
+    if code.splitlines()[:1] == ["# error"]:
+        return "Error: " + code.partition("\n")[2]
     expected_solution = expected.get('solution', '') if expected else ''
 
     # Check if the expected solution appears anywhere in the content (for non-code responses)
@@ -274,4 +276,4 @@ def main():
             evaluate_solutions(solutions, store_name, language, max_problem_number, expected_solutions, tool_mode=args.tool)
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

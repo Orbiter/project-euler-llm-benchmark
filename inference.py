@@ -9,6 +9,7 @@ from llm_model_test import complete_model_capabilities, has_complete_model_capab
 from benchmark import read_benchmark, write_benchmark
 from execute_js import ensure_javascript_runtime
 from language_config import DEFAULT_LANGUAGES
+from run_control import atomic_write_text, run_main
 from llm_client import openai_api_list, ensure_model_available, load_endpoint_file, Endpoint, LoadBalancer, Server, Task, Response
 
 def read_template(template_path):
@@ -99,8 +100,7 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
         def save_solution(resonse: Response):
             # Save the solution to a file
             process_result_file_path = os.path.join(solutions_dir, f"{resonse.task.id}.md")
-            with open(process_result_file_path, 'w', encoding='utf-8') as file:
-                file.write(resonse.result)
+            atomic_write_text(process_result_file_path, resonse.result)
             telemetry_result_file_path = os.path.join(solutions_dir, f"{resonse.task.id}.json")
             telemetry = {
                 "duration_seconds": resonse.duration_seconds,
@@ -108,8 +108,7 @@ def process_problem_files(problems_dir, template_content, endpoints: List[Endpoi
                 "completion_tokens": resonse.completion_tokens,
                 "reasoning_tokens": resonse.reasoning_tokens,
             }
-            with open(telemetry_result_file_path, 'w', encoding='utf-8') as file:
-                json.dump(telemetry, file, indent=4)
+            atomic_write_text(telemetry_result_file_path, json.dumps(telemetry, indent=4))
 
         # Create task and add to load balancer
         task = Task(
@@ -279,4 +278,4 @@ def main():
                                   think = args.think, no_think = args.no_think)
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

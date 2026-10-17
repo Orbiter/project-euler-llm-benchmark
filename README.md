@@ -301,7 +301,7 @@ Results are:
 ### Thinking
 | Model                                                                                            | Best<br/>Model<br/>for<br/>Size (GB) | PE-200-<br/>Score | Performance-<br/>Score | Mem-<br/>Score | Size<br/>*10^9 Params | Bits | Context Length<br/>(K) | Python | JavaScript | Java | Rust | Clojure |
 | :----------------------------------------------------------------------------------------------- | -----------------------------------: | ----------------: | ---------------------: | -------------: | --------------------: | ---: | ---------------------: | -----: | ---------: | ---: | ---: | ------: |
-| gpt-6.1-sol-think                                                                                |          |  159.5 |        |        |        |   16 | 1050 | 169.38 | 171.8 | 172.03 | 170.44 | 1.57 |
+| gpt-6.1-sol-think                                                                                |          |  168.4 |        |        |        |   16 | 1050 | 169.38 | 171.8 | 172.03 | 170.44 | 135.4 |
 | deepseek-v4-flash-0731-think                                                                     |      228 |  111.1 |        |     49 |    304 |    4 | 1024 | 121.26 | 115.86 | 121.45 | 112.66 |  7.6 |
 | GLM-5.3-Flash-think                                                                              |          |  102.7 |        |        |        |   16 | 1024 | 105.8 | 109.32 | 114.52 | 110.15 | 10.31 |
 | frob/ling-3.0-flash:124b-a5b-q4_K_M-think                                                        |          |   79.7 |        |     32 |  124.0 |   16 |  256 | 87.1 |      | 83.59 | 84.02 | 1.51 |
@@ -858,6 +858,12 @@ Performance Score = PE-200 Score * effective tokens/second / 100
 ```
 
 For example, a PE-200 Score of `40` and an effective throughput of `25` tokens per second produce a Performance Score of `10`. Throughput and Performance Scores measured on different hardware are not directly comparable. The score is only calculated for PE-Bench-200 and remains blank when either the output-token or prompt-token throughput measurement is unavailable.
+
+Run `python3.12 performance.py --all` to benchmark installed models without complete throughput values. For each model, the script first tests Ollama's OpenAI-compatible `/v1/chat/completions` endpoint with the server's default context size, then performs the native warm-up and measurements through `/api/chat` with `--num-ctx`. The native endpoint supplies `prompt_eval_duration` and `eval_duration`, which the OpenAI-compatible response does not expose; request wall time is not used to calculate throughput. Neither the preflight nor the warm-up contributes to the stored median rates.
+
+Both APIs log their URL, model and generation settings, HTTP status, elapsed time, and returned token/timing metrics. Failures also include the exception type and response body (up to 4,000 characters). An OpenAI preflight failure is printed before the native request, and both errors are retained if the native warm-up also fails. If only the OpenAI preflight fails, native throughput measurements can still proceed.
+
+For Nemotron Bolt's missing nine-expert Metal batch kernel, the script automatically retries the complete native benchmark with `num_batch=16` when an `unexpected EOF` response is accompanied by the matching error in newly appended `~/.ollama/logs/server.log` lines. Previous measurements are discarded and the retry uses fresh prompts. Other failures are reported without this retry. Use `--num-batch 16` to select the workaround directly, including when server logs are elsewhere. The complete long prompt is still evaluated; its measured ingestion rate reflects the smaller batch size. Models without this failure keep the server's default batch setting unless `--num-batch` is supplied.
 
 If we ask a LLM to solve 100 problems, add the achieved points for each correctly solved problem and divide it by 100, we get the performance
 number for that LLM which compares to human performance by that average number. A performance value of `2` would mean "two-fold super-human performance".

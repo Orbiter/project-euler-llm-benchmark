@@ -103,17 +103,17 @@ def execute_solution(program_file_path, expected):
     expected_solution = expected.get('solution', '') if expected else ''
 
     # Check if the expected solution appears anywhere in the content (for non-code responses)
-    if expected_solution and len(expected_solution) > 0:
-        # Remove commas and check if solution appears in content
-        code_normalized = code.replace(',', '')
-        if expected_solution in code_normalized:
-            # Extract the context around the solution for logging
-            idx = code_normalized.find(expected_solution)
-            context_start = max(0, idx - 20)
-            context_end = min(len(code_normalized), idx + len(expected_solution) + 20)
-            context = code_normalized[context_start:context_end]
-            print(f"Executed {program_file_path}: Found solution {expected_solution} in content: ...{context}...")
-            return expected_solution
+    #if expected_solution and len(expected_solution) > 0:
+    #    # Remove commas and check if solution appears in content
+    #    code_normalized = code.replace(',', '')
+    #    if expected_solution in code_normalized:
+    #        # Extract the context around the solution for logging
+    #        idx = code_normalized.find(expected_solution)
+    #        context_start = max(0, idx - 20)
+    #        context_end = min(len(code_normalized), idx + len(expected_solution) + 20)
+    #        context = code_normalized[context_start:context_end]
+    #        print(f"Executed {program_file_path}: Found solution {expected_solution} in content: ...{context}...")
+    #        return expected_solution
 
     # Otherwise, try to execute the code
     if True:

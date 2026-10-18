@@ -4,6 +4,10 @@
 The values reported here use Ollama's own token counts and nanosecond timing
 fields.  They therefore match the rates printed by ``ollama run --verbose``
 instead of estimating throughput from wall-clock request time.
+
+An OpenAI-compatible chat preflight runs before the native warm-up so failures
+on /v1/chat/completions can be compared with those on /api/chat. Measurements
+still use /api/chat for its separate prompt and decode timing fields.
 """
 
 import argparse
@@ -28,6 +32,9 @@ MIN_PROMPT_TOKENS = 4_000
 REQUEST_TIMEOUT_SECONDS = 1_200
 UNLOAD_TIMEOUT_SECONDS = 30
 UNLOAD_POLL_INTERVAL_SECONDS = 0.25
+MAX_ERROR_RESPONSE_CHARS = 4_000
+OLLAMA_SERVER_LOG = Path.home() / ".ollama" / "logs" / "server.log"
+METAL_SAFE_NUM_BATCH = 16
 
 _ADJECTIVES = (
     "amber", "balanced", "coastal", "distributed", "efficient", "granular",
@@ -60,6 +67,10 @@ _CONDITIONS = (
 
 class PerformanceBenchmarkError(RuntimeError):
     """Raised when the benchmark cannot produce a valid measurement."""
+
+
+class MissingMetalKernelError(PerformanceBenchmarkError):
+    """The server log confirms the missing nine-expert Metal batch kernel."""
 
 
 def _sysctl_value(name: str) -> str:
@@ -261,6 +272,129 @@ def build_long_prompt(run_number: int, record_count: int) -> str:
     return "\n".join(lines)
 
 
+def _post_json(
+    session: requests.Session,
+    url: str,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    """Log request settings and response diagnostics without dumping long prompts."""
+    settings = {key: value for key, value in payload.items() if key != "messages"}
+    settings["messages"] = [
+        {"role": message["role"], "content_chars": len(message["content"])}
+        for message in payload.get("messages", [])
+    ]
+    print(f"API request: POST {url}", flush=True)
+    print(f"  Parameters: {json.dumps(settings, sort_keys=True)}", flush=True)
+    print(f"  Timeout: {REQUEST_TIMEOUT_SECONDS}s", flush=True)
+    started = time.monotonic()
+    response = None
+
+    try:
+        response = session.post(url, json=payload, timeout=REQUEST_TIMEOUT_SECONDS)
+        print(
+            f"API response: POST {url}: HTTP {response.status_code} "
+            f"after {time.monotonic() - started:.2f}s "
+            f"(Content-Type: {response.headers.get('Content-Type', 'unknown')})",
+            flush=True,
+        )
+        response.raise_for_status()
+        data = response.json()
+        if not isinstance(data, dict):
+            raise ValueError("Expected a JSON object.")
+        if data.get("error"):
+            raise ValueError(f"API returned an error: {data['error']}")
+    except (requests.RequestException, ValueError) as exc:
+        if response is None and isinstance(exc, requests.RequestException):
+            response = exc.response
+        detail = (
+            f"POST {url} failed after {time.monotonic() - started:.2f}s: "
+            f"{type(exc).__name__}: {exc}"
+        )
+        if response is not None:
+            body = response.text
+            excerpt = body[:MAX_ERROR_RESPONSE_CHARS]
+            if len(body) > MAX_ERROR_RESPONSE_CHARS:
+                excerpt += f" ... [truncated; {len(body)} characters total]"
+            detail += f"; HTTP {response.status_code}; Response: {excerpt!r}"
+        else:
+            detail += "; no HTTP response received"
+        print(f"API error: {detail}", flush=True)
+        raise PerformanceBenchmarkError(detail) from exc
+
+    metrics = {
+        key: data[key]
+        for key in (
+            "done", "done_reason", "total_duration", "load_duration",
+            "prompt_eval_count", "prompt_eval_cached_count", "prompt_eval_duration", "eval_count",
+            "eval_duration", "usage",
+        )
+        if key in data
+    }
+    print(f"  Response keys: {', '.join(sorted(data))}", flush=True)
+    if metrics:
+        print(f"  Metrics (durations in ns): {json.dumps(metrics, sort_keys=True)}", flush=True)
+    return data
+
+
+def _post_openai_chat(
+    session: requests.Session,
+    api_base: str,
+    model: str,
+) -> dict[str, Any]:
+    """Exercise Ollama's OpenAI-compatible endpoint independently of timing calls."""
+    url = f"{api_base}/v1/chat/completions"
+    data = _post_json(session, url, {
+        "model": model,
+        "messages": [{"role": "user", "content": "Reply with the single word ready."}],
+        "stream": False,
+        "temperature": 0,
+        "seed": 91_336,
+        "max_tokens": 8,
+        "reasoning_effort": "none",
+    })
+    choices = data.get("choices")
+    if (
+        not isinstance(choices, list)
+        or not choices
+        or not isinstance(choices[0], dict)
+        or not isinstance(choices[0].get("message"), dict)
+    ):
+        raise PerformanceBenchmarkError(
+            f"POST {url} returned no chat completion; response keys: {sorted(data)}"
+        )
+    return data
+
+
+def _ollama_log_position() -> tuple[int, int] | None:
+    try:
+        status = OLLAMA_SERVER_LOG.stat()
+        return status.st_ino, status.st_size
+    except OSError:
+        return None
+
+
+def _missing_metal_kernel_since(position: tuple[int, int] | None) -> str | None:
+    """Only inspect newly appended log lines, so old crashes cannot trigger retries."""
+    if position is None:
+        return None
+    try:
+        with OLLAMA_SERVER_LOG.open("rb") as log:
+            status = OLLAMA_SERVER_LOG.stat()
+            if status.st_ino != position[0] or status.st_size < position[1]:
+                return None
+            log.seek(max(position[1], status.st_size - 65_536))
+            lines = log.read(65_536).decode("utf-8", errors="replace").splitlines()
+    except OSError:
+        return None
+    for line in reversed(lines):
+        if (
+            "kernel not found in any metal library" in line
+            and "kernel_mul_mm_id_map0_ne20_9'" in line
+        ):
+            return line
+    return None
+
+
 def _post_chat(
     session: requests.Session,
     api_base: str,
@@ -270,39 +404,35 @@ def _post_chat(
     num_ctx: int,
     num_predict: int,
     seed: int,
+    num_batch: int | None = None,
 ) -> dict[str, Any]:
-    url = f"{api_base}/api/chat"
+    options = {
+        "temperature": 0,
+        "seed": seed,
+        "num_ctx": num_ctx,
+        "num_predict": num_predict,
+    }
+    if num_batch is not None:
+        options["num_batch"] = num_batch
+    log_position = _ollama_log_position()
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+        "think": False,
+        "keep_alive": "10m",
+        "options": options,
+    }
     try:
-        response = session.post(
-            url,
-            json={
-                "model": model,
-                "messages": [{"role": "user", "content": prompt}],
-                "stream": False,
-                "think": False,
-                "keep_alive": "10m",
-                "options": {
-                    "temperature": 0,
-                    "seed": seed,
-                    "num_ctx": num_ctx,
-                    "num_predict": num_predict,
-                },
-            },
-            timeout=REQUEST_TIMEOUT_SECONDS,
-        )
-        response.raise_for_status()
-        data = response.json()
-    except requests.RequestException as exc:
-        detail = ""
-        if exc.response is not None:
-            detail = f" Response: {exc.response.text[:500]}"
-        raise PerformanceBenchmarkError(f"Ollama request to {url} failed.{detail}") from exc
-    except ValueError as exc:
-        raise PerformanceBenchmarkError("Ollama returned invalid JSON.") from exc
-
-    if not isinstance(data, dict):
-        raise PerformanceBenchmarkError("Ollama returned a non-object JSON response.")
-    return data
+        return _post_json(session, f"{api_base}/api/chat", payload)
+    except PerformanceBenchmarkError as exc:
+        if "unexpected eof" in str(exc).lower():
+            kernel_error = _missing_metal_kernel_since(log_position)
+            if kernel_error:
+                raise MissingMetalKernelError(
+                    f"{exc}; Ollama server log: {kernel_error}"
+                ) from exc
+        raise
 
 
 def _rate(data: dict[str, Any], count_key: str, duration_key: str) -> float:
@@ -327,25 +457,105 @@ def measure_performance(
     prompt_records: int,
     num_ctx: int,
     num_predict: int,
+    num_batch: int | None = None,
 ) -> tuple[int, int]:
     """Warm the model, measure several runs, and return rounded medians."""
+    with requests.Session() as session:
+        print(
+            f"OpenAI-compatible preflight for {model} "
+            "(server-default context size; excluded from measurements)...",
+            flush=True,
+        )
+        openai_error = None
+        try:
+            _post_openai_chat(session, api_base, model)
+        except PerformanceBenchmarkError as exc:
+            openai_error = exc
+            print(f"OpenAI-compatible preflight failed: {exc}", flush=True)
+            print(
+                "Checking native warm-up before continuing with native timing measurements.",
+                flush=True,
+            )
+        else:
+            print("OpenAI-compatible preflight succeeded.", flush=True)
+
+        print(
+            "Using native Ollama /api/chat for warm-up and measurements: "
+            "prompt_eval_duration and eval_duration are required; "
+            "/v1/chat/completions does not provide these timing fields.",
+            flush=True,
+        )
+        try:
+            try:
+                return _measure_native_performance(
+                    session, api_base, model, runs=runs, prompt_records=prompt_records,
+                    num_ctx=num_ctx, num_predict=num_predict, num_batch=num_batch,
+                )
+            except MissingMetalKernelError as exc:
+                if num_batch is not None and num_batch < 32:
+                    raise
+                print(f"Confirmed Metal kernel failure: {exc}", flush=True)
+                print(
+                    f"Retrying the complete native benchmark with num_batch={METAL_SAFE_NUM_BATCH} "
+                    "to avoid the missing nine-expert Metal kernel. "
+                    "Prompt throughput will reflect this smaller batch size. "
+                    "Discarding measurements from the failed attempt.",
+                    flush=True,
+                )
+                try:
+                    return _measure_native_performance(
+                        session, api_base, model, runs=runs, prompt_records=prompt_records,
+                        num_ctx=num_ctx, num_predict=num_predict,
+                        num_batch=METAL_SAFE_NUM_BATCH, prompt_run_offset=runs,
+                    )
+                except PerformanceBenchmarkError as retry_error:
+                    raise PerformanceBenchmarkError(
+                        f"Original native benchmark failed: {exc}; "
+                        f"retry with num_batch={METAL_SAFE_NUM_BATCH} failed: {retry_error}"
+                    ) from retry_error
+        except PerformanceBenchmarkError as exc:
+            preflight_detail = (
+                f"OpenAI-compatible preflight failed: {openai_error}"
+                if openai_error is not None
+                else "OpenAI-compatible preflight succeeded"
+            )
+            raise PerformanceBenchmarkError(
+                f"{preflight_detail}; {exc}"
+            ) from exc
+
+
+def _measure_native_performance(
+    session: requests.Session,
+    api_base: str,
+    model: str,
+    *,
+    runs: int,
+    prompt_records: int,
+    num_ctx: int,
+    num_predict: int,
+    num_batch: int | None,
+    prompt_run_offset: int = 0,
+) -> tuple[int, int]:
     output_rates: list[float] = []
     prompt_rates: list[float] = []
-
-    with requests.Session() as session:
-        print(f"Warming up {model}...", flush=True)
+    batch_label = "server default" if num_batch is None else str(num_batch)
+    print(
+        f"Warming up {model} with num_ctx={num_ctx}, think=false, num_batch={batch_label}...",
+        flush=True,
+    )
+    try:
         _post_chat(
-            session,
-            api_base,
-            model,
-            "Reply with the single word ready.",
-            num_ctx=num_ctx,
-            num_predict=8,
-            seed=91_336,
+            session, api_base, model, "Reply with the single word ready.",
+            num_ctx=num_ctx, num_predict=8, seed=91_336, num_batch=num_batch,
         )
+    except PerformanceBenchmarkError as exc:
+        raise type(exc)(f"native Ollama warm-up failed: {exc}") from exc
 
-        for run_number in range(1, runs + 1):
-            prompt = build_long_prompt(run_number, prompt_records)
+    for run_number in range(1, runs + 1):
+        print(f"Measuring run {run_number}/{runs} (num_batch={batch_label})...", flush=True)
+        prompt_number = run_number + prompt_run_offset
+        prompt = build_long_prompt(prompt_number, prompt_records)
+        try:
             data = _post_chat(
                 session,
                 api_base,
@@ -353,27 +563,30 @@ def measure_performance(
                 prompt,
                 num_ctx=num_ctx,
                 num_predict=num_predict,
-                seed=91_337 + run_number,
+                seed=91_337 + prompt_number,
+                num_batch=num_batch,
+            )
+        except PerformanceBenchmarkError as exc:
+            raise type(exc)(f"native Ollama run {run_number}/{runs} failed: {exc}") from exc
+
+        prompt_count = data.get("prompt_eval_count")
+        if not isinstance(prompt_count, int) or prompt_count < MIN_PROMPT_TOKENS:
+            raise PerformanceBenchmarkError(
+                f"Run {run_number} evaluated only {prompt_count!r} prompt tokens; "
+                f"at least {MIN_PROMPT_TOKENS} are required. Increase "
+                "--prompt-records or --num-ctx."
             )
 
-            prompt_count = data.get("prompt_eval_count")
-            if not isinstance(prompt_count, int) or prompt_count < MIN_PROMPT_TOKENS:
-                raise PerformanceBenchmarkError(
-                    f"Run {run_number} evaluated only {prompt_count!r} prompt tokens; "
-                    f"at least {MIN_PROMPT_TOKENS} are required. Increase "
-                    "--prompt-records or --num-ctx."
-                )
-
-            output_rate = _rate(data, "eval_count", "eval_duration")
-            prompt_rate = _rate(data, "prompt_eval_count", "prompt_eval_duration")
-            output_rates.append(output_rate)
-            prompt_rates.append(prompt_rate)
-            print(
-                f"Run {run_number}/{runs}: output={output_rate:.2f} tokens/s, "
-                f"prompt={prompt_rate:.2f} tokens/s "
-                f"({prompt_count} prompt tokens)",
-                flush=True,
-            )
+        output_rate = _rate(data, "eval_count", "eval_duration")
+        prompt_rate = _rate(data, "prompt_eval_count", "prompt_eval_duration")
+        output_rates.append(output_rate)
+        prompt_rates.append(prompt_rate)
+        print(
+            f"Run {run_number}/{runs}: output={output_rate:.2f} tokens/s, "
+            f"prompt={prompt_rate:.2f} tokens/s "
+            f"({prompt_count} prompt tokens; num_batch={batch_label})",
+            flush=True,
+        )
 
     return round(statistics.median(output_rates)), round(statistics.median(prompt_rates))
 
@@ -505,6 +718,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Ollama context size used for the test (default: 16384)",
     )
     parser.add_argument(
+        "--num-batch",
+        type=int,
+        help=(
+            "native Ollama prompt batch size (default: server setting; "
+            "automatically retry with 16 for a confirmed missing nine-expert Metal kernel)"
+        ),
+    )
+    parser.add_argument(
         "--num-predict",
         type=int,
         default=512,
@@ -529,6 +750,7 @@ def measure_and_store(
     prompt_records: int,
     num_ctx: int,
     num_predict: int,
+    num_batch: int | None = None,
 ) -> tuple[int, int]:
     """Benchmark one model and immediately persist its two rates."""
     unload_all_ollama_models(api_base)
@@ -539,6 +761,7 @@ def measure_and_store(
         prompt_records=prompt_records,
         num_ctx=num_ctx,
         num_predict=num_predict,
+        num_batch=num_batch,
     )
     update_benchmark_entries(
         benchmark_path,
@@ -573,6 +796,8 @@ def main(argv: list[str] | None = None) -> int:
             )
         if args.num_predict < 1:
             raise PerformanceBenchmarkError("--num-predict must be at least 1.")
+        if args.num_batch is not None and args.num_batch < 1:
+            raise PerformanceBenchmarkError("--num-batch must be at least 1.")
         if args.all and args.store_name:
             raise PerformanceBenchmarkError("--store-name cannot be used with --all.")
 
@@ -627,6 +852,7 @@ def main(argv: list[str] | None = None) -> int:
                         prompt_records=args.prompt_records,
                         num_ctx=args.num_ctx,
                         num_predict=args.num_predict,
+                        num_batch=args.num_batch,
                     )
                 except PerformanceBenchmarkError as exc:
                     failures.append((model, str(exc)))
@@ -657,6 +883,7 @@ def main(argv: list[str] | None = None) -> int:
             prompt_records=args.prompt_records,
             num_ctx=args.num_ctx,
             num_predict=args.num_predict,
+            num_batch=args.num_batch,
         )
     except PerformanceBenchmarkError as exc:
         print(f"performance.py: error: {exc}", file=sys.stderr)

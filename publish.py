@@ -175,9 +175,9 @@ class BenchmarkPublisher:
         if output_tokens_per_second is None or prompt_tokens_per_second is None:
             return None
 
-        return pe_score * (
-            output_tokens_per_second + (prompt_tokens_per_second / 100.0)
-        ) / 100.0
+        pf_score = output_tokens_per_second + (prompt_tokens_per_second / 100.0)
+
+        return pe_score * pf_score ** 1.6 / 1000.0
 
     def _sorted_entries(self, entries: dict, tool_mode: bool = False) -> dict:
         filtered_entries = {
